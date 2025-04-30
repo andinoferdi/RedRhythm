@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pop(context);
+            Navigator.of(context).pop();
           },
         ),
       ),
@@ -156,28 +157,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-              const Center(
-                child: Text(
-                  'or continue with',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildSocialIcon('assets/images/google_icon.png'),
-                  const SizedBox(width: 24),
-                  _buildSocialIcon('assets/images/facebook_icon.png'),
-                  const SizedBox(width: 24),
-                  _buildSocialIcon('assets/images/apple_icon.png'),
-                ],
-              ),
               const SizedBox(height: 30),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -192,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Navigate to sign up
+                      Navigator.of(context).pushNamed(AppRoutes.register);
                     },
                     child: const Text(
                       'Sign Up',
@@ -254,27 +233,6 @@ class _LoginScreenState extends State<LoginScreen> {
               : null,
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialIcon(String imagePath) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: Color(0xFF1E1E1E),
-        ),
-        child: Center(
-          child: Image.asset(
-            imagePath,
-            width: 24,
-            height: 24,
-          ),
         ),
       ),
     );

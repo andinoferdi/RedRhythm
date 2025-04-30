@@ -14,7 +14,7 @@ class AuthOptionsScreen extends StatelessWidget {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+            Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
           },
         ),
       ),
@@ -40,52 +40,13 @@ class AuthOptionsScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 30),
-              _buildSocialButton(
-                context,
-                'Continue with Google',
-                'assets/images/google_icon.png',
-                () {},
-              ),
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                context,
-                'Continue with Facebook',
-                'assets/images/facebook_icon.png',
-                () {},
-              ),
-              const SizedBox(height: 16),
-              _buildSocialButton(
-                context,
-                'Continue with Apple',
-                'assets/images/apple_icon.png',
-                () {},
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(child: Divider(color: Colors.white.withOpacity(0.5))),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      'or',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Colors.white.withOpacity(0.5))),
-                ],
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 50),
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.login);
+                    Navigator.of(context).pushNamed(AppRoutes.login);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE71E27),
@@ -118,7 +79,7 @@ class AuthOptionsScreen extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // Navigate to sign up screen
+                      Navigator.of(context).pushNamed(AppRoutes.register);
                     },
                     child: const Text(
                       'Sign Up',
@@ -135,47 +96,6 @@ class AuthOptionsScreen extends StatelessWidget {
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton(
-    BuildContext context,
-    String text,
-    String iconPath,
-    VoidCallback onPressed,
-  ) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Colors.white, width: 1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              iconPath,
-              width: 24,
-              height: 24,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 16,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );

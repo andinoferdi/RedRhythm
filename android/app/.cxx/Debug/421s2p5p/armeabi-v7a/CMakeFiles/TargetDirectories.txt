@@ -1,0 +1,2 @@
+C:/Users/Ferdi/Documents/RedRhythm/android/app/.cxx/Debug/421s2p5p/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/Ferdi/Documents/RedRhythm/android/app/.cxx/Debug/421s2p5p/armeabi-v7a/CMakeFiles/rebuild_cache.dir

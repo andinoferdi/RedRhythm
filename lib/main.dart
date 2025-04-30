@@ -22,9 +22,16 @@ class MyApp extends StatelessWidget {
         primaryColor: const Color(0xFFE71E27),
         fontFamily: 'Poppins',
         useMaterial3: true,
+        scaffoldBackgroundColor: Colors.black,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
       ),
       initialRoute: AppRoutes.splash,
-      routes: AppRoutes.routes,
+      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }
