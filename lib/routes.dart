@@ -4,6 +4,8 @@ import 'screens/onboarding_screen.dart';
 import 'screens/auth_options_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/home_screen.dart';
+import 'screens/explore_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -11,6 +13,8 @@ class AppRoutes {
   static const String authOptions = '/auth-options';
   static const String login = '/login';
   static const String register = '/register';
+  static const String home = '/home';
+  static const String explore = '/explore';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -39,6 +43,16 @@ class AppRoutes {
           builder: (_) => const RegisterScreen(),
           settings: settings,
         );
+      case home:
+        return FadePageRoute(
+          builder: (_) => const HomeScreen(),
+          settings: settings,
+        );
+      case explore:
+        return FadePageRoute(
+          builder: (_) => const ExploreScreen(),
+          settings: settings,
+        );
       default:
         return FadePageRoute(
           builder: (_) => const SplashScreen(),
@@ -53,6 +67,8 @@ class AppRoutes {
     authOptions: (context) => const AuthOptionsScreen(),
     login: (context) => const LoginScreen(),
     register: (context) => const RegisterScreen(),
+    home: (context) => const HomeScreen(),
+    explore: (context) => const ExploreScreen(),
   };
 }
 

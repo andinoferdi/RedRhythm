@@ -46,7 +46,7 @@ class AuthOptionsScreen extends StatelessWidget {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushNamed(AppRoutes.login);
+                    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE71E27),
@@ -79,7 +79,7 @@ class AuthOptionsScreen extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).pushNamed(AppRoutes.register);
+                      Navigator.of(context).pushReplacementNamed(AppRoutes.register);
                     },
                     child: const Text(
                       'Sign Up',
