@@ -6,6 +6,8 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
+import 'screens/library_screen.dart';
+import 'screens/stats_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -15,6 +17,8 @@ class AppRoutes {
   static const String register = '/register';
   static const String home = '/home';
   static const String explore = '/explore';
+  static const String library = '/library';
+  static const String stats = '/stats';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -53,6 +57,16 @@ class AppRoutes {
           builder: (_) => const ExploreScreen(),
           settings: settings,
         );
+      case library:
+        return FadePageRoute(
+          builder: (_) => const LibraryScreen(),
+          settings: settings,
+        );
+      case stats:
+        return FadePageRoute(
+          builder: (_) => const StatsScreen(),
+          settings: settings,
+        );
       default:
         return FadePageRoute(
           builder: (_) => const SplashScreen(),
@@ -62,14 +76,16 @@ class AppRoutes {
   }
 
   static Map<String, WidgetBuilder> get routes => {
-    splash: (context) => const SplashScreen(),
-    onboarding: (context) => const OnboardingScreen(),
-    authOptions: (context) => const AuthOptionsScreen(),
-    login: (context) => const LoginScreen(),
-    register: (context) => const RegisterScreen(),
-    home: (context) => const HomeScreen(),
-    explore: (context) => const ExploreScreen(),
-  };
+        splash: (context) => const SplashScreen(),
+        onboarding: (context) => const OnboardingScreen(),
+        authOptions: (context) => const AuthOptionsScreen(),
+        login: (context) => const LoginScreen(),
+        register: (context) => const RegisterScreen(),
+        home: (context) => const HomeScreen(),
+        explore: (context) => const ExploreScreen(),
+        library: (context) => const LibraryScreen(),
+        stats: (context) => const StatsScreen(),
+      };
 }
 
 class FadePageRoute<T> extends PageRoute<T> {

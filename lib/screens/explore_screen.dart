@@ -119,8 +119,10 @@ class ExploreScreen extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildGenreCard('Kpop', const Color(0xFF8BC34A), Icons.music_note),
-              _buildGenreCard('Indie', const Color(0xFFE91E63), Icons.music_video),
+              _buildGenreCard(
+                  'Kpop', const Color(0xFF8BC34A), Icons.music_note),
+              _buildGenreCard(
+                  'Indie', const Color(0xFFE91E63), Icons.music_video),
               _buildGenreCard('R&B', const Color(0xFF5C6BC0), Icons.piano),
               _buildGenreCard('Pop', const Color(0xFFE67E22), Icons.mic),
             ],
@@ -156,12 +158,19 @@ class ExploreScreen extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildGenreCard('Made\nfor You', const Color(0xFF039BE5), Icons.person),
-              _buildGenreCard('RELEASED', const Color(0xFF9C27B0), Icons.new_releases, isGradient: true),
-              _buildGenreCard('Music\nCharts', const Color(0xFF3F51B5), Icons.equalizer),
-              _buildGenreCard('Podcasts', const Color(0xFFD32F2F), Icons.podcasts),
-              _buildGenreCard('Bollywood', const Color(0xFFFF9800), Icons.movie),
-              _buildGenreCard('Pop\nFusion', const Color(0xFF009688), Icons.queue_music),
+              _buildGenreCard(
+                  'Made\nfor You', const Color(0xFF039BE5), Icons.person),
+              _buildGenreCard(
+                  'RELEASED', const Color(0xFF9C27B0), Icons.new_releases,
+                  isGradient: true),
+              _buildGenreCard(
+                  'Music\nCharts', const Color(0xFF3F51B5), Icons.equalizer),
+              _buildGenreCard(
+                  'Podcasts', const Color(0xFFD32F2F), Icons.podcasts),
+              _buildGenreCard(
+                  'Bollywood', const Color(0xFFFF9800), Icons.movie),
+              _buildGenreCard(
+                  'Pop\nFusion', const Color(0xFF009688), Icons.queue_music),
             ],
           ),
         ),
@@ -169,7 +178,8 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGenreCard(String title, Color color, IconData icon, {bool isGradient = false}) {
+  Widget _buildGenreCard(String title, Color color, IconData icon,
+      {bool isGradient = false}) {
     return Container(
       decoration: BoxDecoration(
         color: color,
@@ -245,13 +255,16 @@ class ExploreScreen extends StatelessWidget {
             Navigator.of(context).pushReplacementNamed(AppRoutes.home);
           }),
           _buildNavItem(context, Icons.search, 'Explore', true, () {}),
-          _buildNavItem(context, Icons.folder, 'Library', false, () {}),
+          _buildNavItem(context, Icons.library_music, 'Library', false, () {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.library);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildNavItem(BuildContext context, IconData icon, String label,
+      bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -273,33 +286,5 @@ class ExploreScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class WaveformPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-
-    final double centerY = size.height / 2;
-    final double width = size.width;
-
-    // Draw 3 lines for simplified waveform
-    canvas.drawLine(
-        Offset(0, centerY), Offset(width * 0.2, centerY - size.height * 0.3), paint);
-    canvas.drawLine(Offset(width * 0.2, centerY - size.height * 0.3),
-        Offset(width * 0.5, centerY + size.height * 0.3), paint);
-    canvas.drawLine(Offset(width * 0.5, centerY + size.height * 0.3),
-        Offset(width * 0.8, centerY - size.height * 0.1), paint);
-    canvas.drawLine(Offset(width * 0.8, centerY - size.height * 0.1),
-        Offset(width, centerY + size.height * 0.2), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
   }
 }

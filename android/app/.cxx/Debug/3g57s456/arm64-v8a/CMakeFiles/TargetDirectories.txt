@@ -1,0 +1,2 @@
+C:/Users/Ferdi/Downloads/RedRhythm/android/app/.cxx/Debug/3g57s456/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/Ferdi/Downloads/RedRhythm/android/app/.cxx/Debug/3g57s456/arm64-v8a/CMakeFiles/rebuild_cache.dir

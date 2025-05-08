@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../routes.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -15,7 +16,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              _buildHeader(),
+              _buildHeader(context),
               const SizedBox(height: 24),
               _buildContinueListening(),
               const SizedBox(height: 30),
@@ -27,11 +28,11 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
       child: Row(
@@ -78,11 +79,18 @@ class HomeScreen extends StatelessWidget {
           ),
           Row(
             children: [
-              const Icon(Icons.stacked_line_chart, color: Colors.white, size: 24),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, AppRoutes.stats);
+                },
+                child: const Icon(Icons.stacked_line_chart,
+                    color: Colors.white, size: 24),
+              ),
               const SizedBox(width: 16),
               Stack(
                 children: [
-                  const Icon(Icons.notifications_outlined, color: Colors.white, size: 24),
+                  const Icon(Icons.notifications_outlined,
+                      color: Colors.white, size: 24),
                   Positioned(
                     right: 0,
                     top: 0,
@@ -98,7 +106,8 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(width: 16),
-              const Icon(Icons.settings_outlined, color: Colors.white, size: 24),
+              const Icon(Icons.settings_outlined,
+                  color: Colors.white, size: 24),
             ],
           ),
         ],
@@ -133,7 +142,7 @@ class HomeScreen extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _buildPlaylistCard(
-                'Coffee & Jazz', 
+                'Coffee & Jazz',
                 Icons.coffee,
                 gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
@@ -142,7 +151,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               _buildPlaylistCard(
-                'RELEASED', 
+                'RELEASED',
                 Icons.new_releases,
                 iconColor: Colors.green,
                 gradient: const LinearGradient(
@@ -152,7 +161,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               _buildPlaylistCard(
-                'Anything Goes', 
+                'Anything Goes',
                 Icons.all_inclusive,
                 gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
@@ -161,7 +170,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               _buildPlaylistCard(
-                'Anime OSTs', 
+                'Anime OSTs',
                 Icons.music_note,
                 gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
@@ -170,7 +179,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               _buildPlaylistCard(
-                'Harry\'s House', 
+                'Harry\'s House',
                 Icons.house,
                 gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
@@ -179,7 +188,7 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               _buildPlaylistCard(
-                'Lo-Fi Beats', 
+                'Lo-Fi Beats',
                 Icons.headphones,
                 gradient: const LinearGradient(
                   begin: Alignment.centerLeft,
@@ -217,7 +226,7 @@ class HomeScreen extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: [
               _buildMixCard(
-                'Pop Mix', 
+                'Pop Mix',
                 Colors.red.shade400,
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
@@ -227,7 +236,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               _buildMixCard(
-                'Chill Mix', 
+                'Chill Mix',
                 Colors.amber.shade400,
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
@@ -237,7 +246,7 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               _buildMixCard(
-                'K-Pop Mix', 
+                'K-Pop Mix',
                 Colors.green.shade400,
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
@@ -300,7 +309,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaylistCard(String title, IconData icon, {Color? iconColor, required Gradient gradient}) {
+  Widget _buildPlaylistCard(String title, IconData icon,
+      {Color? iconColor, required Gradient gradient}) {
     return Container(
       decoration: BoxDecoration(
         gradient: gradient,
@@ -341,7 +351,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMixCard(String title, Color accentColor, {required Gradient gradient}) {
+  Widget _buildMixCard(String title, Color accentColor,
+      {required Gradient gradient}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,7 +434,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecommendationCard(String title, IconData icon, {required Gradient gradient}) {
+  Widget _buildRecommendationCard(String title, IconData icon,
+      {required Gradient gradient}) {
     return Container(
       width: 200,
       height: 200,
@@ -463,7 +475,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildBottomNavBar(BuildContext context) {
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -480,15 +492,18 @@ class HomeScreen extends StatelessWidget {
         children: [
           _buildNavItem(Icons.home_filled, 'Home', true, () {}),
           _buildNavItem(Icons.search, 'Explore', false, () {
-            Navigator.of(navigatorKey.currentContext!).pushReplacementNamed('/explore');
+            Navigator.of(context).pushReplacementNamed(AppRoutes.explore);
           }),
-          _buildNavItem(Icons.folder, 'Library', false, () {}),
+          _buildNavItem(Icons.library_music, 'Library', false, () {
+            Navigator.of(context).pushReplacementNamed(AppRoutes.library);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildNavItem(
+      IconData icon, String label, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -512,4 +527,3 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
-
