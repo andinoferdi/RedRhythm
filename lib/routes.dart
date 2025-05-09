@@ -6,7 +6,7 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
-import 'screens/library_screen.dart';
+import 'screens/library/library_screen.dart';
 import 'screens/stats_screen.dart';
 
 class AppRoutes {

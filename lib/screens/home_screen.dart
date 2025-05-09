@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../routes.dart';
+import 'playlist_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -18,11 +19,11 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _buildHeader(context),
               const SizedBox(height: 24),
-              _buildContinueListening(),
+              _buildContinueListening(context),
               const SizedBox(height: 30),
-              _buildYourTopMixes(),
+              _buildYourTopMixes(context),
               const SizedBox(height: 30),
-              _buildRecentListening(),
+              _buildRecentListening(context),
               const SizedBox(height: 80), // Space for bottom nav
             ],
           ),
@@ -115,7 +116,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContinueListening() {
+  Widget _buildContinueListening(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -187,13 +188,21 @@ class HomeScreen extends StatelessWidget {
                   colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
                 ),
               ),
-              _buildPlaylistCard(
-                'Lo-Fi Beats',
-                Icons.headphones,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                  );
+                },
+                child: _buildPlaylistCard(
+                  'Lo-Fi Loft',
+                  Icons.headphones,
+                  gradient: const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+                  ),
                 ),
               ),
             ],
@@ -203,7 +212,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildYourTopMixes() {
+  Widget _buildYourTopMixes(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -245,13 +254,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              _buildMixCard(
-                'K-Pop Mix',
-                Colors.green.shade400,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black87],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                  );
+                },
+                child: _buildMixCard(
+                  'Lofi Mix',
+                  Colors.blue.shade400,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black87],
+                  ),
                 ),
               ),
             ],
@@ -261,14 +278,14 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentListening() {
+  Widget _buildRecentListening(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Based on your recent listening',
+            'Recently Played',
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -277,61 +294,55 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 240,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildRecommendationCard(
-                'Harry\'s House',
-                Icons.house,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black54],
-                ),
-              ),
-              const SizedBox(width: 16),
-              _buildRecommendationCard(
-                'Night Tape',
-                Icons.nightlight_round,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black54],
-                ),
-              ),
-            ],
-          ),
+        ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                );
+              },
+              child: _buildRecentCard('Lofi Loft', 'Playlist', 'https://via.placeholder.com/300/FF5252/FFFFFF?text=Lofi+Art'),
+            ),
+            const SizedBox(height: 12),
+            _buildRecentCard('Dream On', 'Song • Aerosmith', 'https://via.placeholder.com/300/5D4037/FFFFFF?text=Dream+On'),
+            const SizedBox(height: 12),
+            _buildRecentCard('Bohemian Rhapsody', 'Song • Queen', 'https://via.placeholder.com/300/42A5F5/FFFFFF?text=Queen'),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildPlaylistCard(String title, IconData icon,
-      {Color? iconColor, required Gradient gradient}) {
+  Widget _buildPlaylistCard(
+    String title,
+    IconData icon, {
+    Color iconColor = Colors.white,
+    required Gradient gradient,
+  }) {
     return Container(
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
         gradient: gradient,
-        borderRadius: BorderRadius.circular(12),
       ),
+      padding: const EdgeInsets.all(12),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Container(
-              width: 70,
-              height: 70,
-              color: Colors.grey.shade800,
-              child: Icon(
-                icon,
-                color: iconColor ?? Colors.white,
-                size: 30,
-              ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 20,
             ),
           ),
           const SizedBox(width: 12),
@@ -340,9 +351,10 @@ class HomeScreen extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
               ),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -351,127 +363,106 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMixCard(String title, Color accentColor,
-      {required Gradient gradient}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 170,
-          height: 170,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade800,
+  Widget _buildMixCard(
+    String title,
+    Color color, {
+    required Gradient gradient,
+  }) {
+    return Container(
+      width: 160,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: color,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: gradient,
+              ),
+            ),
           ),
-          child: Stack(
-            children: [
-              Center(
-                child: Text(
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
                 ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: gradient,
-                ),
-              ),
-              // Add circular white elements for the design
-              Positioned(
-                right: 20,
-                top: 20,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
+                const SizedBox(height: 4),
+                const Text(
+                  'Based on your listening',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
                   ),
                 ),
-              ),
-              Positioned(
-                left: 20,
-                bottom: 20,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentCard(String title, String subtitle, String imageUrl) {
+    return Row(
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Colors.grey.shade800,
+            image: imageUrl.startsWith('http')
+                ? DecorationImage(
+                    image: NetworkImage(imageUrl),
+                    fit: BoxFit.cover,
+                  )
+                : DecorationImage(
+                    image: AssetImage(imageUrl),
+                    fit: BoxFit.cover,
                   ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 14,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 2),
-        Container(
-          width: 170,
-          height: 4,
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: 170,
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+        const Icon(
+          Icons.more_vert,
+          color: Colors.white,
         ),
       ],
-    );
-  }
-
-  Widget _buildRecommendationCard(String title, IconData icon,
-      {required Gradient gradient}) {
-    return Container(
-      width: 200,
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade800,
-      ),
-      child: Stack(
-        children: [
-          Center(
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 50,
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: gradient,
-            ),
-          ),
-          Positioned(
-            bottom: 16,
-            left: 16,
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -479,51 +470,43 @@ class HomeScreen extends StatelessWidget {
     return Container(
       height: 70,
       decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade900,
-            width: 0.5,
+        color: const Color(0xFF1E1E1E),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            spreadRadius: 5,
           ),
-        ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(Icons.home_filled, 'Home', true, () {}),
-          _buildNavItem(Icons.search, 'Explore', false, () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.explore);
-          }),
-          _buildNavItem(Icons.library_music, 'Library', false, () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.library);
-          }),
+          _buildNavItem(Icons.home, 'Home', isSelected: true),
+          _buildNavItem(Icons.search, 'Search'),
+          _buildNavItem(Icons.library_music, 'Library'),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(
-      IconData icon, String label, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? const Color(0xFFE71E27) : Colors.white,
-            size: 26,
+  Widget _buildNavItem(IconData icon, String label, {bool isSelected = false}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          color: isSelected ? Colors.white : Colors.grey,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontSize: 12,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? const Color(0xFFE71E27) : Colors.white,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

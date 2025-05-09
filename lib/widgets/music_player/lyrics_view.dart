@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+
+class LyricsView extends StatelessWidget {
+  final List<String> lyrics;
+
+  const LyricsView({
+    Key? key,
+    required this.lyrics,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        itemCount: lyrics.length,
+        itemBuilder: (context, index) {
+          final bool isActive = index < 2; // First two lines are active
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              lyrics[index],
+              style: TextStyle(
+                color: isActive ? Colors.red : Colors.grey,
+                fontSize: 16,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+} 
