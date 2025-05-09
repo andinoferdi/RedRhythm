@@ -31,6 +31,18 @@ class MyApp extends StatelessWidget {
         title: 'RedRhythm',
         debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
+        builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          final constrainedTextScaleFactor = 
+              mediaQuery.textScaleFactor.clamp(0.8, 1.0);
+          
+          return MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaleFactor: constrainedTextScaleFactor,
+            ),
+            child: child!,
+          );
+        },
         theme: ThemeData(
           primaryColor: const Color(0xFFE71E27),
           colorScheme: ColorScheme.dark(
@@ -63,7 +75,6 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
-    
         initialRoute: AppRoutes.splash,
         onGenerateRoute: AppRoutes.onGenerateRoute,
       ),

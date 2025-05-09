@@ -1,122 +1,152 @@
 import 'package:flutter/material.dart';
 import '../routes.dart';
 import 'playlist_screen.dart';
+import '../widgets/custom_bottom_nav.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Get the bottom padding to account for system navigation bars
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
+      // Use resizeToAvoidBottomInset: false to prevent keyboard from pushing up content
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
+        // We'll handle bottom padding ourselves
+        bottom: false,
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
               _buildHeader(context),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               _buildContinueListening(context),
               const SizedBox(height: 30),
               _buildYourTopMixes(context),
               const SizedBox(height: 30),
               _buildRecentListening(context),
-              const SizedBox(height: 80), // Space for bottom nav
+              // Add a bottom spacing to account for the navigation bar
+              SizedBox(
+                  height: 70 + bottomPadding), // Fixed to a more reasonable size
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 0,
+        bottomPadding: bottomPadding,
+      ),
     );
   }
 
+  // Rest of the code remains the same...
+
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade800, width: 1),
-                  color: Colors.grey.shade800,
-                ),
-                child: const Icon(
-                  Icons.person,
-                  color: Colors.white,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Welcome back !',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        height: 58, // Increased to safely accommodate the content
+        padding: const EdgeInsets.only(bottom: 2), // Add bottom padding for extra safety
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade800, width: 1),
+                    color: Colors.grey.shade800,
                   ),
-                  Text(
-                    'AndinoFerdi',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 16,
-                    ),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 30,
                   ),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, AppRoutes.stats);
-                },
-                child: const Icon(Icons.stacked_line_chart,
-                    color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Stack(
-                children: [
-                  const Icon(Icons.notifications_outlined,
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 140, // Slightly reduced to prevent potential overflow
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // Keep this to prevent overflow
+                    mainAxisAlignment: MainAxisAlignment.center, // Center text vertically
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Welcome back !',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18, // Slightly reduced font size
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'AndinoFerdi',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14, // Slightly reduced font size
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.stats);
+                  },
+                  child: const Icon(Icons.stacked_line_chart,
                       color: Colors.white, size: 24),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
+                ),
+                const SizedBox(width: 16),
+                Stack(
+                  children: [
+                    const Icon(Icons.notifications_outlined,
+                        color: Colors.white, size: 24),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              const Icon(Icons.settings_outlined,
-                  color: Colors.white, size: 24),
-            ],
-          ),
-        ],
+                  ],
+                ),
+                const SizedBox(width: 16),
+                const Icon(Icons.settings_outlined,
+                    color: Colors.white, size: 24),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildContinueListening(BuildContext context) {
+    // Implementation remains the same
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -192,7 +222,8 @@ class HomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const PlaylistScreen()),
                   );
                 },
                 child: _buildPlaylistCard(
@@ -212,7 +243,57 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // For brevity, I'm assuming the other widget methods remain unchanged
+  // Other methods would follow here: _buildYourTopMixes, _buildRecentListening, etc.
+
+  Widget _buildPlaylistCard(
+    String title,
+    IconData icon, {
+    Color iconColor = Colors.white,
+    required Gradient gradient,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: gradient,
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.black45,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Remaining method implementations would follow...
   Widget _buildYourTopMixes(BuildContext context) {
+    // Implementation would be here
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -258,7 +339,8 @@ class HomeScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const PlaylistScreen()),
                   );
                 },
                 child: _buildMixCard(
@@ -303,63 +385,22 @@ class HomeScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const PlaylistScreen()),
                 );
               },
-              child: _buildRecentCard('Lofi Loft', 'Playlist', 'https://via.placeholder.com/300/FF5252/FFFFFF?text=Lofi+Art'),
+              child: _buildRecentCard('Lofi Loft', 'Playlist',
+                  'https://via.placeholder.com/300/FF5252/FFFFFF?text=Lofi+Art'),
             ),
             const SizedBox(height: 12),
-            _buildRecentCard('Dream On', 'Song • Aerosmith', 'https://via.placeholder.com/300/5D4037/FFFFFF?text=Dream+On'),
+            _buildRecentCard('Dream On', 'Song • Aerosmith',
+                'https://via.placeholder.com/300/5D4037/FFFFFF?text=Dream+On'),
             const SizedBox(height: 12),
-            _buildRecentCard('Bohemian Rhapsody', 'Song • Queen', 'https://via.placeholder.com/300/42A5F5/FFFFFF?text=Queen'),
+            _buildRecentCard('Bohemian Rhapsody', 'Song • Queen',
+                'https://via.placeholder.com/300/42A5F5/FFFFFF?text=Queen'),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildPlaylistCard(
-    String title,
-    IconData icon, {
-    Color iconColor = Colors.white,
-    required Gradient gradient,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        gradient: gradient,
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black45,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -461,50 +502,6 @@ class HomeScreen extends StatelessWidget {
         const Icon(
           Icons.more_vert,
           color: Colors.white,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            spreadRadius: 5,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(Icons.home, 'Home', isSelected: true),
-          _buildNavItem(Icons.search, 'Search'),
-          _buildNavItem(Icons.library_music, 'Library'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, {bool isSelected = false}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.grey,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey,
-            fontSize: 12,
-          ),
         ),
       ],
     );

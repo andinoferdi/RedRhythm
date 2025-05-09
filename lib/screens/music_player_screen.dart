@@ -31,6 +31,7 @@ class MusicPlayerScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
+        bottom: true, // Ensure bottom area is safe
         child: Consumer<MusicPlayerProvider>(
           builder: (context, playerProvider, _) {
             final currentSong = playerProvider.currentSong ?? song;
@@ -41,25 +42,34 @@ class MusicPlayerScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(context, playlist),
-                  const SizedBox(height: 20),
-                  AlbumArt(imageUrl: currentSong.albumArtUrl),
-                  const SizedBox(height: 20),
-                  TrackInfo(
-                    title: currentSong.title,
-                    artist: currentSong.artist,
-                  ),
-                  const SizedBox(height: 20),
-                  ProgressBar(
-                    currentTime: playerProvider.currentPosition,
-                    totalTime: currentSong.duration,
-                  ),
-                  const SizedBox(height: 20),
-                  const PlaybackControls(),
-                  const SizedBox(height: 24),
-                  const Divider(color: Colors.grey),
-                  _buildLyricsHeader(),
                   Expanded(
-                    child: LyricsView(lyrics: currentSong.lyrics),
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          AlbumArt(imageUrl: currentSong.albumArtUrl),
+                          const SizedBox(height: 20),
+                          TrackInfo(
+                            title: currentSong.title,
+                            artist: currentSong.artist,
+                          ),
+                          const SizedBox(height: 20),
+                          ProgressBar(
+                            currentTime: playerProvider.currentPosition,
+                            totalTime: currentSong.duration,
+                          ),
+                          const SizedBox(height: 20),
+                          const PlaybackControls(),
+                          const SizedBox(height: 24),
+                          const Divider(color: Colors.grey),
+                          _buildLyricsHeader(),
+                          LyricsView(lyrics: currentSong.lyrics),
+                          const SizedBox(height: 20), // Bottom padding
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

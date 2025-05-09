@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../routes.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/constants.dart';
+import '../../widgets/custom_bottom_nav.dart';
 import 'library_controller.dart';
 import 'library_tab_selector.dart';
 import 'library_tab_enum.dart';
@@ -21,28 +22,31 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
+    // Get the bottom padding to account for system navigation bars
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return ChangeNotifierProvider(
       create: (_) => LibraryController(),
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
+          bottom: false,
           child: Column(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const LibraryTabSelector(),
-                    const Expanded(
-                      child: _TabContentView(),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 16),
+              _buildHeader(),
+              const SizedBox(height: 16),
+              const LibraryTabSelector(),
+              const Expanded(
+                child: _TabContentView(),
               ),
-              _buildBottomNavBar(),
+              // No need for padding at the bottom of the column since we're using a bottom nav
             ],
           ),
+        ),
+        bottomNavigationBar: CustomBottomNavBar(
+          currentIndex: 2,
+          bottomPadding: bottomPadding,
         ),
       ),
     );
@@ -50,112 +54,47 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary,
-                ),
-                child: const Icon(
-                  Icons.graphic_eq,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Your Library',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Icon(
-            Icons.search,
-            color: Colors.white,
-            size: 28,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      height: 60,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.withOpacity(0.2),
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(
-            Icons.home,
-            'Home',
-            AppRoutes.home,
-            false,
-          ),
-          _buildNavItem(
-            Icons.search,
-            'Explore',
-            AppRoutes.explore,
-            false,
-          ),
-          _buildNavItem(
-            Icons.library_music,
-            'Library',
-            AppRoutes.library,
-            true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(
-    IconData icon,
-    String label,
-    String route,
-    bool isActive,
-  ) {
-    return InkWell(
-      onTap: () {
-        if (!isActive) {
-          Navigator.pushReplacementNamed(context, route);
-        }
-      },
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: SizedBox(
-        width: 80,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        height: 50, // Match exact height with home screen
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(
-              icon,
-              color: isActive ? AppColors.primary : Colors.white,
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary,
+                  ),
+                  child: const Icon(
+                    Icons.graphic_eq,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 145, // Constrain width
+                  child: const Text(
+                    'Your Library',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive ? AppColors.primary : Colors.white,
-                fontSize: 12,
-              ),
+            const Icon(
+              Icons.search,
+              color: Colors.white,
+              size: 28,
             ),
           ],
         ),
@@ -169,19 +108,22 @@ class _TabContentView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LibraryController>(
-      builder: (context, controller, _) {
-        switch (controller.selectedTab) {
-          case LibraryTab.playlists:
-            return const PlaylistTab();
-          case LibraryTab.artists:
-            return const ArtistTab();
-          case LibraryTab.albums:
-            return const AlbumTab();
-          case LibraryTab.podcasts:
-            return const PodcastTab();
-        }
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4), // Add bottom padding
+      child: Consumer<LibraryController>(
+        builder: (context, controller, _) {
+          switch (controller.selectedTab) {
+            case LibraryTab.playlists:
+              return const PlaylistTab();
+            case LibraryTab.artists:
+              return const ArtistTab();
+            case LibraryTab.albums:
+              return const AlbumTab();
+            case LibraryTab.podcasts:
+              return const PodcastTab();
+          }
+        },
+      ),
     );
   }
 } 

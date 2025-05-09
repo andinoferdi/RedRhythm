@@ -1,63 +1,96 @@
 import 'package:flutter/material.dart';
 import '../routes.dart';
+import '../widgets/custom_bottom_nav.dart';
 
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Get the bottom padding to account for system navigation bars
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       body: SafeArea(
+        bottom: false, // Don't apply bottom safe area to avoid double padding
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16), // Added top spacing
+              const SizedBox(height: 16), // Consistent top spacing
               _buildSearchHeader(),
+              const SizedBox(height: 16), // Consistent spacing
               _buildSearchBar(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 24), // Adjusted spacing
               _buildYourTopGenres(),
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
               _buildBrowseAll(),
-              const SizedBox(height: 80), // Space for bottom nav
+              // Add a bottom spacing to account for the navigation bar
+              SizedBox(height: 70 + bottomPadding), // Consistent with home screen
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: 1,
+        bottomPadding: bottomPadding,
+      ),
     );
   }
 
   Widget _buildSearchHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade800, width: 1),
-              color: Colors.grey.shade800,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: SizedBox(
+        height: 50, // Match exact height with home screen
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.grey.shade800, width: 1),
+                    color: Colors.grey.shade800,
+                  ),
+                  child: const Icon(
+                    Icons.person,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 145, // Constrain width
+                  child: const Text(
+                    'Search',
+                    style: TextStyle(
+                      color: Color(0xFFE53935),
+                      fontSize: 28, // Match size with Library screen
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 30,
+            Row(
+              children: const [
+                Icon(
+                  Icons.search,
+                  color: Colors.white,
+                  size: 28, // Match size with Library screen
+                ),
+              ],
             ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            'Search',
-            style: TextStyle(
-              color: Color(0xFFE53935),
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -68,22 +101,23 @@ class ExploreScreen extends StatelessWidget {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: const Color(0xFF1E1E1E),
           borderRadius: BorderRadius.circular(25),
+          border: Border.all(color: Colors.grey.shade800, width: 1),
         ),
         child: Row(
           children: [
             const SizedBox(width: 16),
             Icon(
               Icons.search,
-              color: Colors.grey.shade600,
+              color: Colors.grey.shade400,
               size: 24,
             ),
             const SizedBox(width: 12),
             Text(
               'Songs, Artists, Podcasts & More',
               style: TextStyle(
-                color: Colors.grey.shade600,
+                color: Colors.grey.shade400,
                 fontSize: 16,
               ),
             ),
@@ -229,58 +263,6 @@ class ExploreScreen extends StatelessWidget {
                   size: 32,
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border(
-          top: BorderSide(
-            color: Colors.grey.shade900,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(context, Icons.home_filled, 'Home', false, () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-          }),
-          _buildNavItem(context, Icons.search, 'Explore', true, () {}),
-          _buildNavItem(context, Icons.library_music, 'Library', false, () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.library);
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(BuildContext context, IconData icon, String label,
-      bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? const Color(0xFFE71E27) : Colors.white,
-            size: 26,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? const Color(0xFFE71E27) : Colors.white,
-              fontSize: 12,
             ),
           ),
         ],

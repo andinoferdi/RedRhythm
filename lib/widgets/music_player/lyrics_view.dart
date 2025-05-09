@@ -11,12 +11,15 @@ class LyricsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 200, // Fixed height to prevent overflow
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
         color: Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListView.builder(
+        shrinkWrap: true, // Use minimal space
+        physics: const BouncingScrollPhysics(), // Smooth scrolling
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
         itemCount: lyrics.length,
         itemBuilder: (context, index) {
