@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../routes.dart';
 import 'playlist_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
+import '../features/auth/auth_controller.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
@@ -26,7 +28,7 @@ class HomeScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              _buildHeader(context),
+              _buildHeader(context, ref),
               const SizedBox(height: 16),
               _buildContinueListening(context),
               const SizedBox(height: 30),
@@ -49,7 +51,10 @@ class HomeScreen extends StatelessWidget {
 
   // Rest of the code remains the same...
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authControllerProvider);
+    final userName = authState.user?.data['name'] ?? 'User';
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
@@ -93,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        'AndinoFerdi',
+                        userName,
                         style: TextStyle(
                           color: Colors.grey.shade500,
                           fontSize: 14, // Slightly reduced font size
@@ -135,8 +140,13 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 16),
-                const Icon(Icons.settings_outlined,
-                    color: Colors.white, size: 24),
+                GestureDetector(
+                  onTap: () {
+                    _showProfileMenu(context, ref);
+                  },
+                  child: const Icon(Icons.settings_outlined,
+                      color: Colors.white, size: 24),
+                ),
               ],
             ),
           ],
@@ -249,45 +259,82 @@ class HomeScreen extends StatelessWidget {
   Widget _buildPlaylistCard(
     String title,
     IconData icon, {
+    LinearGradient? gradient,
     Color iconColor = Colors.white,
-    required Gradient gradient,
   }) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
         gradient: gradient,
+        borderRadius: BorderRadius.circular(8),
       ),
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.black45,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          children: [
+            Icon(icon, color: iconColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  void _showProfileMenu(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text(
+            'Profile Options',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.account_circle, color: Colors.white),
+                title: const Text(
+                  'View Profile',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  // Add profile view navigation here
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  // Logout logic
+                  await ref.read(authControllerProvider.notifier).logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.authOptions,
+                      (route) => false,
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
