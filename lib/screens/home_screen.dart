@@ -1,17 +1,162 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketbase/pocketbase.dart';
+import 'dart:io' show Platform;
+import 'package:http/http.dart' as http;
 import '../routes.dart';
 import 'playlist_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../features/auth/auth_controller.dart';
+import '../features/play_history/play_history_controller.dart';
+import '../models/play_history.dart';
+import '../services/pocketbase_service.dart';
+
+// Helper function to check if host is reachable
+Future<bool> isHostReachable(String url) async {
+  try {
+    final response = await http.get(Uri.parse(url)).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        return http.Response('Timeout', 408);
+      },
+    );
+    print('Host connection test: $url - ${response.statusCode}');
+    return response.statusCode < 400;
+  } catch (e) {
+    print('Host connection error: $url - $e');
+    return false;
+  }
+}
+
+// Test and determine the best PocketBase URL
+Future<String> determinePocketBaseUrl() async {
+  final List<String> possibleUrls = [
+    'http://10.0.2.2:8090',      // Standard Android emulator
+    'http://127.0.0.1:8090',     // iOS simulator or local
+  ];
+  
+  // If you're using a physical device, add your computer's IP here
+  // possibleUrls.add('http://192.168.1.100:8090');
+  
+  for (final url in possibleUrls) {
+    print('Testing connection to: $url');
+    if (await isHostReachable('$url/api/health')) {
+      print('Successfully connected to: $url');
+      return url;
+    }
+  }
+  
+  // Default to Android emulator address if nothing works
+  return Platform.isAndroid ? 'http://10.0.2.2:8090' : 'http://127.0.0.1:8090';
+}
+
+// PocketBase instance with lazy initialization
+late PocketBase pb;
+bool isPbInitialized = false;
+
+// Provider to ensure PocketBase is initialized before use
+final pocketBaseInitProvider = FutureProvider<PocketBase>((ref) async {
+  if (!isPbInitialized) {
+    final url = await determinePocketBaseUrl();
+    pb = PocketBase(url);
+    isPbInitialized = true;
+    print('PocketBase initialized with URL: ${pb.baseUrl}');
+  }
+  return pb;
+});
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Provider for recently played songs
+final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
+  // First ensure PocketBase is initialized with correct URL
+  await ref.watch(pocketBaseInitProvider.future);
+  
+  final authState = ref.watch(authControllerProvider);
+  final userId = authState.user?.id;
+  
+  print('Current userId: $userId'); // Debug log for user ID
+  
+  if (userId == null) {
+    print('User not logged in or userId is null');
+    return [];
+  }
+  
+  try {
+    print('Attempting to connect to PocketBase at: ${pb.baseUrl}');
+    
+    // Verify we can reach the server
+    final isReachable = await isHostReachable('${pb.baseUrl}/api/collections/user_history/records');
+    if (!isReachable) {
+      print('WARNING: Cannot reach PocketBase server at ${pb.baseUrl}');
+    }
+    
+    // Direct test to check if record exists without filter
+    try {
+      final allRecords = await pb.collection('user_history').getFullList();
+      print('All user_history records (no filter): ${allRecords.length}');
+      
+      for (final record in allRecords) {
+        print('Record ID: ${record.id}');
+        print('  user_id value: ${record.data['user_id']}');
+        print('  song_id value: ${record.data['song_id']}');
+      }
+    } catch (e) {
+      print('Error fetching all records: $e');
+    }
+    
+    // First try direct filter on user_id
+    var recentlyPlayed = await pb.collection('user_history').getList(
+      page: 1,
+      perPage: 3,
+      filter: 'user_id = "$userId"',
+      sort: '-played_at',
+      // Start with simpler expand
+      expand: 'song_id',
+    );
+    
+    print('Recently played count with direct filter: ${recentlyPlayed.items.length}');
+    
+    // If nothing found, try getting all history and printing info for debugging
+    if (recentlyPlayed.items.isEmpty) {
+      print('No history found with direct filter, trying all records...');
+      
+      // Try with different filter format
+      try {
+        final altQuery = await pb.collection('user_history').getList(
+          page: 1,
+          perPage: 10,
+          filter: 'user_id.id = "$userId"',
+        );
+        print('Alternative query results: ${altQuery.items.length}');
+      } catch (e) {
+        print('Alternative query error: $e');
+      }
+    }
+    
+    return recentlyPlayed.items;
+  } catch (e, stackTrace) {
+    print('Error fetching recently played songs: $e');
+    print('Stack trace: $stackTrace');
+    return [];
+  }
+});
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Load play history when screen builds, tapi dengan try-catch
+    try {
+      // Gunakan Future.microtask untuk menghindari setState selama build
+      Future.microtask(() {
+        ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
+      });
+    } catch (e) {
+      print('Error loading play history: $e');
+    }
+    
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
@@ -34,7 +179,7 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 30),
               _buildYourTopMixes(context),
               const SizedBox(height: 30),
-              _buildRecentListening(context),
+              _buildRecentListening(context, ref),
               // Add a bottom spacing to account for the navigation bar
               SizedBox(
                   height: 70 + bottomPadding), // Fixed to a more reasonable size
@@ -48,8 +193,6 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
-
-  // Rest of the code remains the same...
 
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
@@ -407,7 +550,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentListening(BuildContext context) {
+  Widget _buildRecentListening(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -423,29 +566,75 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const PlaylistScreen()),
+        Consumer(
+          builder: (context, ref, child) {
+            // Temporary fallback to hardcoded data for development
+            // Set to false to use real data
+            
+        
+            
+            // Watch play history state instead of direct provider
+            final playHistoryState = ref.watch(playHistoryControllerProvider);
+            
+            // Show loading indicator
+            if (playHistoryState.isLoading) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
+            // Show error
+            if (playHistoryState.error != null) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+                  child: Text(
+                    'Error: ${playHistoryState.error}',
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              );
+            }
+            
+            // Show empty state
+            if (playHistoryState.recentlyPlayed.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: Text(
+                    'No recently played songs',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+            
+            // Show list of recently played songs
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: playHistoryState.recentlyPlayed.length,
+              itemBuilder: (context, index) {
+                final history = playHistoryState.recentlyPlayed[index];
+                
+                return Column(
+                  children: [
+                    _buildRecentCard(
+                      history.songTitle ?? 'Unknown Song', 
+                      'Song • ${history.artistName ?? 'Unknown Artist'}',
+                      history.albumCoverUrl ?? 'https://via.placeholder.com/300/5D4037/FFFFFF?text=No+Cover'
+                    ),
+                    if (index < playHistoryState.recentlyPlayed.length - 1)
+                      const SizedBox(height: 12),
+                  ],
                 );
               },
-              child: _buildRecentCard('Lofi Loft', 'Playlist',
-                  'https://via.placeholder.com/300/FF5252/FFFFFF?text=Lofi+Art'),
-            ),
-            const SizedBox(height: 12),
-            _buildRecentCard('Dream On', 'Song • Aerosmith',
-                'https://via.placeholder.com/300/5D4037/FFFFFF?text=Dream+On'),
-            const SizedBox(height: 12),
-            _buildRecentCard('Bohemian Rhapsody', 'Song • Queen',
-                'https://via.placeholder.com/300/42A5F5/FFFFFF?text=Queen'),
-          ],
+            );
+          },
         ),
       ],
     );

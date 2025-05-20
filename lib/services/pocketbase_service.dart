@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io' show Platform;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Service class for PocketBase API interactions
 class PocketBaseService {
@@ -9,6 +10,7 @@ class PocketBaseService {
   
   late final PocketBase _pb;
   final _storage = const FlutterSecureStorage();
+  bool _isInitialized = false;
   
   // Singleton pattern
   factory PocketBaseService() {
@@ -18,6 +20,7 @@ class PocketBaseService {
   PocketBaseService._internal() {
     // Initialize PocketBase with your server URL
     // Use 10.0.2.2 instead of 127.0.0.1 for Android emulators
+    _isInitialized = true; // Mark as initialized
     final host = Platform.isAndroid ? '10.0.2.2' : '127.0.0.1';
     _pb = PocketBase('http://$host:8090');
     _initAuth();
@@ -121,4 +124,67 @@ class PocketBaseService {
   Future<void> logout() async {
     _pb.authStore.clear();
   }
+
+  Future<PocketBase> initialize() async {
+    if (!_isInitialized) {
+      final url = await determinePocketBaseUrl();
+      _pb = PocketBase(url);
+      _isInitialized = true;
+      print('PocketBase initialized with URL: ${_pb.baseUrl}');
+    } else {
+      print('PocketBase already initialized with URL: ${_pb.baseUrl}');
+    }
+    return _pb;
+  }
+
+  PocketBase get instance {
+    if (!_isInitialized) {
+      throw Exception('PocketBase has not been initialized. Call initialize() first.');
+    }
+    return _pb;
+  }
+}
+
+// Singleton instance
+final pocketBaseService = PocketBaseService();
+
+// Provider for PocketBase
+final pocketBaseProvider = Provider<PocketBase>((ref) {
+  // This will throw an exception if not initialized
+  // For real app, you should use FutureProvider to handle initialization
+  return pocketBaseService.instance;
+});
+
+// Helper function to check if host is reachable
+Future<bool> isHostReachable(String url) async {
+  try {
+    final response = await PocketBase(url).health.check();
+    print('Host connection test: $url - Success');
+    return true;
+  } catch (e) {
+    print('Host connection error: $url - $e');
+    return false;
+  }
+}
+
+// Test and determine the best PocketBase URL
+Future<String> determinePocketBaseUrl() async {
+  final List<String> possibleUrls = [
+    'http://10.0.2.2:8090',      // Standard Android emulator
+    'http://127.0.0.1:8090',     // iOS simulator or local
+  ];
+  
+  // If you're using a physical device, add your computer's IP here
+  // possibleUrls.add('http://192.168.1.100:8090');
+  
+  for (final url in possibleUrls) {
+    print('Testing connection to: $url');
+    if (await isHostReachable(url)) {
+      print('Successfully connected to: $url');
+      return url;
+    }
+  }
+  
+  // Default to Android emulator address if nothing works
+  return Platform.isAndroid ? 'http://10.0.2.2:8090' : 'http://127.0.0.1:8090';
 } 

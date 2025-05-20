@@ -3,12 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes.dart';
 import 'features/auth/auth_wrapper.dart';
+import 'services/pocketbase_service.dart';
 
 // Global navigator key for accessing the navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize PocketBase connection
+  await pocketBaseService.initialize();
+  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
