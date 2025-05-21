@@ -245,24 +245,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Expanded(
                       child: Container(
                         height: 1,
-                        color: Colors.white.withOpacity(0.3),
+                        color: const Color.fromRGBO(255, 255, 255, 0.3),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'OR',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Color.fromRGBO(255, 255, 255, 0.8),
                         ),
                       ),
                     ),
                     Expanded(
                       child: Container(
                         height: 1,
-                        color: Colors.white.withOpacity(0.3),
+                        color: const Color.fromRGBO(255, 255, 255, 0.3),
                       ),
                     ),
                   ],
@@ -387,12 +387,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         showCursor: true,
         readOnly: false,
         enableIMEPersonalizedLearning: true,
-        toolbarOptions: const ToolbarOptions(
-          copy: true,
-          cut: true,
-          paste: true,
-          selectAll: true,
-        ),
+        contextMenuBuilder: (context, editableTextState) {
+          return AdaptiveTextSelectionToolbar.editableText(
+            editableTextState: editableTextState,
+          );
+        },
         onChanged: (value) {
           controller.value = TextEditingValue(
             text: value,
@@ -401,19 +400,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         },
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+          hintStyle: const TextStyle(
+            color: Color.fromRGBO(255, 255, 255, 0.6),
             fontFamily: 'Poppins',
           ),
           prefixIcon: Icon(
             icon,
-            color: Colors.white.withOpacity(0.6),
+            color: const Color.fromRGBO(255, 255, 255, 0.6),
           ),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     obscureText ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.white.withOpacity(0.6),
+                    color: const Color.fromRGBO(255, 255, 255, 0.6),
                   ),
                   onPressed: onToggleVisibility,
                 )

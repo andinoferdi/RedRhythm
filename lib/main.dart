@@ -39,12 +39,11 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        final constrainedTextScaleFactor = 
-            mediaQuery.textScaleFactor.clamp(0.8, 1.0);
+        final double scaleFactor = mediaQuery.textScaler.scale(1.0).clamp(0.8, 1.0);
         
         return MediaQuery(
           data: mediaQuery.copyWith(
-            textScaleFactor: constrainedTextScaleFactor,
+            textScaler: TextScaler.linear(scaleFactor),
           ),
           child: child!,
         );
@@ -54,7 +53,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.dark(
           primary: const Color(0xFFE71E27),
           secondary: Colors.red.shade400,
-          background: Colors.black,
+          surfaceContainer: Colors.black,
           surface: const Color(0xFF121212),
         ),
         fontFamily: 'Poppins',
@@ -68,7 +67,7 @@ class MyApp extends StatelessWidget {
         ),
         textButtonTheme: TextButtonThemeData(
           style: ButtonStyle(
-            foregroundColor: MaterialStateProperty.all(Colors.white),
+            foregroundColor: const MaterialStatePropertyAll(Colors.white),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(

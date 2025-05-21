@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 
 class ArtistTab extends StatelessWidget {
-  const ArtistTab({Key? key}) : super(key: key);
+  const ArtistTab({super.key});
 
   @override
   Widget build(BuildContext context) {

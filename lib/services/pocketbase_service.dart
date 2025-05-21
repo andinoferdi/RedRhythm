@@ -130,9 +130,6 @@ class PocketBaseService {
       final url = await determinePocketBaseUrl();
       _pb = PocketBase(url);
       _isInitialized = true;
-      print('PocketBase initialized with URL: ${_pb.baseUrl}');
-    } else {
-      print('PocketBase already initialized with URL: ${_pb.baseUrl}');
     }
     return _pb;
   }
@@ -145,17 +142,9 @@ class PocketBaseService {
   }
 
   Future<void> validateAPIAccess() async {
-    if (!_isInitialized) {
-      print('ERROR: PocketBase not initialized before validateAPIAccess');
+    if (!_isInitialized || !_pb.authStore.isValid) {
       return;
     }
-    
-    if (!_pb.authStore.isValid) {
-      print('ERROR: Auth not valid, cannot validate API access');
-      return;
-    }
-    
-    print('===== VALIDATING API ACCESS FOR ALL COLLECTIONS =====');
     
     // List of collections to check
     final collections = [
@@ -168,36 +157,20 @@ class PocketBaseService {
     
     for (final collection in collections) {
       try {
-        print('Testing access to collection: $collection');
-        final result = await _pb.collection(collection).getList(page: 1, perPage: 1);
-        print('✓ SUCCESS: Can access $collection - found ${result.items.length} items');
+        await _pb.collection(collection).getList(page: 1, perPage: 1);
       } catch (e) {
-        print('✗ ERROR: Cannot access $collection - $e');
+        // Silently handle errors
       }
     }
     
     // Check user auth
-    try {
-      print('Testing auth status...');
-      if (_pb.authStore.isValid) {
-        print('✓ Auth is valid');
-        print('User ID: ${_pb.authStore.model?.id}');
-        
-        // Try refreshing auth
-        try {
-          await _pb.collection('users').authRefresh();
-          print('✓ Auth refresh successful');
-        } catch (e) {
-          print('✗ Auth refresh failed: $e');
-        }
-      } else {
-        print('✗ Auth is NOT valid');
+    if (_pb.authStore.isValid) {
+      try {
+        await _pb.collection('users').authRefresh();
+      } catch (e) {
+        // Silently handle errors
       }
-    } catch (e) {
-      print('✗ Error checking auth: $e');
     }
-    
-    print('===== API ACCESS VALIDATION COMPLETE =====');
   }
 }
 
@@ -206,19 +179,15 @@ final pocketBaseService = PocketBaseService();
 
 // Provider for PocketBase
 final pocketBaseProvider = Provider<PocketBase>((ref) {
-  // This will throw an exception if not initialized
-  // For real app, you should use FutureProvider to handle initialization
   return pocketBaseService.instance;
 });
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
   try {
-    final response = await PocketBase(url).health.check();
-    print('Host connection test: $url - Success');
+    await PocketBase(url).health.check();
     return true;
   } catch (e) {
-    print('Host connection error: $url - $e');
     return false;
   }
 }
@@ -230,13 +199,8 @@ Future<String> determinePocketBaseUrl() async {
     'http://127.0.0.1:8090',     // iOS simulator or local
   ];
   
-  // If you're using a physical device, add your computer's IP here
-  // possibleUrls.add('http://192.168.1.100:8090');
-  
   for (final url in possibleUrls) {
-    print('Testing connection to: $url');
     if (await isHostReachable(url)) {
-      print('Successfully connected to: $url');
       return url;
     }
   }

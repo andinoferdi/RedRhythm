@@ -10,10 +10,10 @@ import '../providers/music_player_provider.dart';
 
 class MusicPlayerScreen extends StatelessWidget {
   const MusicPlayerScreen({
-    Key? key,
+    super.key,
     required this.song,
     required this.playlist,
-  }) : super(key: key);
+  });
 
   final Song song;
   final String playlist;

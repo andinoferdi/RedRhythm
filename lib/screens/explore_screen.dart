@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../routes.dart';
 import '../widgets/custom_bottom_nav.dart';
 
 class ExploreScreen extends StatelessWidget {
-  const ExploreScreen({Key? key}) : super(key: key);
+  const ExploreScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

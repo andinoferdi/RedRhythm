@@ -4,7 +4,7 @@ import '../data/sample_songs.dart';
 import 'music_player_screen.dart';
 
 class PlaylistScreen extends StatelessWidget {
-  const PlaylistScreen({Key? key}) : super(key: key);
+  const PlaylistScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

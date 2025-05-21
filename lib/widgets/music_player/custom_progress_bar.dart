@@ -7,11 +7,11 @@ class CustomProgressBar extends StatelessWidget {
   final Function(Duration) onSeek;
 
   const CustomProgressBar({
-    Key? key,
+    super.key,
     required this.currentTime,
     required this.totalTime,
     required this.onSeek,
-  }) : super(key: key);
+  });
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -48,7 +48,7 @@ class CustomProgressBar extends StatelessWidget {
                 progress: progress,
                 stripeColor1: Colors.yellow,
                 stripeColor2: Colors.black,
-                progressColor: Colors.red.withOpacity(0.5),
+                progressColor: const Color.fromRGBO(255, 0, 0, 0.5),
               ),
               child: Align(
                 alignment: Alignment(math.min(2 * progress - 1, 1), 0),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 
 class PodcastTab extends StatelessWidget {
-  const PodcastTab({Key? key}) : super(key: key);
+  const PodcastTab({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../routes.dart';
 import '../../utils/app_colors.dart';
-import '../../utils/constants.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import 'library_controller.dart';
 import 'library_tab_selector.dart';
@@ -13,7 +11,7 @@ import 'album_tab.dart';
 import 'podcast_tab.dart';
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({Key? key}) : super(key: key);
+  const LibraryScreen({super.key});
 
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();

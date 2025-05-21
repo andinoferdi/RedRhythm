@@ -38,7 +38,7 @@ class _StatsScreenState extends State<StatsScreen> {
             Text(
               'Past 30 Days',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: const Color.fromRGBO(255, 255, 255, 0.6),
                 fontSize: 16,
               ),
             ),
@@ -218,7 +218,7 @@ class _StatsScreenState extends State<StatsScreen> {
                     Text(
                       track['artist'],
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                        color: const Color.fromRGBO(255, 255, 255, 0.6),
                         fontSize: 16,
                       ),
                     ),

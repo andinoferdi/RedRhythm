@@ -6,10 +6,10 @@ class CustomBottomNavBar extends StatelessWidget {
   final double? bottomPadding;
 
   const CustomBottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     this.bottomPadding,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class CustomBottomNavBar extends StatelessWidget {
         color: const Color(0xFF1E1E1E),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: const Color.fromRGBO(0, 0, 0, 0.2),
             blurRadius: 4,
             offset: const Offset(0, -1),
           ),

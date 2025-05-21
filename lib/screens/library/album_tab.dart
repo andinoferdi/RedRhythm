@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 
 class AlbumTab extends StatelessWidget {
-  const AlbumTab({Key? key}) : super(key: key);
+  const AlbumTab({super.key});
 
   @override
   Widget build(BuildContext context) {

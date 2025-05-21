@@ -374,12 +374,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         showCursor: true,
         readOnly: false,
         enableIMEPersonalizedLearning: true,
-        toolbarOptions: const ToolbarOptions(
-          copy: true,
-          cut: true,
-          paste: true,
-          selectAll: true,
-        ),
+        contextMenuBuilder: (context, editableTextState) {
+          return AdaptiveTextSelectionToolbar.editableText(
+            editableTextState: editableTextState,
+          );
+        },
         onChanged: (value) {
           controller.value = TextEditingValue(
             text: value,
@@ -389,18 +388,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: Colors.white.withOpacity(0.6),
+            color: const Color.fromRGBO(255, 255, 255, 0.6),
             fontFamily: 'Poppins',
           ),
           prefixIcon: Icon(
             icon,
-            color: Colors.white.withOpacity(0.6),
+            color: const Color.fromRGBO(255, 255, 255, 0.6),
           ),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
                     obscureText ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.white.withOpacity(0.6),
+                    color: const Color.fromRGBO(255, 255, 255, 0.6),
                   ),
                   onPressed: onToggleVisibility,
                 )

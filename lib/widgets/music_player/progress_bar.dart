@@ -8,10 +8,10 @@ class ProgressBar extends StatelessWidget {
   final Duration totalTime;
 
   const ProgressBar({
-    Key? key,
+    super.key,
     required this.currentTime,
     required this.totalTime,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

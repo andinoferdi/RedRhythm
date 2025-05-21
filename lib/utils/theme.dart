@@ -17,11 +17,11 @@ class AppTheme {
         colorScheme: const ColorScheme.dark(
           primary: AppColors.primary,
           secondary: AppColors.primary,
-          background: AppColors.background,
+          surfaceContainer: AppColors.background,
           surface: Color(0xFF1E1E1E),
           onPrimary: Colors.white,
           onSecondary: Colors.white,
-          onBackground: Colors.white,
+          onSurfaceVariant: Colors.white,
           onSurface: Colors.white,
         ),
 
@@ -167,11 +167,11 @@ class AppTheme {
           borderSide: const BorderSide(color: Colors.red, width: 1),
         ),
         hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.6),
+          color: const Color.fromRGBO(255, 255, 255, 0.6),
           fontFamily: 'Poppins',
         ),
-        prefixIconColor: Colors.white.withOpacity(0.6),
-        suffixIconColor: Colors.white.withOpacity(0.6),
+        prefixIconColor: const Color.fromRGBO(255, 255, 255, 0.6),
+        suffixIconColor: const Color.fromRGBO(255, 255, 255, 0.6),
       );
 
   // Card theme
@@ -266,10 +266,10 @@ class AppTheme {
         color: Colors.white,
       );
 
-  static TextStyle get captionStyle => TextStyle(
+  static TextStyle get captionStyle => const TextStyle(
         fontFamily: 'Poppins',
         fontSize: AppConstants.smallFontSize,
-        color: Colors.white.withOpacity(0.7),
+        color: Color.fromRGBO(255, 255, 255, 0.7),
       );
 
   static TextStyle get linkStyle => const TextStyle(

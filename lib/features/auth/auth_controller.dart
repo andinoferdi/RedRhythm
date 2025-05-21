@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pocketbase/pocketbase.dart';
 import '../../services/pocketbase_service.dart';
 import 'auth_state.dart';
 
@@ -61,7 +60,6 @@ class AuthController extends StateNotifier<AuthState> {
 
   /// Logout the current user
   Future<void> logout() async {
-    print('DEBUG-AUTH: Logging out user: ${state.user?.id}');
     await _pocketBaseService.logout();
     state = state.copyWith(user: null);
   }
@@ -69,33 +67,26 @@ class AuthController extends StateNotifier<AuthState> {
   // Refresh user data from server
   Future<void> refreshUser() async {
     if (!_pocketBaseService.isAuthenticated || _pocketBaseService.currentUser == null) {
-      print('DEBUG-AUTH: Cannot refresh user - no valid auth');
       return;
     }
     
     try {
-      print('DEBUG-AUTH: Refreshing user data from server');
       // Gunakan direct access ke PocketBase untuk refresh auth
       final pb = _pocketBaseService.pb;
       if (pb.authStore.isValid) {
         await pb.collection('users').authRefresh();
-        print('DEBUG-AUTH: Auth refresh successful');
         
         if (pb.authStore.model != null) {
           final userId = pb.authStore.model!.id;
-          print('DEBUG-AUTH: Fetching current user record: $userId');
           
           // Langsung fetch user dari PocketBase
           final freshUserData = await pb.collection('users').getOne(userId);
-          print('DEBUG-AUTH: User data refreshed successfully');
           state = state.copyWith(user: freshUserData);
         }
       }
     } catch (e) {
-      print('DEBUG-AUTH: Error refreshing user: $e');
       // If refresh fails, clear auth
       if (e.toString().contains('401') || e.toString().contains('auth')) {
-        print('DEBUG-AUTH: Auth error during refresh, logging out');
         logout();
       }
     }

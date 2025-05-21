@@ -5,7 +5,7 @@ import 'library_tab_enum.dart';
 import '../../utils/app_colors.dart';
 
 class LibraryTabSelector extends StatelessWidget {
-  const LibraryTabSelector({Key? key}) : super(key: key);
+  const LibraryTabSelector({super.key});
 
   @override
   Widget build(BuildContext context) {

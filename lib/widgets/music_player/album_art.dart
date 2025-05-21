@@ -4,9 +4,9 @@ class AlbumArt extends StatelessWidget {
   final String imageUrl;
 
   const AlbumArt({
-    Key? key,
+    super.key,
     required this.imageUrl,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class AlbumArt extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: const Color.fromRGBO(0, 0, 0, 0.3),
             blurRadius: 15,
             offset: const Offset(0, 10),
           ),

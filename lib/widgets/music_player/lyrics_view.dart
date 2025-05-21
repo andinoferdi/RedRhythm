@@ -4,9 +4,9 @@ class LyricsView extends StatelessWidget {
   final List<String> lyrics;
 
   const LyricsView({
-    Key? key,
+    super.key,
     required this.lyrics,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +14,7 @@ class LyricsView extends StatelessWidget {
       height: 200, // Fixed height to prevent overflow
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: const Color.fromRGBO(255, 0, 0, 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListView.builder(

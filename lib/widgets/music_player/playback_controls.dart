@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/music_player_provider.dart';
 
 class PlaybackControls extends StatelessWidget {
-  const PlaybackControls({Key? key}) : super(key: key);
+  const PlaybackControls({super.key});
 
   @override
   Widget build(BuildContext context) {
