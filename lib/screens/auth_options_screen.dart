@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../routes.dart';
+import 'package:auto_route/auto_route.dart';
+import '../routes/app_router.dart';
 
+@RoutePage()
 class AuthOptionsScreen extends StatelessWidget {
   const AuthOptionsScreen({super.key});
 
@@ -13,9 +15,7 @@ class AuthOptionsScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.onboarding);
-          },
+          onPressed: () => context.router.replace(const OnboardingRoute()),
         ),
       ),
       body: SingleChildScrollView(
@@ -46,7 +46,7 @@ class AuthOptionsScreen extends StatelessWidget {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+                    context.router.push(const LoginRoute());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE71E27),
@@ -79,7 +79,7 @@ class AuthOptionsScreen extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () {
-                      Navigator.of(context).pushReplacementNamed(AppRoutes.register);
+                      context.router.push(const RegisterRoute());
                     },
                     child: const Text(
                       'Sign Up',
@@ -101,3 +101,4 @@ class AuthOptionsScreen extends StatelessWidget {
     );
   }
 }
+

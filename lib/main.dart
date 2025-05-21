@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'routes.dart';
-import 'features/auth/auth_wrapper.dart';
+import 'package:get_it/get_it.dart';
+import 'routes/app_router.dart';
 import 'services/pocketbase_service.dart';
+import 'core/di/service_locator.dart';
 
 // Global navigator key for accessing the navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -11,8 +12,11 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Setup dependency injection
+  await setupServiceLocator();
+  
   // Initialize PocketBase connection
-  await pocketBaseService.initialize();
+  await GetIt.I<PocketBaseService>().initialize();
   
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -33,10 +37,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final router = appRouter;
+    
+    return MaterialApp.router(
       title: 'RedRhythm',
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
+      routerDelegate: router.delegate(),
+      routeInformationParser: router.defaultRouteParser(),
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
         final double scaleFactor = mediaQuery.textScaler.scale(1.0).clamp(0.8, 1.0);
@@ -80,8 +87,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const AuthWrapper(),
-      onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
 }

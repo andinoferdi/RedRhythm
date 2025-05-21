@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../routes.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_state.dart';
+import '../routes/app_router.dart';
 
+@RoutePage()
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,8 +43,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (value == null || value.isEmpty) {
       return 'Password is required';
     }
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
     }
     return null;
   }
@@ -54,8 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     
     // Only proceed if form is valid
     if (isValid) {
-      final controller = ref.read(authControllerProvider.notifier);
-      await controller.login(
+      await ref.read(authControllerProvider.notifier).login(
         _emailController.text.trim(),
         _passwordController.text,
       );
@@ -83,20 +84,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authControllerProvider);
     
     // Handle authentication state changes
-    ref.listen(authControllerProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-      } else if (next.status == AuthStatus.registrationSuccess && next.successMessage != null) {
+    ref.listen<AuthState>(authControllerProvider, (previous, state) {
+      if (state.isAuthenticated && state.user != null) {
+        context.router.replace(const HomeRoute());
+      } else if (state.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.successMessage!),
-            backgroundColor: Colors.green,
-          ),
-        );
-      } else if (next.status == AuthStatus.error && next.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.errorMessage!),
+            content: Text(state.error!),
             backgroundColor: Colors.red,
           ),
         );
@@ -110,9 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.of(context).pushReplacementNamed(AppRoutes.authOptions);
-          },
+          onPressed: () => context.router.pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -216,7 +208,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading
+                    onPressed: authState.isLoading
                         ? null
                         : _handleLogin,
                     style: ElevatedButton.styleFrom(
@@ -226,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       disabledBackgroundColor: Colors.grey,
                     ),
-                    child: authState.status == AuthStatus.loading
+                    child: authState.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Log in',
@@ -248,11 +240,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: const Color.fromRGBO(255, 255, 255, 0.3),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'OR',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 14,
                           color: Color.fromRGBO(255, 255, 255, 0.8),
@@ -331,7 +323,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.of(context).pushNamed(AppRoutes.register);
+                        context.router.replace(const RegisterRoute());
                       },
                       child: const Text(
                         'Sign Up',

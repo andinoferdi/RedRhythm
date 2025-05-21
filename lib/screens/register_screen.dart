@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../routes.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_state.dart';
+import '../routes/app_router.dart';
 
+@RoutePage()
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -54,8 +56,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (value == null || value.isEmpty) {
       return 'Password is required';
     }
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
     }
     return null;
   }
@@ -67,9 +69,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
     if (value != _passwordController.text) {
       return 'Passwords do not match';
-    }
-    if (value.length < 8) {
-      return 'Password must be at least 8 characters';
     }
     return null;
   }
@@ -92,8 +91,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     // Only proceed if form is valid
     if (isValid) {
-      final controller = ref.read(authControllerProvider.notifier);
-      await controller.register(
+      await ref.read(authControllerProvider.notifier).register(
         _emailController.text.trim(),
         _passwordController.text,
         _nameController.text.trim(),
@@ -122,20 +120,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authControllerProvider);
     
     // Handle authentication state changes
-    ref.listen(authControllerProvider, (previous, next) {
-      if (next.status == AuthStatus.registrationSuccess) {
-        // Navigate to login screen after successful registration
+    ref.listen<AuthState>(authControllerProvider, (previous, state) {
+      if (state.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.successMessage ?? 'Registration successful! You can now log in.'),
+            content: Text(state.successMessage!),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-      } else if (next.status == AuthStatus.error && next.errorMessage != null) {
+        context.router.replace(const LoginRoute());
+      } else if (state.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.errorMessage!),
+            content: Text(state.error!),
             backgroundColor: Colors.red,
           ),
         );
@@ -149,10 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            // Navigate back to auth options screen
-            Navigator.of(context).pushReplacementNamed(AppRoutes.authOptions);
-          },
+          onPressed: () => context.router.pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -265,12 +259,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'I agree to the Terms and Conditions',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        color: Colors.white,
+                    Expanded(
+                      child: Text(
+                        'I agree to the Terms and Conditions',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -280,7 +276,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading
+                    onPressed: authState.isLoading
                         ? null
                         : _handleRegister,
                     style: ElevatedButton.styleFrom(
@@ -290,7 +286,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       disabledBackgroundColor: Colors.grey,
                     ),
-                    child: authState.status == AuthStatus.loading
+                    child: authState.isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Register',
@@ -316,9 +312,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pushReplacementNamed(AppRoutes.login);
-                      },
+                      onTap: () => context.router.replace(const LoginRoute()),
                       child: const Text(
                         'Log In',
                         style: TextStyle(
@@ -331,7 +325,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -387,8 +380,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         },
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(
-            color: const Color.fromRGBO(255, 255, 255, 0.6),
+          hintStyle: const TextStyle(
+            color: Color.fromRGBO(255, 255, 255, 0.6),
             fontFamily: 'Poppins',
           ),
           prefixIcon: Icon(

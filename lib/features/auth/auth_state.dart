@@ -1,69 +1,47 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
 
+part 'auth_state.freezed.dart';
+part 'auth_state.g.dart';
+
 /// Authentication state
-enum AuthStatus {
-  initial,
-  authenticated,
-  unauthenticated,
-  loading,
-  error,
-  registrationSuccess,
-}
-
-/// Authentication state class
-class AuthState {
-  final AuthStatus status;
-  final RecordModel? user;
-  final String? errorMessage;
-  final String? successMessage;
-
-  /// Creates an AuthState instance
-  const AuthState({
-    this.status = AuthStatus.initial,
-    this.user,
-    this.errorMessage,
-    this.successMessage,
-  });
-
-  /// Creates a copy of this AuthState but with the given fields replaced
-  AuthState copyWith({
-    AuthStatus? status,
+@freezed
+class AuthState with _$AuthState {
+  const factory AuthState({
     RecordModel? user,
-    String? errorMessage,
+    @Default(false) bool isLoading,
+    @Default(false) bool isAuthenticated,
+    String? error,
     String? successMessage,
-  }) {
-    return AuthState(
-      status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage,
-      successMessage: successMessage ?? this.successMessage,
-    );
-  }
+  }) = _AuthState;
+
+  factory AuthState.fromJson(Map<String, dynamic> json) => 
+      _$AuthStateFromJson(json);
 
   /// Initial auth state
-  static AuthState initial() => const AuthState(status: AuthStatus.initial);
+  factory AuthState.initial() => const AuthState();
 
   /// Loading auth state
-  static AuthState loading() => const AuthState(status: AuthStatus.loading);
+  factory AuthState.loading() => const AuthState(isLoading: true);
 
   /// Authenticated auth state
-  static AuthState authenticated(RecordModel user) => AuthState(
-        status: AuthStatus.authenticated,
+  factory AuthState.authenticated(RecordModel user) => AuthState(
         user: user,
+        isAuthenticated: true,
       );
 
   /// Unauthenticated auth state
-  static AuthState unauthenticated() => const AuthState(status: AuthStatus.unauthenticated);
+  factory AuthState.unauthenticated() => const AuthState(isAuthenticated: false);
 
   /// Error auth state
-  static AuthState error(String message) => AuthState(
-        status: AuthStatus.error,
-        errorMessage: message,
+  factory AuthState.error(String message) => AuthState(
+        error: message,
+        isLoading: false,
       );
         
   /// Registration success state
-  static AuthState registrationSuccess(String message) => AuthState(
-        status: AuthStatus.registrationSuccess,
+  factory AuthState.registrationSuccess(String message) => AuthState(
         successMessage: message,
+        isLoading: false,
       );
 } 

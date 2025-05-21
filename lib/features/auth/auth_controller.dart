@@ -1,25 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/pocketbase_service.dart';
+import 'package:get_it/get_it.dart';
+import '../../repositories/user_repository.dart';
 import 'auth_state.dart';
 
 /// Provider for the AuthController
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => AuthController(),
+  (ref) => GetIt.I<AuthController>(),
 );
 
 /// Controller for handling authentication
 class AuthController extends StateNotifier<AuthState> {
-  final PocketBaseService _pocketBaseService = PocketBaseService();
+  final UserRepository _userRepository;
   
-  AuthController() : super(AuthState.initial()) {
+  AuthController(this._userRepository) : super(AuthState.initial()) {
     _checkAuthStatus();
   }
   
   /// Checks the current authentication status
   Future<void> _checkAuthStatus() async {
     try {
-      if (_pocketBaseService.isAuthenticated) {
-        final user = _pocketBaseService.currentUser;
+      if (_userRepository.isAuthenticated) {
+        final user = _userRepository.currentUser;
         if (user != null) {
           state = AuthState.authenticated(user);
         } else {
@@ -37,7 +38,7 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> login(String email, String password) async {
     try {
       state = AuthState.loading();
-      final user = await _pocketBaseService.login(email, password);
+      final user = await _userRepository.login(email, password);
       state = AuthState.authenticated(user);
     } catch (e) {
       state = AuthState.error(e.toString());
@@ -48,7 +49,7 @@ class AuthController extends StateNotifier<AuthState> {
   Future<bool> register(String email, String password, String name) async {
     try {
       state = AuthState.loading();
-      await _pocketBaseService.register(email, password, name);
+      await _userRepository.register(email, password, name);
       // Set state to registration success instead of logging in
       state = AuthState.registrationSuccess("Registration successful! You can now log in.");
       return true;
@@ -60,32 +61,26 @@ class AuthController extends StateNotifier<AuthState> {
 
   /// Logout the current user
   Future<void> logout() async {
-    await _pocketBaseService.logout();
-    state = state.copyWith(user: null);
+    await _userRepository.logout();
+    state = AuthState.unauthenticated();
   }
 
-  // Refresh user data from server
+  /// Refresh user data from server
   Future<void> refreshUser() async {
-    if (!_pocketBaseService.isAuthenticated || _pocketBaseService.currentUser == null) {
+    if (!_userRepository.isAuthenticated || _userRepository.currentUser == null) {
       return;
     }
     
     try {
-      // Gunakan direct access ke PocketBase untuk refresh auth
-      final pb = _pocketBaseService.pb;
-      if (pb.authStore.isValid) {
-        await pb.collection('users').authRefresh();
-        
-        if (pb.authStore.model != null) {
-          final userId = pb.authStore.model!.id;
-          
-          // Langsung fetch user dari PocketBase
-          final freshUserData = await pb.collection('users').getOne(userId);
-          state = state.copyWith(user: freshUserData);
-        }
+      await _userRepository.refreshAuth();
+      
+      if (_userRepository.currentUser != null) {
+        final userId = _userRepository.currentUser!.id;
+        final freshUserData = await _userRepository.getUserProfile(userId);
+        state = AuthState.authenticated(freshUserData);
       }
     } catch (e) {
-      // If refresh fails, clear auth
+      // If refresh fails, logout
       if (e.toString().contains('401') || e.toString().contains('auth')) {
         logout();
       }

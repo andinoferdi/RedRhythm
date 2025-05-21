@@ -1,58 +1,54 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/song.dart';
 
-enum PlaybackState {
-  playing,
-  paused,
-  stopped,
-  loading
-}
-
+/// Class for managing music player state using Provider pattern
 class MusicPlayerProvider extends ChangeNotifier {
   Song? _currentSong;
+  List<Song> _queue = [];
+  int _currentIndex = 0;
   Duration _currentPosition = Duration.zero;
-  PlaybackState _playbackState = PlaybackState.stopped;
+  bool _isPlaying = false;
+  bool _isBuffering = false;
   bool _isShuffleEnabled = false;
   bool _isRepeatEnabled = false;
 
+  // Getters
   Song? get currentSong => _currentSong;
+  List<Song> get queue => _queue;
+  int get currentIndex => _currentIndex;
   Duration get currentPosition => _currentPosition;
-  PlaybackState get playbackState => _playbackState;
+  bool get isPlaying => _isPlaying;
+  bool get isBuffering => _isBuffering;
   bool get isShuffleEnabled => _isShuffleEnabled;
   bool get isRepeatEnabled => _isRepeatEnabled;
-  bool get isPlaying => _playbackState == PlaybackState.playing;
 
+  // Methods
   void playSong(Song song) {
     _currentSong = song;
+    _isPlaying = true;
     _currentPosition = Duration.zero;
-    _playbackState = PlaybackState.playing;
     notifyListeners();
   }
 
-  void togglePlayPause() {
-    if (_currentSong != null) {
-      if (_playbackState == PlaybackState.playing) {
-        _playbackState = PlaybackState.paused;
-      } else {
-        _playbackState = PlaybackState.playing;
-      }
+  void pause() {
+    if (_isPlaying) {
+      _isPlaying = false;
       notifyListeners();
     }
   }
 
-  void nextSong() {
-    // Implementation would depend on playlist management
-    notifyListeners();
+  void resume() {
+    if (!_isPlaying && _currentSong != null) {
+      _isPlaying = true;
+      notifyListeners();
+    }
   }
 
-  void previousSong() {
-    // Implementation would depend on playlist management
-    notifyListeners();
-  }
-
-  void updatePosition(Duration position) {
-    _currentPosition = position;
-    notifyListeners();
+  void togglePlayPause() {
+    if (_currentSong != null) {
+      _isPlaying = !_isPlaying;
+      notifyListeners();
+    }
   }
 
   void seekTo(Duration position) {
@@ -60,8 +56,45 @@ class MusicPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void nextSong() {
+    if (_queue.isEmpty || _currentIndex >= _queue.length - 1) {
+      return;
+    }
+    
+    _currentIndex++;
+    _currentSong = _queue[_currentIndex];
+    _currentPosition = Duration.zero;
+    notifyListeners();
+  }
+
+  void previousSong() {
+    if (_queue.isEmpty || _currentIndex <= 0) {
+      return;
+    }
+    
+    _currentIndex--;
+    _currentSong = _queue[_currentIndex];
+    _currentPosition = Duration.zero;
+    notifyListeners();
+  }
+
   void toggleShuffle() {
     _isShuffleEnabled = !_isShuffleEnabled;
+    
+    if (_isShuffleEnabled && _queue.isNotEmpty) {
+      // Shuffle the queue but keep current song as first
+      final currentSong = _currentSong;
+      final List<Song> shuffledQueue = List.from(_queue)..shuffle();
+      
+      if (currentSong != null) {
+        shuffledQueue.remove(currentSong);
+        shuffledQueue.insert(0, currentSong);
+      }
+      
+      _queue = shuffledQueue;
+      _currentIndex = 0;
+    }
+    
     notifyListeners();
   }
 

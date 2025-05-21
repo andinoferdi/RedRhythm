@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../routes.dart';
+import 'package:auto_route/auto_route.dart';
 import 'auth_controller.dart';
-import 'auth_state.dart';
 
 /// Widget that manages redirection based on auth state
+@RoutePage(name: 'AuthWrapperRoute')
 class AuthWrapper extends ConsumerWidget {
   const AuthWrapper({super.key});
 
@@ -13,8 +13,7 @@ class AuthWrapper extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
 
     // Show loading indicator when checking auth status
-    if (authState.status == AuthStatus.initial || 
-        authState.status == AuthStatus.loading) {
+    if (authState.isLoading) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -23,25 +22,11 @@ class AuthWrapper extends ConsumerWidget {
     }
 
     // If user is authenticated, navigate to home screen
-    if (authState.status == AuthStatus.authenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-      });
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+    if (authState.isAuthenticated) {
+      return const AutoRouter();
     }
 
     // If user is not authenticated, navigate to auth options screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.authOptions);
-    });
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return AutoRouter();
   }
 } 

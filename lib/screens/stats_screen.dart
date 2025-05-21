@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 
+@RoutePage()
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
 
@@ -18,53 +20,35 @@ class _StatsScreenState extends State<StatsScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        title: const Text(
+          'Your Listening Stats',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.router.pop(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Top',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            _buildTabs(),
+            const SizedBox(height: 20),
+            Expanded(
+              child: _buildTrackList(),
             ),
-            Text(
-              'Past 30 Days',
-              style: TextStyle(
-                color: const Color.fromRGBO(255, 255, 255, 0.6),
-                fontSize: 16,
-              ),
-            ),
+            _buildTimePeriodSelector(),
           ],
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.grid_view, color: Colors.white),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildTabs(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: _buildTrackList(),
-          ),
-          _buildTimePeriodSelector(),
-        ],
       ),
     );
   }

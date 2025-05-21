@@ -37,7 +37,7 @@ final playHistoryRepositoryProvider = Provider<PlayHistoryRepository>((ref) {
 
 // Provider untuk PocketBase instance
 final pocketBaseProvider = Provider((ref) {
-  return pocketBaseService.pb;
+  return pocketbaseService.pb;
 });
 
 // Controller provider

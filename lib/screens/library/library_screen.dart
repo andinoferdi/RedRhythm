@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:auto_route/auto_route.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import 'library_controller.dart';
@@ -10,6 +11,7 @@ import 'artist_tab.dart';
 import 'album_tab.dart';
 import 'podcast_tab.dart';
 
+@RoutePage()
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
 
@@ -17,7 +19,21 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
+class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // Get the bottom padding to account for system navigation bars
@@ -27,6 +43,30 @@ class _LibraryScreenState extends State<LibraryScreen> {
       create: (_) => LibraryController(),
       child: Scaffold(
         backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            'Your Library',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Poppins',
+            ),
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Color(0xFFE71E27),
+            tabs: const [
+              Tab(text: 'Music'),
+              Tab(text: 'Playlists'),
+              Tab(text: 'Downloads'),
+            ],
+          ),
+        ),
         body: SafeArea(
           bottom: false,
           child: Column(
@@ -42,7 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: CustomBottomNavBar(
+        bottomNavigationBar: CustomBottomNav(
           currentIndex: 2,
           bottomPadding: bottomPadding,
         ),

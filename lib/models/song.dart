@@ -1,43 +1,50 @@
-class Song {
-  final String id;
-  final String title;
-  final String artist;
-  final String albumArtUrl;
-  final Duration duration;
-  final String albumName;
-  final List<String> lyrics;
-  final String playlistId;
+import 'package:pocketbase/pocketbase.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  const Song({
-    required this.id,
-    required this.title,
-    required this.artist,
-    required this.albumArtUrl,
-    required this.duration,
-    required this.albumName,
-    required this.lyrics,
-    required this.playlistId,
-  });
+part 'song.g.dart';
+part 'song.freezed.dart';
 
-  Song copyWith({
-    String? id,
-    String? title,
-    String? artist,
-    String? albumArtUrl,
-    Duration? duration,
-    String? albumName,
-    List<String>? lyrics,
+@freezed
+class Song with _$Song {
+  const factory Song({
+    required String id,
+    required String title,
+    required String artist,
+    required String albumArtUrl,
+    required int durationInSeconds,
+    required String albumName,
+    required List<String> lyrics,
     String? playlistId,
-  }) {
+  }) = _Song;
+
+  factory Song.fromJson(Map<String, dynamic> json) => _$SongFromJson(json);
+  
+  /// Create a Song from a PocketBase record
+  static Song fromRecord(RecordModel record) {
+    // Get expanded artist and album if available
+    final artistRecord = record.expand['artist']?[0] as RecordModel?;
+    final albumRecord = record.expand['album']?[0] as RecordModel?;
+    
+    // Extract data from record
+    final artistName = artistRecord?.data['name'] as String? ?? 'Unknown Artist';
+    final albumName = albumRecord?.data['name'] as String? ?? 'Unknown Album';
+    final albumArtUrl = albumRecord?.data['cover_url'] as String? ?? '';
+    final lyrics = (record.data['lyrics'] as String?)?.split('\n') ?? <String>[];
+    
     return Song(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      artist: artist ?? this.artist,
-      albumArtUrl: albumArtUrl ?? this.albumArtUrl,
-      duration: duration ?? this.duration,
-      albumName: albumName ?? this.albumName,
-      lyrics: lyrics ?? this.lyrics,
-      playlistId: playlistId ?? this.playlistId,
+      id: record.id,
+      title: record.data['title'] as String? ?? 'Unknown Title',
+      artist: artistName,
+      albumArtUrl: albumArtUrl,
+      durationInSeconds: record.data['duration'] as int? ?? 0,
+      albumName: albumName,
+      lyrics: lyrics,
+      playlistId: record.data['playlist_id'] as String?,
     );
   }
+}
+
+/// Extension to convert duration in seconds to Duration
+extension DurationExt on Song {
+  Duration get duration => Duration(seconds: durationInSeconds);
 } 

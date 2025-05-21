@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import '../models/song.dart';
 import '../data/sample_songs.dart';
 import 'music_player_screen.dart';
 
+@RoutePage()
 class PlaylistScreen extends StatelessWidget {
   const PlaylistScreen({super.key});
 
@@ -170,7 +172,6 @@ class PlaylistScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => MusicPlayerScreen(
           song: song,
-          playlist: 'Lofi Loft',
         ),
       ),
     );

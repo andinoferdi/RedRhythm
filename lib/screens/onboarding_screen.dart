@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../routes.dart';
+import 'package:auto_route/auto_route.dart';
+import '../routes/app_router.dart';
 
+@RoutePage()
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
@@ -107,8 +109,7 @@ class OnboardingScreen extends StatelessWidget {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(
-                            context, AppRoutes.authOptions);
+                        context.router.replace(const AuthOptionsRoute());
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE71E27),

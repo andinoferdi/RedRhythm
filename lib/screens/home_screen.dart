@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
-import '../routes.dart';
+import 'package:auto_route/auto_route.dart';
+import '../routes/app_router.dart';
 import 'playlist_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../features/auth/auth_controller.dart';
@@ -94,6 +95,7 @@ final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
   }
 });
 
+@RoutePage()
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -139,7 +141,7 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
+      bottomNavigationBar: CustomBottomNav(
         currentIndex: 0,
         bottomPadding: bottomPadding,
       ),
@@ -210,7 +212,7 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 GestureDetector(
                   onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.stats);
+                    context.router.push(const StatsRoute());
                   },
                   child: const Icon(Icons.stacked_line_chart,
                       color: Colors.white, size: 24),
@@ -419,10 +421,7 @@ class HomeScreen extends ConsumerWidget {
                   // Logout logic
                   await ref.read(authControllerProvider.notifier).logout();
                   if (context.mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      AppRoutes.authOptions,
-                      (route) => false,
-                    );
+                    context.router.replace(const AuthOptionsRoute());
                   }
                 },
               ),

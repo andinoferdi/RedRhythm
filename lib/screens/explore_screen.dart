@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:auto_route/auto_route.dart';
 import '../widgets/custom_bottom_nav.dart';
 
+@RoutePage()
 class ExploreScreen extends StatelessWidget {
   const ExploreScreen({super.key});
 
@@ -10,11 +12,11 @@ class ExploreScreen extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Colors.black,
       body: SafeArea(
         bottom: false, // Don't apply bottom safe area to avoid double padding
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -32,7 +34,7 @@ class ExploreScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
+      bottomNavigationBar: CustomBottomNav(
         currentIndex: 1,
         bottomPadding: bottomPadding,
       ),
