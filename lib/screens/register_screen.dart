@@ -73,6 +73,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return null;
   }
 
+  // Helper method to show error snackbar
+  void _showErrorSnackBar(String message) {
+    // Extract just the relevant part of the error message if it's from our exception
+    String displayMessage = message;
+    if (message.startsWith('Exception: ')) {
+      displayMessage = message.substring('Exception: '.length);
+    }
+    
+    // Limit the length of the message for better display
+    if (displayMessage.length > 100) {
+      displayMessage = displayMessage.substring(0, 100) + '...';
+    }
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(displayMessage),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(10),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
   // Handle registration
   Future<void> _handleRegister() async {
     // Always validate the form
@@ -80,12 +107,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     
     // Check terms agreement
     if (!_agreeTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the Terms and Conditions'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackBar('Please agree to the Terms and Conditions');
       return;
     }
 
@@ -98,12 +120,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       );
     } else {
       // Show a general error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fix the errors in the form before proceeding'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackBar('Please fix the errors in the form before proceeding');
     }
   }
 
@@ -126,16 +143,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           SnackBar(
             content: Text(state.successMessage!),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: const EdgeInsets.all(10),
           ),
         );
         context.router.replace(const LoginRoute());
       } else if (state.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.error!),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnackBar(state.error!);
       }
     });
     

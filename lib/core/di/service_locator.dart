@@ -31,7 +31,5 @@ Future<void> setupServiceLocator() async {
     getIt<UserRepository>(),
   ));
   
-  getIt.registerFactory<PlayerController>(() => PlayerController(
-    getIt<SongRepository>(),
-  ));
+  getIt.registerFactory<PlayerController>(() => PlayerController());
 } 

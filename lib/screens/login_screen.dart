@@ -328,7 +328,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Center(
                   child: GestureDetector(
                     onTap: () {
-                      // Implement forgot password later
+                      context.router.push(const ForgotPasswordRoute());
                     },
                     child: const Text(
                       'Forgot the password?',

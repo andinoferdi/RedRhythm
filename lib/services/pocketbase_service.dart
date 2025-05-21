@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:math' show min;
 
 /// Service class for PocketBase API interactions
 class PocketBaseService {
@@ -155,9 +156,6 @@ class PocketBaseService {
     return value == 'true';
   }
   
-  Future<String?> _getToken() async {
-    return await _storage.read(key: 'pb_auth_token');
-  }
   
   /// Check if user is authenticated
   bool get isAuthenticated => _pb.authStore.isValid;
@@ -216,17 +214,23 @@ class PocketBaseService {
 
   // Test and determine the best PocketBase URL
   Future<String> determinePocketBaseUrl() async {
+    print("Menentukan URL PocketBase...");
     final List<String> possibleUrls = [
       'http://10.0.2.2:8090',      // Standard Android emulator
       'http://127.0.0.1:8090',     // iOS simulator or local
+      'http://192.168.122.1:8090', // WSL IP or other local network
+      'http://localhost:8090',     // localhost direct
     ];
     
     for (final url in possibleUrls) {
+      print("Mencoba URL: $url");
       if (await isHostReachable('$url/api/health')) {
+        print("URL berhasil terhubung: $url");
         return url;
       }
     }
     
+    print("Semua URL gagal, menggunakan default");
     // Default to Android emulator address if nothing works
     return Platform.isAndroid ? 'http://10.0.2.2:8090' : 'http://127.0.0.1:8090';
   }
@@ -234,14 +238,22 @@ class PocketBaseService {
   // Helper function to check if host is reachable
   Future<bool> isHostReachable(String url) async {
     try {
+      print("Memeriksa koneksi ke $url");
       final response = await http.get(Uri.parse(url)).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
+          print("Timeout saat menghubungi $url");
           return http.Response('Timeout', 408);
         },
       );
-      return response.statusCode < 400;
+      final isSuccess = response.statusCode < 400;
+      print("Respons dari $url: ${response.statusCode} (${isSuccess ? 'Sukses' : 'Gagal'})");
+      if (isSuccess) {
+        print("Respons body: ${response.body.substring(0, min(100, response.body.length))}...");
+      }
+      return isSuccess;
     } catch (e) {
+      print("Error saat menghubungi $url: $e");
       return false;
     }
   }

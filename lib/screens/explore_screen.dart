@@ -3,7 +3,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../features/auth/auth_controller.dart';
-import '../utils/image_helpers.dart';
 import '../screens/home_screen.dart';
 import '../widgets/user_avatar.dart';
 

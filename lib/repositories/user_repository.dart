@@ -62,7 +62,34 @@ class UserRepository {
       if (e.toString().contains('email') && e.toString().contains('exists')) {
         throw Exception('An account with this email already exists');
       }
-      throw Exception('Registration failed: ${e.toString().replaceAll('Exception:', '')}');
+      
+      // Extract specific validation errors from PocketBase response
+      if (e.toString().contains('validation_min_text_constraint') && 
+          e.toString().contains('password')) {
+        throw Exception('Password must be at least 6 characters');
+      }
+      
+      if (e.toString().contains('validation') && e.toString().contains('password')) {
+        throw Exception('Password validation failed. Please use a stronger password');
+      }
+      
+      if (e.toString().contains('validation') && e.toString().contains('email')) {
+        throw Exception('Please enter a valid email address');
+      }
+      
+      if (e.toString().contains('data')) {
+        // Try to extract more specific error message
+        final errorMsg = e.toString();
+        if (errorMsg.contains('message:')) {
+          final messagePart = errorMsg.split('message:').last.split(',').first;
+          if (messagePart.length > 5 && messagePart.length < 100) {
+            throw Exception('Registration error: ${messagePart.trim()}');
+          }
+        }
+      }
+      
+      // Generic fallback
+      throw Exception('Registration failed. Please check your information and try again');
     }
   }
   
@@ -105,6 +132,214 @@ class UserRepository {
       // If refresh fails, clear auth
       _pb.authStore.clear();
       throw Exception('Failed to refresh authentication: $e');
+    }
+  }
+  
+  /// Request password reset
+  Future<void> requestPasswordReset(String email) async {
+    try {
+      await _pb.collection('users').requestPasswordReset(email);
+    } catch (e) {
+      // Check if it's a network error
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('network')) {
+        throw Exception('Network error. Please check your connection');
+      }
+      
+      // Check if it's a "not found" error (email doesn't exist)
+      if (e.toString().contains('404') || e.toString().contains('not found')) {
+        // We don't want to reveal if an email exists or not for security reasons
+        // So instead of an error, we'll return success to prevent user enumeration attacks
+        return;
+      }
+      
+      // Generic error
+      throw Exception('Failed to send password reset email. Please try again later.');
+    }
+  }
+  
+  /// Check if an email exists in the database
+  Future<RecordModel?> checkEmailExists(String email) async {
+    try {
+      // Pastikan email dalam format lowercase untuk menghindari masalah case sensitivity
+      final emailLowercase = email.toLowerCase().trim();
+      
+      print("Mencari email: $emailLowercase");
+      
+      // Coba dengan filter yang lebih sederhana
+      final result = await _pb.collection('users').getList(
+        filter: 'email ~ "$emailLowercase"',  // Menggunakan operator ~ untuk pencarian yang lebih fleksibel
+        page: 1,
+        perPage: 10,  // Meningkatkan jumlah hasil untuk debugging
+      );
+      
+      print("Hasil pencarian: ${result.items.length} item ditemukan");
+      
+      // Debug output - lihat semua email yang ditemukan
+      for (final item in result.items) {
+        print("Email ditemukan: ${item.data['email']}");
+      }
+      
+      if (result.items.isEmpty) {
+        print("Tidak ada email yang ditemukan");
+        return null;
+      }
+      
+      // Cari email yang tepat sama
+      for (final item in result.items) {
+        if (item.data['email'].toString().toLowerCase() == emailLowercase) {
+          print("Email yang cocok ditemukan: ${item.id}");
+          return item;
+        }
+      }
+      
+      // Jika tidak ada yang cocok persis
+      print("Tidak ada email yang cocok persis");
+      return null;
+    } catch (e) {
+      print("Error saat mencari email: $e");
+      // Untuk debugging, lemparkan error agar dapat dilihat
+      throw Exception("Error mencari email: $e");
+    }
+  }
+  
+  /// Update user password directly
+  Future<RecordModel> updatePassword(String userId, String newPassword) async {
+    try {
+      // Update the user's password
+      return await _pb.collection('users').update(
+        userId,
+        body: {
+          'password': newPassword,
+          'passwordConfirm': newPassword,
+        },
+      );
+    } catch (e) {
+      // Check if it's a validation error
+      if (e.toString().contains('validation')) {
+        if (e.toString().contains('min')) {
+          throw Exception('Password must be at least 6 characters');
+        }
+        throw Exception('Password validation failed. Please use a stronger password');
+      }
+      
+      // Generic error
+      throw Exception('Failed to update password. Please try again later');
+    }
+  }
+  
+  /// Reset password directly with email (tanpa memerlukan user ID)
+  Future<Map<String, dynamic>> resetPasswordDirect(String email, String newPassword) async {
+    try {
+      print("Mencoba reset password langsung untuk: $email");
+      
+      // Pendekatan 1: Menggunakan filter yang lebih tepat untuk menemukan user
+      try {
+        print("Mencoba menemukan user dengan email exact match");
+        
+        // Cari user dengan filter yang lebih tepat
+        final searchResult = await _pb.collection('users').getList(
+          filter: 'email = "$email"', // Gunakan exact match dengan =
+          sort: '-created',
+        );
+        
+        print("Hasil pencarian exact: ${searchResult.items.length} users");
+        
+        if (searchResult.items.isNotEmpty) {
+          final userId = searchResult.items[0].id;
+          print("Ditemukan user dengan ID: $userId");
+          
+          // Update password user
+          await _pb.collection('users').update(
+            userId,
+            body: {
+              'password': newPassword,
+              'passwordConfirm': newPassword,
+            },
+          );
+          
+          return {'success': true, 'method': 'exact_match_update'};
+        }
+      } catch (e) {
+        print("Error pada exact match: $e");
+      }
+      
+      // Pendekatan 2: Menggunakan API sendiri untuk pengubahan password langsung
+      try {
+        print("Mencoba API admin untuk reset password");
+        
+        // Mencari user dengan email di database (case insensitive)
+        final emailLower = email.toLowerCase();
+        final users = await _pb.collection('users').getList(
+          filter: 'LOWER(email) ~ "${emailLower}"',
+          sort: '-created',
+        );
+        
+        print("Ditemukan ${users.items.length} users dengan email yang mirip");
+        
+        // Temukan yang cocok persis
+        for (final user in users.items) {
+          final userEmail = user.data['email'].toString().toLowerCase();
+          if (userEmail == emailLower) {
+            print("Match ditemukan: ${user.id}");
+            
+            // Update password
+            await _pb.collection('users').update(
+              user.id,
+              body: {
+                'password': newPassword,
+                'passwordConfirm': newPassword,
+              },
+            );
+            
+            return {'success': true, 'method': 'admin_reset'};
+          }
+        }
+      } catch (e) {
+        print("Error pada admin reset: $e");
+      }
+      
+      // Pendekatan 3: Menggunakan collection API langsung
+      try {
+        print("Mencoba collection API langsung untuk reset password");
+        
+        // Gunakan getFullList dengan filter yang lebih spesifik
+        final records = await _pb.collection('users').getFullList(
+          filter: 'email = "$email"',
+        );
+        
+        if (records.isNotEmpty) {
+          final userId = records[0].id;
+          print("Ditemukan user ID dari collection API: $userId");
+          
+          // Reset password
+          await _pb.collection('users').update(
+            userId,
+            body: {
+              'password': newPassword,
+              'passwordConfirm': newPassword,
+            },
+          );
+          
+          return {'success': true, 'method': 'direct_collection_api'};
+        }
+      } catch (e) {
+        print("Error pada collection API: $e");
+      }
+      
+      // Jika sampai di sini, berarti tidak berhasil mengubah password
+      return {
+        'success': false,
+        'error': 'Tidak dapat menemukan akun dengan email $email. Silakan periksa alamat email Anda.'
+      };
+    } catch (e) {
+      print("Error utama saat reset password: $e");
+      
+      return {
+        'success': false,
+        'error': 'Gagal reset password: ${e.toString()}'
+      };
     }
   }
 } 

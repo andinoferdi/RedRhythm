@@ -1,25 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_it/get_it.dart';
-import '../../repositories/song_repository.dart';
 import '../../models/song.dart';
 import 'player_state.dart';
 
 /// Provider for player controller
 final playerControllerProvider = StateNotifierProvider<PlayerController, PlayerState>(
-  (ref) => GetIt.I<PlayerController>(),
+  (ref) => PlayerController(),
 );
 
-/// Provider for song repository
-final songRepositoryProvider = Provider<SongRepository>((ref) {
-  // This will be injected via GetIt
-  throw UnimplementedError('Use GetIt for dependency injection');
-});
+
 
 /// Controller for handling music playback
 class PlayerController extends StateNotifier<PlayerState> {
-  final SongRepository _songRepository;
-  
-  PlayerController(this._songRepository) : super(PlayerState.initial());
+  PlayerController() : super(PlayerState.initial());
   
   /// Play a song
   void playSong(Song song) {

@@ -6,6 +6,7 @@ import '../screens/onboarding_screen.dart';
 import '../screens/auth_options_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
+import '../screens/forgot_password_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/explore_screen.dart';
 import '../screens/library/library_screen.dart';
@@ -13,7 +14,6 @@ import '../screens/stats_screen.dart';
 import '../screens/music_player_screen.dart';
 import '../screens/playlist_screen.dart';
 import '../features/auth/auth_wrapper.dart';
-import '../utils/custom_page_transitions.dart';
 
 part 'app_router.gr.dart';
 
@@ -51,6 +51,7 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: AuthOptionsRoute.page),
     AutoRoute(page: LoginRoute.page),
     AutoRoute(page: RegisterRoute.page),
+    AutoRoute(page: ForgotPasswordRoute.page),
     AutoRoute(page: HomeRoute.page),
     AutoRoute(page: ExploreRoute.page),
     AutoRoute(page: LibraryRoute.page),

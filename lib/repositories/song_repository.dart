@@ -70,7 +70,7 @@ class SongRepository {
       
       return response.items
           .map((record) {
-            final songRecord = record.expand['song']?[0] as RecordModel?;
+            final songRecord = record.expand['song']?[0];
             if (songRecord != null) {
               return Song.fromRecord(songRecord);
             }

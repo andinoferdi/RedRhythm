@@ -14,7 +14,6 @@ import '../utils/image_helpers.dart';
 import '../widgets/user_avatar.dart';
 import '../models/song.dart';
 import '../features/player/player_controller.dart';
-import '../routes/app_router.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -316,7 +315,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             }
             
             // Get the PocketBase URL for image URLs
-            final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
             
             // Show genres grid
             return Padding(
