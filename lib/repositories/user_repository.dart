@@ -19,12 +19,30 @@ class UserRepository {
       );
       
       if (authData.record == null) {
-        throw Exception('Login failed: No user record returned');
+        throw Exception('Username or password is incorrect');
       }
       
       return authData.record!;
     } catch (e) {
-      throw Exception('Login failed: $e');
+      // Check if the error is related to authentication
+      if (e.toString().contains('Failed to authenticate') || 
+          e.toString().contains('400') ||
+          e.toString().contains('auth-with') ||
+          e.toString().contains('failed')) {
+        throw Exception('Username or password is incorrect');
+      }
+      // For network errors
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('network')) {
+        throw Exception('Network error. Please check your connection');
+      }
+      // For server errors
+      if (e.toString().contains('500')) {
+        throw Exception('Server error. Please try again later');
+      }
+      // Generic error fallback
+      throw Exception('Login failed. Please try again');
     }
   }
   
@@ -40,7 +58,11 @@ class UserRepository {
       
       return await _pb.collection('users').create(body: userData);
     } catch (e) {
-      throw Exception('Registration failed: $e');
+      // Check if it's an email already exists error
+      if (e.toString().contains('email') && e.toString().contains('exists')) {
+        throw Exception('An account with this email already exists');
+      }
+      throw Exception('Registration failed: ${e.toString().replaceAll('Exception:', '')}');
     }
   }
   

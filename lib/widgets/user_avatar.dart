@@ -1,0 +1,86 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketbase/pocketbase.dart';
+import '../utils/image_helpers.dart';
+
+/// A reusable widget to display the user's avatar
+class UserAvatar extends ConsumerWidget {
+  /// The user record from PocketBase
+  final RecordModel? user;
+  
+  /// The PocketBase server URL
+  final String? baseUrl;
+  
+  /// The size of the avatar (both width and height)
+  final double size;
+  
+  /// The size of the icon shown when no avatar is available
+  final double iconSize;
+  
+  /// Border color for the avatar container
+  final Color borderColor;
+  
+  /// Background color for the avatar container
+  final Color backgroundColor;
+  
+  /// Create a new UserAvatar widget
+  const UserAvatar({
+    super.key,
+    required this.user,
+    required this.baseUrl,
+    this.size = 50,
+    this.iconSize = 30,
+    this.borderColor = const Color(0xFF424242), // Grey shade 800
+    this.backgroundColor = const Color(0xFF424242), // Grey shade 800
+  });
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get avatar URL if available
+    final avatarUrl = user?.getAvatarUrl(baseUrl);
+    
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: borderColor, width: 1),
+        color: backgroundColor,
+      ),
+      child: avatarUrl != null 
+        ? ClipOval(
+            child: Image.network(
+              avatarUrl,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: iconSize,
+                );
+              },
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Center(
+                  child: SizedBox(
+                    width: size * 0.48, // Scale the indicator based on avatar size
+                    height: size * 0.48,
+                    child: const CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.0,
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        : Icon(
+            Icons.person,
+            color: Colors.white,
+            size: iconSize,
+          ),
+    );
+  }
+} 

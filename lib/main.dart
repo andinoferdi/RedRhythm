@@ -66,12 +66,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Poppins',
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.black,
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-          },
-        ),
+        // Transisi halaman dikendalikan oleh Auto Router
         textButtonTheme: TextButtonThemeData(
           style: ButtonStyle(
             foregroundColor: const MaterialStatePropertyAll(Colors.white),

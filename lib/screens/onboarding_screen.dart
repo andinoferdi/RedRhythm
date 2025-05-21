@@ -80,30 +80,6 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE71E27),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: const Color.fromRGBO(255, 255, 255, 0.4),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
                     height: 56,

@@ -9,6 +9,12 @@ import 'playlist_screen.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/play_history/play_history_controller.dart';
+import '../features/genre/genre_controller.dart';
+import '../utils/image_helpers.dart';
+import '../widgets/user_avatar.dart';
+import '../models/song.dart';
+import '../features/player/player_controller.dart';
+import '../routes/app_router.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -96,21 +102,27 @@ final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
 });
 
 @RoutePage()
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Load play history when screen builds, tapi dengan try-catch
-    try {
-      // Gunakan Future.microtask untuk menghindari setState selama build
-      Future.microtask(() {
-        ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
-      });
-    } catch (e) {
-      // Silently handle errors
-    }
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
     
+    // Load data on init rather than during build to avoid blinking
+    Future.microtask(() {
+      ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
+      ref.read(genreControllerProvider.notifier).loadGenres();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
@@ -127,13 +139,13 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              _buildHeader(context, ref),
+              _buildHeader(context),
               const SizedBox(height: 16),
               _buildContinueListening(context),
               const SizedBox(height: 30),
               _buildYourTopMixes(context),
               const SizedBox(height: 30),
-              _buildRecentListening(context, ref),
+              _buildRecentListening(context),
               // Add a bottom spacing to account for the navigation bar
               SizedBox(
                   height: 70 + bottomPadding), // Fixed to a more reasonable size
@@ -148,9 +160,13 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+  Widget _buildHeader(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
-    final userName = authState.user?.data['name'] ?? 'User';
+    final user = authState.user;
+    final userName = user?.getName() ?? 'User';
+    
+    // Get the PocketBase URL
+    final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -162,19 +178,9 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade800, width: 1),
-                    color: Colors.grey.shade800,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                UserAvatar(
+                  user: user,
+                  baseUrl: pocketBaseUrl,
                 ),
                 const SizedBox(width: 12),
                 SizedBox(
@@ -239,7 +245,7 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 GestureDetector(
                   onTap: () {
-                    _showProfileMenu(context, ref);
+                    _showProfileMenu(context);
                   },
                   child: const Icon(Icons.settings_outlined,
                       color: Colors.white, size: 24),
@@ -253,7 +259,6 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildContinueListening(BuildContext context) {
-    // Implementation remains the same
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -269,95 +274,104 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GridView.count(
-            crossAxisCount: 2,
-            childAspectRatio: 2.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildPlaylistCard(
-                'Coffee & Jazz',
-                Icons.coffee,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+        Consumer(
+          builder: (context, ref, child) {
+            // Get the current state without triggering loads during build
+            final genreState = ref.watch(genreControllerProvider);
+            
+            // Show loading state
+            if (genreState.isLoading) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: CircularProgressIndicator(),
                 ),
-              ),
-              _buildPlaylistCard(
-                'RELEASED',
-                Icons.new_releases,
-                iconColor: Colors.green,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
-                ),
-              ),
-              _buildPlaylistCard(
-                'Anything Goes',
-                Icons.all_inclusive,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
-                ),
-              ),
-              _buildPlaylistCard(
-                'Anime OSTs',
-                Icons.music_note,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
-                ),
-              ),
-              _buildPlaylistCard(
-                'Harry\'s House',
-                Icons.house,
-                gradient: const LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const PlaylistScreen()),
-                  );
-                },
-                child: _buildPlaylistCard(
-                  'Lo-Fi Loft',
-                  Icons.headphones,
-                  gradient: const LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+              );
+            }
+            
+            // Show error state
+            if (genreState.error != null) {
+              return Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: Text(
+                    'Error: ${genreState.error}',
+                    style: TextStyle(color: Colors.red),
                   ),
                 ),
+              );
+            }
+            
+            // Show empty state
+            if (genreState.genres.isEmpty) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  child: Text(
+                    'No genres available',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+            
+            // Get the PocketBase URL for image URLs
+            final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
+            
+            // Show genres grid
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: GridView.count(
+                crossAxisCount: 2,
+                childAspectRatio: 2.5,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: genreState.genres.take(6).map((genre) {
+                  // Map genre icon names to Material icons
+                  IconData icon = Icons.music_note;
+                  
+                  if (genre.name.toLowerCase().contains('jazz')) {
+                    icon = Icons.coffee;
+                  } else if (genre.name.toLowerCase().contains('release')) {
+                    icon = Icons.new_releases;
+                  } else if (genre.name.toLowerCase().contains('anything')) {
+                    icon = Icons.all_inclusive;
+                  } else if (genre.name.toLowerCase().contains('anime')) {
+                    icon = Icons.music_note;
+                  } else if (genre.name.toLowerCase().contains('house')) {
+                    icon = Icons.house;
+                  } else if (genre.name.toLowerCase().contains('lo-fi')) {
+                    icon = Icons.headphones;
+                  }
+                  
+                  return _buildPlaylistCard(
+                    genre.name,
+                    icon,
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+                    ),
+                    imageUrl: genre.iconUrl,
+                  );
+                }).toList(),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
   }
 
-  // For brevity, I'm assuming the other widget methods remain unchanged
-  // Other methods would follow here: _buildYourTopMixes, _buildRecentListening, etc.
-
+  // Updating the _buildPlaylistCard method to accept an image URL
   Widget _buildPlaylistCard(
     String title,
     IconData icon, {
     LinearGradient? gradient,
     Color iconColor = Colors.white,
+    String? imageUrl,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -368,7 +382,21 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            Icon(icon, color: iconColor),
+            if (imageUrl != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: Image.network(
+                  imageUrl,
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(icon, color: iconColor);
+                  },
+                ),
+              )
+            else
+              Icon(icon, color: iconColor),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -386,7 +414,15 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showProfileMenu(BuildContext context, WidgetRef ref) {
+  void _showProfileMenu(BuildContext context) {
+    final authState = ref.watch(authControllerProvider);
+    final user = authState.user;
+    final userName = user?.getName() ?? 'User';
+    final userEmail = user?.getEmail() ?? '';
+    
+    // Get the PocketBase URL
+    final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
+    
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -399,6 +435,51 @@ class HomeScreen extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // User profile info section
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  children: [
+                    // Avatar
+                    UserAvatar(
+                      user: user,
+                      baseUrl: pocketBaseUrl,
+                      size: 60,
+                      iconSize: 36,
+                    ),
+                    const SizedBox(width: 16),
+                    // User info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            userName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            userEmail,
+                            style: TextStyle(
+                              color: Colors.grey.shade400,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.grey),
               ListTile(
                 leading: const Icon(Icons.account_circle, color: Colors.white),
                 title: const Text(
@@ -501,7 +582,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentListening(BuildContext context, WidgetRef ref) {
+  Widget _buildRecentListening(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -519,11 +600,6 @@ class HomeScreen extends ConsumerWidget {
         const SizedBox(height: 16),
         Consumer(
           builder: (context, ref, child) {
-            // Temporary fallback to hardcoded data for development
-            // Set to false to use real data
-            
-        
-            
             // Watch play history state instead of direct provider
             final playHistoryState = ref.watch(playHistoryControllerProvider);
             
@@ -575,9 +651,12 @@ class HomeScreen extends ConsumerWidget {
                 return Column(
                   children: [
                     _buildRecentCard(
+                      context,
+                      ref,
                       history.songTitle ?? 'Unknown Song', 
                       'Song • ${history.artistName ?? 'Unknown Artist'}',
-                      history.albumCoverUrl ?? 'https://via.placeholder.com/300/5D4037/FFFFFF?text=No+Cover'
+                      history.albumCoverUrl ?? 'https://via.placeholder.com/300/5D4037/FFFFFF?text=No+Cover',
+                      songId: history.songId,
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)
                       const SizedBox(height: 12),
@@ -589,6 +668,107 @@ class HomeScreen extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Widget _buildRecentCard(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    String subtitle,
+    String imageUrl, {
+    required String songId,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        _playSong(context, ref, songId, title, subtitle, imageUrl);
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade800,
+              image: imageUrl.startsWith('http')
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : DecorationImage(
+                      image: AssetImage(imageUrl),
+                      fit: BoxFit.cover,
+                    ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.play_arrow,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              _playSong(context, ref, songId, title, subtitle, imageUrl);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Method to play a song and navigate to player screen
+  void _playSong(
+    BuildContext context,
+    WidgetRef ref,
+    String songId,
+    String title,
+    String subtitle,
+    String albumArtUrl,
+  ) {
+    // Extract artist name from subtitle (format: "Song • Artist Name")
+    final artist = subtitle.contains('•') 
+        ? subtitle.split('•').last.trim() 
+        : 'Unknown Artist';
+    
+    // Create song model from the available information
+    final song = Song(
+      id: songId,
+      title: title,
+      artist: artist,
+      albumArtUrl: albumArtUrl,
+      durationInSeconds: 180, // Default 3 minutes if we don't know duration
+      albumName: 'Unknown Album',
+      lyrics: [],
+    );
+    
+    // Play the song and navigate to player screen
+    ref.read(playerControllerProvider.notifier).playSong(song);
+    
+    // Navigate to the music player screen
+    context.router.push(MusicPlayerRoute(song: song));
   }
 
   Widget _buildMixCard(
@@ -639,58 +819,6 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRecentCard(String title, String subtitle, String imageUrl) {
-    return Row(
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.shade800,
-            image: imageUrl.startsWith('http')
-                ? DecorationImage(
-                    image: NetworkImage(imageUrl),
-                    fit: BoxFit.cover,
-                  )
-                : DecorationImage(
-                    image: AssetImage(imageUrl),
-                    fit: BoxFit.cover,
-                  ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Icon(
-          Icons.more_vert,
-          color: Colors.white,
-        ),
-      ],
     );
   }
 }

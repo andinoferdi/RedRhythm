@@ -1,23 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import '../routes/app_router.dart';
+import '../features/auth/auth_controller.dart';
 
 @RoutePage()
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
     Timer(const Duration(seconds: 2), () {
-      context.router.replace(const OnboardingRoute());
+      _checkAuthAndNavigate();
     });
+  }
+  
+  void _checkAuthAndNavigate() {
+    final authState = ref.read(authControllerProvider);
+    
+    // If user is already authenticated, navigate to home
+    if (authState.isAuthenticated) {
+      context.router.replace(const HomeRoute());
+    } else {
+      // Otherwise go to onboarding
+      context.router.replace(const OnboardingRoute());
+    }
   }
 
   @override

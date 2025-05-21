@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/user_repository.dart';
+import '../../repositories/genre_repository.dart';
 import '../../features/auth/auth_controller.dart';
 import '../../features/player/player_controller.dart';
 
@@ -18,6 +19,10 @@ Future<void> setupServiceLocator() async {
   ));
   
   getIt.registerLazySingleton<UserRepository>(() => UserRepository(
+    getIt<PocketBaseService>(),
+  ));
+  
+  getIt.registerLazySingleton<GenreRepository>(() => GenreRepository(
     getIt<PocketBaseService>(),
   ));
   

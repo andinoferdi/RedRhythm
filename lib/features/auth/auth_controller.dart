@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import '../../repositories/user_repository.dart';
+import '../../services/pocketbase_service.dart';
 import 'auth_state.dart';
 
 /// Provider for the AuthController
@@ -11,6 +12,7 @@ final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
 /// Controller for handling authentication
 class AuthController extends StateNotifier<AuthState> {
   final UserRepository _userRepository;
+  final PocketBaseService _pocketBaseService = GetIt.I<PocketBaseService>();
   
   AuthController(this._userRepository) : super(AuthState.initial()) {
     _checkAuthStatus();
@@ -35,9 +37,14 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   /// Login with email and password
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password, [bool rememberMe = false]) async {
     try {
       state = AuthState.loading();
+      
+      // Set remember me preference before login
+      await _pocketBaseService.setRememberMe(rememberMe);
+      
+      // Perform login
       final user = await _userRepository.login(email, password);
       state = AuthState.authenticated(user);
     } catch (e) {

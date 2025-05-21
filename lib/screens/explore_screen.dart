@@ -1,27 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/custom_bottom_nav.dart';
+import '../features/auth/auth_controller.dart';
+import '../utils/image_helpers.dart';
+import '../screens/home_screen.dart';
+import '../widgets/user_avatar.dart';
 
 @RoutePage()
-class ExploreScreen extends StatelessWidget {
+class ExploreScreen extends ConsumerWidget {
   const ExploreScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
         bottom: false, // Don't apply bottom safe area to avoid double padding
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16), // Consistent top spacing
-              _buildSearchHeader(),
+              _buildSearchHeader(context, ref),
               const SizedBox(height: 16), // Consistent spacing
               _buildSearchBar(),
               const SizedBox(height: 24), // Adjusted spacing
@@ -41,7 +46,14 @@ class ExploreScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchHeader() {
+  Widget _buildSearchHeader(BuildContext context, WidgetRef ref) {
+    // Get the current authenticated user
+    final authState = ref.watch(authControllerProvider);
+    final user = authState.user;
+    
+    // Get the PocketBase URL for constructing the avatar URL
+    final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: SizedBox(
@@ -51,19 +63,9 @@ class ExploreScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade800, width: 1),
-                    color: Colors.grey.shade800,
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 30,
-                  ),
+                UserAvatar(
+                  user: user,
+                  baseUrl: pocketBaseUrl,
                 ),
                 const SizedBox(width: 12),
                 SizedBox(

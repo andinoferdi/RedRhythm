@@ -13,11 +13,37 @@ import '../screens/stats_screen.dart';
 import '../screens/music_player_screen.dart';
 import '../screens/playlist_screen.dart';
 import '../features/auth/auth_wrapper.dart';
+import '../utils/custom_page_transitions.dart';
 
 part 'app_router.gr.dart';
 
-@AutoRouterConfig()
+@AutoRouterConfig(
+  // Define a default transition for all routes
+  replaceInRouteName: 'Screen,Route',
+)
 class AppRouter extends _$AppRouter {
+  @override
+  RouteType get defaultRouteType => RouteType.custom(
+    // Custom fade transition builder
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      // Create a smooth fade transition with a slight scale effect
+      final fadeAnimation = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOut,
+        reverseCurve: Curves.easeIn,
+      );
+      
+      return FadeTransition(
+        opacity: fadeAnimation,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.98, end: 1.0).animate(fadeAnimation),
+          child: child,
+        ),
+      );
+    },
+    durationInMilliseconds: 200, // Faster transitions feel more premium
+  );
+
   @override
   List<AutoRoute> get routes => [
     AutoRoute(page: SplashRoute.page, initial: true),

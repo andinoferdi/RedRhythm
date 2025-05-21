@@ -3,6 +3,7 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 /// Service class for PocketBase API interactions
 class PocketBaseService {
@@ -10,6 +11,7 @@ class PocketBaseService {
   late final PocketBase _pb;
   final _storage = const FlutterSecureStorage();
   bool _isInitialized = false;
+  bool _shouldRemember = false;
   
   factory PocketBaseService() {
     return _instance;
@@ -24,11 +26,40 @@ class PocketBaseService {
   /// Initialize authentication from secure storage
   Future<void> _initAuth() async {
     try {
+      // Check if we should remember the user
+      final rememberStr = await _storage.read(key: 'remember_me');
+      _shouldRemember = rememberStr == 'true';
+      
+      // If we shouldn't remember, don't load any auth data
+      if (!_shouldRemember) {
+        await _storage.delete(key: 'pb_auth');
+        await _storage.delete(key: 'pb_auth_token');
+        await _storage.delete(key: 'pb_auth_model');
+        return;
+      }
+      
       // Try to load the auth store data from secure storage
       final authJson = await _storage.read(key: 'pb_auth');
-      if (authJson != null) {
+      final authToken = await _storage.read(key: 'pb_auth_token');
+      
+      if (authJson != null && authToken != null) {
         // If we have stored auth data, restore it
-        _pb.authStore.save(authJson, await _getToken());
+        _pb.authStore.save(authToken, authJson);
+        
+        // Try to load the model as well
+        final modelJson = await _storage.read(key: 'pb_auth_model');
+        if (modelJson != null) {
+          try {
+            // Try to parse and set the model
+            final modelData = jsonDecode(modelJson);
+            if (modelData is Map<String, dynamic>) {
+              // We can't directly set the model, we'll rely on auth refresh
+              // to populate the model correctly
+            }
+          } catch (e) {
+            debugPrint('Error parsing auth model: $e');
+          }
+        }
         
         // Verify the token is still valid
         if (_pb.authStore.isValid) {
@@ -38,42 +69,90 @@ class PocketBaseService {
           } catch (e) {
             // Clear the auth store if the refresh failed
             _pb.authStore.clear();
-            await _storage.delete(key: 'pb_auth');
+            await _clearStoredAuth();
           }
         } else {
           // Clear the auth store if the token is invalid
           _pb.authStore.clear();
-          await _storage.delete(key: 'pb_auth');
+          await _clearStoredAuth();
         }
       }
     } catch (e) {
       debugPrint('Error initializing auth: $e');
       // Clear auth on any error
       _pb.authStore.clear();
-      await _storage.delete(key: 'pb_auth');
+      await _clearStoredAuth();
     }
     
     // Subscribe to auth changes to persist the state
     _pb.authStore.onChange.listen((e) async {
-      if (_pb.authStore.isValid) {
-        // Save the auth data to secure storage
-        await _storage.write(
-          key: 'pb_auth',
-          value: _pb.authStore.token,
-        );
-        // Store model separately if needed
-        if (_pb.authStore.model != null) {
-          await _storage.write(
-            key: 'pb_auth_model',
-            value: _pb.authStore.model.toString(),
-          );
-        }
-      } else {
-        // Clear the auth data from secure storage
-        await _storage.delete(key: 'pb_auth');
-        await _storage.delete(key: 'pb_auth_model');
+      if (_pb.authStore.isValid && _shouldRemember) {
+        // Only save if remember me is enabled
+        await _saveAuthToStorage();
+      } else if (!_pb.authStore.isValid) {
+        // Always clear auth data when logging out
+        await _clearStoredAuth();
       }
     });
+  }
+  
+  /// Save auth data to secure storage
+  Future<void> _saveAuthToStorage() async {
+    try {
+      // Save the token
+      await _storage.write(
+        key: 'pb_auth_token',
+        value: _pb.authStore.token,
+      );
+      
+      // Save the auth data
+      await _storage.write(
+        key: 'pb_auth',
+        value: _pb.authStore.token, // Use token as cookie data
+      );
+      
+      // Store model separately if needed
+      if (_pb.authStore.model != null) {
+        try {
+          final recordModel = _pb.authStore.model as RecordModel;
+          await _storage.write(
+            key: 'pb_auth_model',
+            value: jsonEncode(recordModel.data),
+          );
+        } catch (e) {
+          debugPrint('Error encoding auth model: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving auth data: $e');
+    }
+  }
+  
+  /// Clear stored auth data
+  Future<void> _clearStoredAuth() async {
+    await _storage.delete(key: 'pb_auth');
+    await _storage.delete(key: 'pb_auth_token');
+    await _storage.delete(key: 'pb_auth_model');
+  }
+  
+  /// Set remember me preference
+  Future<void> setRememberMe(bool value) async {
+    _shouldRemember = value;
+    await _storage.write(key: 'remember_me', value: value.toString());
+    
+    // If we're turning off remember me, clear stored auth
+    if (!value) {
+      await _clearStoredAuth();
+    } else if (_pb.authStore.isValid) {
+      // If turning on remember me and already logged in, save auth
+      await _saveAuthToStorage();
+    }
+  }
+  
+  /// Get current remember me preference
+  Future<bool> getRememberMe() async {
+    final value = await _storage.read(key: 'remember_me');
+    return value == 'true';
   }
   
   Future<String?> _getToken() async {
@@ -90,7 +169,10 @@ class PocketBaseService {
   PocketBase get pb => _pb;
   
   /// Login with email and password
-  Future<RecordModel> login(String email, String password) async {
+  Future<RecordModel> login(String email, String password, {bool rememberMe = false}) async {
+    // Set remember me preference before logging in
+    await setRememberMe(rememberMe);
+    
     final authData = await _pb.collection('users').authWithPassword(
       email,
       password,

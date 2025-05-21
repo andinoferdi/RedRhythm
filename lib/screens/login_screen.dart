@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/auth_controller.dart';
 import '../features/auth/auth_state.dart';
 import '../routes/app_router.dart';
+import '../services/pocketbase_service.dart';
 
 @RoutePage()
 class LoginScreen extends ConsumerStatefulWidget {
@@ -19,6 +20,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _rememberMe = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load remember me preference from storage
+    _loadRememberMePreference();
+  }
+  
+  Future<void> _loadRememberMePreference() async {
+    final remember = await pocketbaseService.getRememberMe();
+    if (mounted) {
+      setState(() {
+        _rememberMe = remember;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,19 +73,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     
     // Only proceed if form is valid
     if (isValid) {
+      // Perform login with remember me preference
       await ref.read(authControllerProvider.notifier).login(
         _emailController.text.trim(),
         _passwordController.text,
+        _rememberMe,
       );
     } else {
       // Show a general error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fix the errors in the form before proceeding'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackBar('Please fix the errors in the form before proceeding');
     }
+  }
+
+  // Helper method to show error snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(10),
+      ),
+    );
   }
 
   // Handle field submission for the password field
@@ -88,12 +117,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (state.isAuthenticated && state.user != null) {
         context.router.replace(const HomeRoute());
       } else if (state.error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.error!),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showErrorSnackBar(state.error!);
       }
     });
     
@@ -193,12 +217,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Remember me',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 16,
-                        color: Colors.white,
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _rememberMe = !_rememberMe;
+                        });
+                      },
+                      child: const Text(
+                        'Remember me',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],

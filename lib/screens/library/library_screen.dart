@@ -19,21 +19,7 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
+class _LibraryScreenState extends State<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     // Get the bottom padding to account for system navigation bars
@@ -42,31 +28,7 @@ class _LibraryScreenState extends State<LibraryScreen> with SingleTickerProvider
     return ChangeNotifierProvider(
       create: (_) => LibraryController(),
       child: Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          title: const Text(
-            'Your Library',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Color(0xFFE71E27),
-            tabs: const [
-              Tab(text: 'Music'),
-              Tab(text: 'Playlists'),
-              Tab(text: 'Downloads'),
-            ],
-          ),
-        ),
+        backgroundColor: const Color(0xFF121212),
         body: SafeArea(
           bottom: false,
           child: Column(
