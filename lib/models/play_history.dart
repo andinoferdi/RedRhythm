@@ -31,10 +31,36 @@ class PlayHistory {
     RecordModel? albumRecord,
     required String baseUrl,
   }) {
+    // Print debug info 
+    print('DEBUG-MODEL: Creating PlayHistory from record: ${record.id}');
+    print('DEBUG-MODEL: Record data: ${record.data}');
+    
     // Ekstrak data dasar dari record history
     final id = record.id;
-    final userId = record.data['user_id'] as String? ?? '';
-    final songId = record.data['song_id'] as String? ?? '';
+    
+    // Handle berbagai format user_id yang mungkin (string atau relation)
+    String userId = '';
+    final userIdRaw = record.data['user_id'];
+    if (userIdRaw is String) {
+      userId = userIdRaw;
+      print('DEBUG-MODEL: user_id is String: $userId');
+    } else if (userIdRaw is Map) {
+      // Handle case where user_id might be an expanded relation object
+      userId = userIdRaw['id'] as String? ?? '';
+      print('DEBUG-MODEL: user_id is Map, extracted ID: $userId');
+    }
+    
+    // Handle berbagai format song_id
+    String songId = '';
+    final songIdRaw = record.data['song_id'];
+    if (songIdRaw is String) {
+      songId = songIdRaw;
+      print('DEBUG-MODEL: song_id is String: $songId');
+    } else if (songIdRaw is Map) {
+      songId = songIdRaw['id'] as String? ?? '';
+      print('DEBUG-MODEL: song_id is Map, extracted ID: $songId');
+    }
+    
     final playedAtStr = record.data['played_at'] as String? ?? DateTime.now().toIso8601String();
     final playedAt = DateTime.parse(playedAtStr);
     final playDurationSeconds = record.data['play_duration_seconds'] as int?;
@@ -46,16 +72,49 @@ class PlayHistory {
     String? albumCoverUrl;
 
     if (songRecord != null) {
-      songTitle = songRecord.data['title'] as String?;
+      print('DEBUG-MODEL: Song record available: ${songRecord.id}');
+      print('DEBUG-MODEL: Song data: ${songRecord.data}');
+      
+      try {
+        songTitle = songRecord.data['title'] as String?;
+        print('DEBUG-MODEL: Extracted song title: $songTitle');
+      } catch (e) {
+        print('DEBUG-MODEL: Error extracting song title: $e');
+      }
       
       if (artistRecord != null) {
-        artistName = artistRecord.data['name'] as String?;
+        try {
+          artistName = artistRecord.data['name'] as String?;
+          print('DEBUG-MODEL: Extracted artist name: $artistName');
+        } catch (e) {
+          print('DEBUG-MODEL: Error extracting artist name: $e');
+        }
+      } else if (songRecord.data['artist_name'] != null) {
+        // Fallback to artist_name field if directly in song record
+        artistName = songRecord.data['artist_name'] as String?;
+        print('DEBUG-MODEL: Using direct artist_name from song: $artistName');
       }
       
       if (albumRecord != null && albumRecord.data['cover_image'] != null) {
-        final coverImage = albumRecord.data['cover_image'];
-        albumCoverUrl = '$baseUrl/api/files/${albumRecord.collectionId}/${albumRecord.id}/$coverImage';
+        try {
+          final coverImage = albumRecord.data['cover_image'];
+          albumCoverUrl = '$baseUrl/api/files/${albumRecord.collectionId}/${albumRecord.id}/$coverImage';
+          print('DEBUG-MODEL: Album cover URL: $albumCoverUrl');
+        } catch (e) {
+          print('DEBUG-MODEL: Error creating album cover URL: $e');
+        }
+      } else if (songRecord.data['album_cover'] != null) {
+        // Fallback to direct album_cover field
+        try {
+          final coverImage = songRecord.data['album_cover'];
+          albumCoverUrl = '$baseUrl/api/files/${songRecord.collectionId}/${songRecord.id}/$coverImage';
+          print('DEBUG-MODEL: Using direct album cover from song: $albumCoverUrl');
+        } catch (e) {
+          print('DEBUG-MODEL: Error with direct album cover: $e');
+        }
       }
+    } else {
+      print('DEBUG-MODEL: No song record available');
     }
 
     return PlayHistory(
@@ -65,8 +124,8 @@ class PlayHistory {
       playedAt: playedAt,
       playDurationSeconds: playDurationSeconds,
       completed: completed,
-      songTitle: songTitle,
-      artistName: artistName,
+      songTitle: songTitle ?? 'Unknown Song',
+      artistName: artistName ?? 'Unknown Artist',
       albumCoverUrl: albumCoverUrl,
     );
   }

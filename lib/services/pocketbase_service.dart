@@ -143,6 +143,62 @@ class PocketBaseService {
     }
     return _pb;
   }
+
+  Future<void> validateAPIAccess() async {
+    if (!_isInitialized) {
+      print('ERROR: PocketBase not initialized before validateAPIAccess');
+      return;
+    }
+    
+    if (!_pb.authStore.isValid) {
+      print('ERROR: Auth not valid, cannot validate API access');
+      return;
+    }
+    
+    print('===== VALIDATING API ACCESS FOR ALL COLLECTIONS =====');
+    
+    // List of collections to check
+    final collections = [
+      'songs',
+      'albums',
+      'artists',
+      'genres',
+      'user_history',
+    ];
+    
+    for (final collection in collections) {
+      try {
+        print('Testing access to collection: $collection');
+        final result = await _pb.collection(collection).getList(page: 1, perPage: 1);
+        print('✓ SUCCESS: Can access $collection - found ${result.items.length} items');
+      } catch (e) {
+        print('✗ ERROR: Cannot access $collection - $e');
+      }
+    }
+    
+    // Check user auth
+    try {
+      print('Testing auth status...');
+      if (_pb.authStore.isValid) {
+        print('✓ Auth is valid');
+        print('User ID: ${_pb.authStore.model?.id}');
+        
+        // Try refreshing auth
+        try {
+          await _pb.collection('users').authRefresh();
+          print('✓ Auth refresh successful');
+        } catch (e) {
+          print('✗ Auth refresh failed: $e');
+        }
+      } else {
+        print('✗ Auth is NOT valid');
+      }
+    } catch (e) {
+      print('✗ Error checking auth: $e');
+    }
+    
+    print('===== API ACCESS VALIDATION COMPLETE =====');
+  }
 }
 
 // Singleton instance
