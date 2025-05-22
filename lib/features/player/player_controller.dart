@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:just_audio/just_audio.dart' hide PlayerState;
 import '../../models/song.dart';
+import '../../services/pocketbase_service.dart';
 import 'player_state.dart';
 
 /// Provider for player controller
@@ -7,40 +10,192 @@ final playerControllerProvider = StateNotifierProvider<PlayerController, PlayerS
   (ref) => PlayerController(),
 );
 
-
-
 /// Controller for handling music playback
 class PlayerController extends StateNotifier<PlayerState> {
-  PlayerController() : super(PlayerState.initial());
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  Timer? _positionTimer;
+  
+  PlayerController() : super(PlayerState.initial()) {
+    _initAudioPlayer();
+  }
+  
+  @override
+  void dispose() {
+    _positionTimer?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+  
+  void _initAudioPlayer() {
+    // Listen to playback state changes
+    _audioPlayer.playerStateStream.listen((playerState) {
+      final isPlaying = playerState.playing;
+      final processingState = playerState.processingState;
+      
+      if (processingState == ProcessingState.loading || 
+          processingState == ProcessingState.buffering) {
+        state = state.copyWith(isBuffering: true);
+      } else {
+        state = state.copyWith(
+          isPlaying: isPlaying,
+          isBuffering: false,
+        );
+        
+        if (processingState == ProcessingState.completed) {
+          _handleSongCompletion();
+        }
+      }
+    });
+    
+    // Listen to duration changes to update song duration
+    _audioPlayer.durationStream.listen((duration) {
+      if (duration != null && state.currentSong != null) {
+        final updatedSong = _updateSongWithRealDuration(state.currentSong!, duration);
+        state = state.copyWith(currentSong: updatedSong);
+      }
+    });
+    
+    // Start position update timer
+    _positionTimer = Timer.periodic(const Duration(milliseconds: 200), (_) async {
+      if (_audioPlayer.playing) {
+        final position = await _audioPlayer.position;
+        state = state.copyWith(currentPosition: position);
+      }
+    });
+  }
+  
+  /// Update song with actual audio duration
+  Song _updateSongWithRealDuration(Song song, Duration realDuration) {
+    // Only update if the real duration is significantly different
+    if ((song.duration - realDuration).inSeconds.abs() > 5) {
+      print('Memperbarui durasi lagu dari ${song.durationInSeconds}s menjadi ${realDuration.inSeconds}s');
+      return song.copyWith(durationInSeconds: realDuration.inSeconds);
+    }
+    return song;
+  }
+  
+  /// Handle song completion based on repeat mode
+  Future<void> _handleSongCompletion() async {
+    switch (state.repeatMode) {
+      case RepeatMode.off:
+        if (state.currentIndex < state.queue.length - 1) {
+          await skipNext();
+        } else {
+          state = state.copyWith(isPlaying: false, currentPosition: state.currentSong?.duration ?? Duration.zero);
+        }
+        break;
+      case RepeatMode.all:
+        if (state.currentIndex < state.queue.length - 1) {
+          await skipNext();
+        } else if (state.queue.isNotEmpty) {
+          // Loop back to first song
+          await playQueue(state.queue, 0);
+        }
+        break;
+      case RepeatMode.one:
+        // Replay current song
+        final currentSong = state.currentSong;
+        if (currentSong != null) {
+          await playSong(currentSong);
+        }
+        break;
+    }
+  }
   
   /// Play a song
-  void playSong(Song song) {
-    state = state.copyWith(
-      currentSong: song,
-      isPlaying: true,
-      currentPosition: Duration.zero,
-    );
-    // Actual audio playback logic would be here
+  Future<void> playSong(Song song) async {
+    // Get audio URL
+    final audioUrl = _getSongAudioUrl(song);
+    if (audioUrl == null) {
+      // If no audio URL is available, update state but don't play
+      state = state.copyWith(
+        currentSong: song,
+        isPlaying: false,
+      );
+      return;
+    }
+    
+    try {
+      // Stop any current playback
+      await _audioPlayer.stop();
+      
+      // Set state to buffering while we prepare to play
+      state = state.copyWith(
+        currentSong: song,
+        isBuffering: true,
+        currentPosition: Duration.zero,
+      );
+      
+      // Set the audio source and start playback
+      await _audioPlayer.setUrl(audioUrl);
+      await _audioPlayer.play();
+      
+      // Update state
+      state = state.copyWith(
+        isPlaying: true,
+        isBuffering: false,
+      );
+    } catch (e) {
+      // Handle errors
+      print('Error playing song: $e');
+      state = state.copyWith(
+        isBuffering: false,
+        isPlaying: false,
+      );
+    }
+  }
+  
+  /// Get audio URL from a song
+  String? _getSongAudioUrl(Song song) {
+    // File audio contoh untuk fallback jika audio PocketBase gagal
+    final String demoAudioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+    
+    try {
+      final pbService = PocketBaseService();
+      
+      // Log untuk debugging
+      print('Song ID: ${song.id}');
+      String? url;
+      
+      // Coba gunakan nama file audio dari model jika tersedia
+      if (song.audioFileName != null && song.audioFileName!.isNotEmpty) {
+        url = '${pbService.pb.baseUrl}/api/files/songs/${song.id}/${song.audioFileName}';
+        print('Menggunakan nama file dari model: ${song.audioFileName}');
+      } else {
+        // Gunakan nama file default jika tidak tersedia di model
+        url = '${pbService.pb.baseUrl}/api/files/songs/${song.id}/dream_on_no3ma56xq7.mp3';
+        print('Menggunakan nama file default: dream_on_no3ma56xq7.mp3');
+      }
+      
+      print('URL audio final: $url');
+      return url;
+    } catch (e) {
+      print('Error getting song audio URL: $e, menggunakan file audio demo');
+      return demoAudioUrl; // Fallback ke demo jika terjadi error
+    }
   }
   
   /// Pause playback
-  void pause() {
+  Future<void> pause() async {
     if (state.isPlaying) {
+      await _audioPlayer.pause();
       state = state.copyWith(isPlaying: false);
-      // Actual audio pause logic would be here
     }
   }
   
   /// Resume playback
-  void resume() {
+  Future<void> resume() async {
     if (!state.isPlaying && state.currentSong != null) {
-      state = state.copyWith(isPlaying: true);
-      // Actual audio resume logic would be here
+      if (_audioPlayer.playing) {
+        state = state.copyWith(isPlaying: true);
+      } else {
+        await _audioPlayer.play();
+      }
     }
   }
   
   /// Skip to next song
-  void skipNext() {
+  Future<void> skipNext() async {
     if (state.queue.isEmpty || state.currentIndex >= state.queue.length - 1) {
       return;
     }
@@ -49,16 +204,20 @@ class PlayerController extends StateNotifier<PlayerState> {
     final nextSong = state.queue[nextIndex];
     
     state = state.copyWith(
-      currentSong: nextSong,
-      isPlaying: true,
-      currentPosition: Duration.zero,
       currentIndex: nextIndex,
     );
-    // Actual audio playback logic would be here
+    
+    await playSong(nextSong);
   }
   
   /// Skip to previous song
-  void skipPrevious() {
+  Future<void> skipPrevious() async {
+    // If we're more than 3 seconds into the song, restart it instead
+    if (state.currentPosition.inSeconds > 3) {
+      await seekTo(Duration.zero);
+      return;
+    }
+    
     if (state.queue.isEmpty || state.currentIndex <= 0) {
       return;
     }
@@ -67,22 +226,20 @@ class PlayerController extends StateNotifier<PlayerState> {
     final prevSong = state.queue[prevIndex];
     
     state = state.copyWith(
-      currentSong: prevSong,
-      isPlaying: true,
-      currentPosition: Duration.zero,
       currentIndex: prevIndex,
     );
-    // Actual audio playback logic would be here
+    
+    await playSong(prevSong);
   }
   
   /// Seek to a position
-  void seekTo(Duration position) {
+  Future<void> seekTo(Duration position) async {
+    await _audioPlayer.seek(position);
     state = state.copyWith(currentPosition: position);
-    // Actual seek logic would be here
   }
   
   /// Set queue and play
-  void playQueue(List<Song> songs, int startIndex) {
+  Future<void> playQueue(List<Song> songs, int startIndex) async {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
@@ -90,11 +247,9 @@ class PlayerController extends StateNotifier<PlayerState> {
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
-      currentSong: songs[startIndex],
-      isPlaying: true,
-      currentPosition: Duration.zero,
     );
-    // Actual audio playback logic would be here
+    
+    await playSong(songs[startIndex]);
   }
   
   /// Toggle shuffle mode
@@ -155,6 +310,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     } else if (index == state.currentIndex) {
       // Stop playback if current song is removed
       if (newQueue.isEmpty) {
+        _audioPlayer.stop();
         state = state.copyWith(
           queue: newQueue,
           currentSong: null,
@@ -168,12 +324,21 @@ class PlayerController extends StateNotifier<PlayerState> {
       if (newIndex >= newQueue.length) {
         newIndex = newQueue.length - 1;
       }
+      
+      // Prepare to play the new song
+      final newSong = newQueue[newIndex];
+      state = state.copyWith(
+        queue: newQueue,
+        currentIndex: newIndex,
+        currentSong: newSong,
+      );
+      playSong(newSong);
+      return;
     }
     
     state = state.copyWith(
       queue: newQueue,
       currentIndex: newIndex,
-      currentSong: newIndex >= 0 && newIndex < newQueue.length ? newQueue[newIndex] : state.currentSong,
     );
   }
 } 

@@ -19,6 +19,7 @@ dependencies:
   json_annotation: ^4.8.1
   path_provider: ^2.1.2
   auto_route: ^7.9.0
+  just_audio: ^0.9.36
 dev_dependencies:
   flutter_test:
     sdk: flutter

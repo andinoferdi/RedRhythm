@@ -1,5 +1,6 @@
 import 'package:pocketbase/pocketbase.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../services/pocketbase_service.dart';
 
 part 'song.g.dart';
 part 'song.freezed.dart';
@@ -15,6 +16,8 @@ class Song with _$Song {
     required String albumName,
     required List<String> lyrics,
     String? playlistId,
+    String? audioFileUrl,
+    String? audioFileName,
   }) = _Song;
 
   factory Song.fromJson(Map<String, dynamic> json) => _$SongFromJson(json);
@@ -31,6 +34,32 @@ class Song with _$Song {
     final albumArtUrl = albumRecord?.data['cover_url'] as String? ?? '';
     final lyrics = (record.data['lyrics'] as String?)?.split('\n') ?? <String>[];
     
+    // Debug: cetak semua fields yang tersedia
+    print('Song record data: ${record.data}');
+    print('Song collection: ${record.collectionId}, Song ID: ${record.id}');
+    
+    // Get audio file information
+    String? audioFileUrl;
+    String? audioFileName;
+    
+    // Nama field audio di PocketBase
+    const String audioField = 'audio_file';
+    
+    // Cek apakah field audio_file ada dan berisi nilai
+    if (record.data.containsKey(audioField) && record.data[audioField] != null) {
+      final audioFileValue = record.data[audioField];
+      print('Nilai field audio_file: $audioFileValue');
+      
+      // PocketBase menyimpan nama file di field, ambil nama file jika bisa
+      if (audioFileValue is String && audioFileValue.isNotEmpty) {
+        // Ini adalah nama file sebenarnya
+        audioFileName = audioFileValue;
+        print('Nama file audio: $audioFileName');
+      }
+    } else {
+      print('Field $audioField tidak ditemukan atau kosong pada song ID: ${record.id}');
+    }
+    
     return Song(
       id: record.id,
       title: record.data['title'] as String? ?? 'Unknown Title',
@@ -40,6 +69,8 @@ class Song with _$Song {
       albumName: albumName,
       lyrics: lyrics,
       playlistId: record.data['playlist_id'] as String?,
+      audioFileName: audioFileName,
+      audioFileUrl: null, // URL akan dibuat di PlayerController
     );
   }
 }

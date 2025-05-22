@@ -28,6 +28,14 @@ class MusicPlayerScreen extends ConsumerWidget {
       );
     }
 
+    // If a song was provided but not yet played, start playback
+    if (song != null && (playerState.currentSong == null || playerState.currentSong?.id != song?.id)) {
+      // Use a microtask to avoid state changes during build
+      Future.microtask(() {
+        ref.read(playerControllerProvider.notifier).playSong(song!);
+      });
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -70,6 +78,17 @@ class MusicPlayerScreen extends ConsumerWidget {
                   fit: BoxFit.cover,
                 ),
               ),
+              // Show loading indicator when buffering
+              child: playerState.isBuffering 
+                ? Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFFE71E27),
+                      ),
+                    ),
+                  )
+                : null,
             ),
             
             // Song info
@@ -167,11 +186,18 @@ class MusicPlayerScreen extends ConsumerWidget {
                       ),
                       child: IconButton(
                         icon: Icon(
-                          playerState.isPlaying ? Icons.pause : Icons.play_arrow,
+                          playerState.isBuffering
+                              ? Icons.hourglass_empty
+                              : playerState.isPlaying ? Icons.pause : Icons.play_arrow,
                           color: Colors.white,
                           size: 36,
                         ),
                         onPressed: () {
+                          if (playerState.isBuffering) {
+                            // Do nothing while buffering
+                            return;
+                          }
+                          
                           if (playerState.isPlaying) {
                             ref.read(playerControllerProvider.notifier).pause();
                           } else {

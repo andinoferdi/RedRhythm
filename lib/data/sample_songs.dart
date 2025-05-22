@@ -1,51 +1,97 @@
 import '../models/song.dart';
 
+/// Sample songs data for testing and UI development
 class SampleSongs {
+  /// Sample lofi playlist songs
   static final List<Song> lofiPlaylist = [
     Song(
-      id: '1',
-      title: 'Midnight Thoughts',
-      artist: 'ChillHop Music',
-      albumName: 'Lofi Study Session',
-      albumArtUrl: 'https://picsum.photos/id/1/400',
-      durationInSeconds: 204, // 3:24
-      lyrics: [],
+      id: 'lofi1',
+      title: 'Midnight Coffee',
+      artist: 'ChillBeats',
+      albumArtUrl: 'https://picsum.photos/id/1025/300/300',
+      durationInSeconds: 240,
+      albumName: 'Lofi Study Beats',
+      lyrics: ['Instrumental music', 'No lyrics'],
     ),
     Song(
-      id: '2',
-      title: 'Coffee Shop Ambience',
-      artist: 'Ambient Waves',
-      albumName: 'Urban Background',
-      albumArtUrl: 'https://picsum.photos/id/2/400',
-      durationInSeconds: 175, // 2:55
-      lyrics: [],
+      id: 'lofi2',
+      title: 'Rainy Window',
+      artist: 'LofiLab',
+      albumArtUrl: 'https://picsum.photos/id/1015/300/300',
+      durationInSeconds: 195,
+      albumName: 'Calm Rain',
+      lyrics: ['Instrumental music', 'No lyrics'],
     ),
     Song(
-      id: '3',
-      title: 'Rainy Day',
-      artist: 'Lo-Fi Beats',
-      albumName: 'Chill Mix Vol. 2',
-      albumArtUrl: 'https://picsum.photos/id/3/400',
-      durationInSeconds: 252, // 4:12
-      lyrics: [],
+      id: 'lofi3',
+      title: 'City Lights',
+      artist: 'Sleepy Tunes',
+      albumArtUrl: 'https://picsum.photos/id/1035/300/300',
+      durationInSeconds: 275,
+      albumName: 'Urban Lofi',
+      lyrics: ['Instrumental music', 'No lyrics'],
     ),
     Song(
-      id: '4',
-      title: 'Urban Melancholy',
-      artist: 'Dreamy Sound',
-      albumName: 'Cityscape Echoes',
-      albumArtUrl: 'https://picsum.photos/id/4/400',
-      durationInSeconds: 225, // 3:45
-      lyrics: [],
+      id: 'lofi4',
+      title: 'Sunset Dreams',
+      artist: 'ChillBeats',
+      albumArtUrl: 'https://picsum.photos/id/1019/300/300',
+      durationInSeconds: 210,
+      albumName: 'Evening Vibes',
+      lyrics: ['Instrumental music', 'No lyrics'],
     ),
     Song(
-      id: '5',
-      title: 'Sunset Vibes',
-      artist: 'Mellow Tunes',
-      albumName: 'Evening Collection',
-      albumArtUrl: 'https://picsum.photos/id/5/400',
-      durationInSeconds: 198, // 3:18
-      lyrics: [],
+      id: 'lofi5',
+      title: 'Morning Mist',
+      artist: 'RelaxBeats',
+      albumArtUrl: 'https://picsum.photos/id/1039/300/300',
+      durationInSeconds: 228,
+      albumName: 'Morning Coffee',
+      lyrics: ['Instrumental music', 'No lyrics'],
+    ),
+  ];
+
+  /// Sample hip hop playlist songs
+  static final List<Song> hipHopPlaylist = [
+    Song(
+      id: 'hh1',
+      title: 'City Groove',
+      artist: 'Urban Flow',
+      albumArtUrl: 'https://picsum.photos/id/1062/300/300',
+      durationInSeconds: 235,
+      albumName: 'Street Life',
+      lyrics: ['Verse 1', 'Hook', 'Verse 2', 'Hook', 'Verse 3', 'Outro'],
+    ),
+    Song(
+      id: 'hh2',
+      title: 'Midnight Run',
+      artist: 'Beat Master',
+      albumArtUrl: 'https://picsum.photos/id/1079/300/300',
+      durationInSeconds: 250,
+      albumName: 'Night Rhythms',
+      lyrics: ['Intro', 'Verse 1', 'Hook', 'Verse 2', 'Hook', 'Outro'],
+    ),
+  ];
+
+  /// Sample pop playlist songs
+  static final List<Song> popPlaylist = [
+    Song(
+      id: 'pop1',
+      title: 'Summer Days',
+      artist: 'Melody Makers',
+      albumArtUrl: 'https://picsum.photos/id/1080/300/300',
+      durationInSeconds: 215,
+      albumName: 'Sunny Vibes',
+      lyrics: ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Pre-Chorus', 'Chorus', 'Bridge', 'Chorus'],
+    ),
+    Song(
+      id: 'pop2',
+      title: 'Dance All Night',
+      artist: 'Party People',
+      albumArtUrl: 'https://picsum.photos/id/1071/300/300',
+      durationInSeconds: 227,
+      albumName: 'Weekend Anthems',
+      lyrics: ['Intro', 'Verse 1', 'Chorus', 'Verse 2', 'Chorus', 'Bridge', 'Chorus', 'Outro'],
     ),
   ];
 } 

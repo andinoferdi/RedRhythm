@@ -16,6 +16,8 @@ _$SongImpl _$$SongImplFromJson(Map<String, dynamic> json) => _$SongImpl(
       lyrics:
           (json['lyrics'] as List<dynamic>).map((e) => e as String).toList(),
       playlistId: json['playlistId'] as String?,
+      audioFileUrl: json['audioFileUrl'] as String?,
+      audioFileName: json['audioFileName'] as String?,
     );
 
 Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
@@ -28,4 +30,6 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'albumName': instance.albumName,
       'lyrics': instance.lyrics,
       'playlistId': instance.playlistId,
+      'audioFileUrl': instance.audioFileUrl,
+      'audioFileName': instance.audioFileName,
     };

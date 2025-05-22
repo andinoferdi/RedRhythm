@@ -28,6 +28,8 @@ mixin _$Song {
   String get albumName => throw _privateConstructorUsedError;
   List<String> get lyrics => throw _privateConstructorUsedError;
   String? get playlistId => throw _privateConstructorUsedError;
+  String? get audioFileUrl => throw _privateConstructorUsedError;
+  String? get audioFileName => throw _privateConstructorUsedError;
 
   /// Serializes this Song to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -51,7 +53,9 @@ abstract class $SongCopyWith<$Res> {
       int durationInSeconds,
       String albumName,
       List<String> lyrics,
-      String? playlistId});
+      String? playlistId,
+      String? audioFileUrl,
+      String? audioFileName});
 }
 
 /// @nodoc
@@ -77,6 +81,8 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
     Object? albumName = null,
     Object? lyrics = null,
     Object? playlistId = freezed,
+    Object? audioFileUrl = freezed,
+    Object? audioFileName = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -111,6 +117,14 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
           ? _value.playlistId
           : playlistId // ignore: cast_nullable_to_non_nullable
               as String?,
+      audioFileUrl: freezed == audioFileUrl
+          ? _value.audioFileUrl
+          : audioFileUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      audioFileName: freezed == audioFileName
+          ? _value.audioFileName
+          : audioFileName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -130,7 +144,9 @@ abstract class _$$SongImplCopyWith<$Res> implements $SongCopyWith<$Res> {
       int durationInSeconds,
       String albumName,
       List<String> lyrics,
-      String? playlistId});
+      String? playlistId,
+      String? audioFileUrl,
+      String? audioFileName});
 }
 
 /// @nodoc
@@ -153,6 +169,8 @@ class __$$SongImplCopyWithImpl<$Res>
     Object? albumName = null,
     Object? lyrics = null,
     Object? playlistId = freezed,
+    Object? audioFileUrl = freezed,
+    Object? audioFileName = freezed,
   }) {
     return _then(_$SongImpl(
       id: null == id
@@ -187,6 +205,14 @@ class __$$SongImplCopyWithImpl<$Res>
           ? _value.playlistId
           : playlistId // ignore: cast_nullable_to_non_nullable
               as String?,
+      audioFileUrl: freezed == audioFileUrl
+          ? _value.audioFileUrl
+          : audioFileUrl // ignore: cast_nullable_to_non_nullable
+              as String?,
+      audioFileName: freezed == audioFileName
+          ? _value.audioFileName
+          : audioFileName // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -202,7 +228,9 @@ class _$SongImpl implements _Song {
       required this.durationInSeconds,
       required this.albumName,
       required final List<String> lyrics,
-      this.playlistId})
+      this.playlistId,
+      this.audioFileUrl,
+      this.audioFileName})
       : _lyrics = lyrics;
 
   factory _$SongImpl.fromJson(Map<String, dynamic> json) =>
@@ -230,10 +258,14 @@ class _$SongImpl implements _Song {
 
   @override
   final String? playlistId;
+  @override
+  final String? audioFileUrl;
+  @override
+  final String? audioFileName;
 
   @override
   String toString() {
-    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId)';
+    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName)';
   }
 
   @override
@@ -252,7 +284,11 @@ class _$SongImpl implements _Song {
                 other.albumName == albumName) &&
             const DeepCollectionEquality().equals(other._lyrics, _lyrics) &&
             (identical(other.playlistId, playlistId) ||
-                other.playlistId == playlistId));
+                other.playlistId == playlistId) &&
+            (identical(other.audioFileUrl, audioFileUrl) ||
+                other.audioFileUrl == audioFileUrl) &&
+            (identical(other.audioFileName, audioFileName) ||
+                other.audioFileName == audioFileName));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -266,7 +302,9 @@ class _$SongImpl implements _Song {
       durationInSeconds,
       albumName,
       const DeepCollectionEquality().hash(_lyrics),
-      playlistId);
+      playlistId,
+      audioFileUrl,
+      audioFileName);
 
   /// Create a copy of Song
   /// with the given fields replaced by the non-null parameter values.
@@ -293,7 +331,9 @@ abstract class _Song implements Song {
       required final int durationInSeconds,
       required final String albumName,
       required final List<String> lyrics,
-      final String? playlistId}) = _$SongImpl;
+      final String? playlistId,
+      final String? audioFileUrl,
+      final String? audioFileName}) = _$SongImpl;
 
   factory _Song.fromJson(Map<String, dynamic> json) = _$SongImpl.fromJson;
 
@@ -313,6 +353,10 @@ abstract class _Song implements Song {
   List<String> get lyrics;
   @override
   String? get playlistId;
+  @override
+  String? get audioFileUrl;
+  @override
+  String? get audioFileName;
 
   /// Create a copy of Song
   /// with the given fields replaced by the non-null parameter values.
