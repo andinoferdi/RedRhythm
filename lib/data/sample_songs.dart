@@ -12,6 +12,7 @@ class SampleSongs {
       durationInSeconds: 240,
       albumName: 'Lofi Study Beats',
       lyrics: ['Instrumental music', 'No lyrics'],
+      audioFileName: 'midnight_coffee.mp3',
     ),
     Song(
       id: 'lofi2',
@@ -21,6 +22,7 @@ class SampleSongs {
       durationInSeconds: 195,
       albumName: 'Calm Rain',
       lyrics: ['Instrumental music', 'No lyrics'],
+      audioFileName: 'rainy_window.mp3',
     ),
     Song(
       id: 'lofi3',
@@ -30,6 +32,7 @@ class SampleSongs {
       durationInSeconds: 275,
       albumName: 'Urban Lofi',
       lyrics: ['Instrumental music', 'No lyrics'],
+      audioFileName: 'city_lights.mp3',
     ),
     Song(
       id: 'lofi4',
@@ -39,6 +42,7 @@ class SampleSongs {
       durationInSeconds: 210,
       albumName: 'Evening Vibes',
       lyrics: ['Instrumental music', 'No lyrics'],
+      audioFileName: 'sunset_dreams.mp3',
     ),
     Song(
       id: 'lofi5',
@@ -48,6 +52,7 @@ class SampleSongs {
       durationInSeconds: 228,
       albumName: 'Morning Coffee',
       lyrics: ['Instrumental music', 'No lyrics'],
+      audioFileName: 'morning_mist.mp3',
     ),
   ];
 
@@ -61,6 +66,7 @@ class SampleSongs {
       durationInSeconds: 235,
       albumName: 'Street Life',
       lyrics: ['Verse 1', 'Hook', 'Verse 2', 'Hook', 'Verse 3', 'Outro'],
+      audioFileName: 'city_groove.mp3',
     ),
     Song(
       id: 'hh2',
@@ -70,6 +76,7 @@ class SampleSongs {
       durationInSeconds: 250,
       albumName: 'Night Rhythms',
       lyrics: ['Intro', 'Verse 1', 'Hook', 'Verse 2', 'Hook', 'Outro'],
+      audioFileName: 'midnight_run.mp3',
     ),
   ];
 
@@ -83,6 +90,7 @@ class SampleSongs {
       durationInSeconds: 215,
       albumName: 'Sunny Vibes',
       lyrics: ['Verse 1', 'Pre-Chorus', 'Chorus', 'Verse 2', 'Pre-Chorus', 'Chorus', 'Bridge', 'Chorus'],
+      audioFileName: 'summer_days.mp3',
     ),
     Song(
       id: 'pop2',
@@ -92,6 +100,7 @@ class SampleSongs {
       durationInSeconds: 227,
       albumName: 'Weekend Anthems',
       lyrics: ['Intro', 'Verse 1', 'Chorus', 'Verse 2', 'Chorus', 'Bridge', 'Chorus', 'Outro'],
+      audioFileName: 'dance_all_night.mp3',
     ),
   ];
 } 
