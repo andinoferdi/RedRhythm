@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/user_repository.dart';
 import '../routes/app_router.dart';
 import 'package:get_it/get_it.dart';
-import 'package:pocketbase/pocketbase.dart';
 
 @RoutePage()
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -28,10 +27,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   // 2. Input password baru (jika email valid)
   // 3. Sukses
   int _currentStep = 1;
-  
-  // Untuk menyimpan ID user saat email valid
-  String? _userId;
-  RecordModel? _userRecord;
 
   @override
   void dispose() {
@@ -84,7 +79,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     
     // Limit the length of the message for better display
     if (displayMessage.length > 100) {
-      displayMessage = displayMessage.substring(0, 100) + '...';
+      displayMessage = '${displayMessage.substring(0, 100)}...';
     }
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -174,21 +169,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       });
 
       try {
-        final email = _emailController.text.trim();
-        print("Langsung menuju reset password untuk: $email");
+        _emailController.text.trim();
         
         // Skip pengecekan email dan asumsikan email valid
         // (PocketBase akan menolak reset jika email tidak ada)
         setState(() {
           _isLoading = false;
           _currentStep = 2;
-          // Tidak perlu userId karena kita akan menggunakan metode lain
-          _userId = "dummy_id"; // Hanya placeholder
         });
         
         _showSuccessSnackBar('Silakan masukkan password baru Anda.');
       } catch (e) {
-        print("Error: $e");
         setState(() {
           _isLoading = false;
           _errorMessage = 'Error: ${e.toString()}';
@@ -240,7 +231,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           _showErrorSnackBar(_errorMessage!);
         }
       } catch (e) {
-        print("Error saat reset password: $e");
         setState(() {
           _isLoading = false;
           _errorMessage = 'Error: ${e.toString()}';
