@@ -82,7 +82,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     'Your Library',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 25,
                       fontWeight: FontWeight.bold,
                     ),
                     maxLines: 1,
@@ -104,7 +104,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 }
 
 class _TabContentView extends StatelessWidget {
-  const _TabContentView({Key? key}) : super(key: key);
+  const _TabContentView();
 
   @override
   Widget build(BuildContext context) {

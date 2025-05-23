@@ -162,7 +162,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildHeader(BuildContext context) {
     final authState = ref.watch(authControllerProvider);
     final user = authState.user;
-    final userName = user?.getName() ?? 'User';
     
     // Get the PocketBase URL
     final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
@@ -188,27 +187,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     mainAxisSize: MainAxisSize.min, // Keep this to prevent overflow
                     mainAxisAlignment: MainAxisAlignment.center, // Center text vertically
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Welcome back !',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18, // Slightly reduced font size
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        userName,
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 14, // Slightly reduced font size
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
                   ),
                 ),
               ],
