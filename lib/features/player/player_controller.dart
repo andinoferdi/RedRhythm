@@ -341,4 +341,22 @@ class PlayerController extends StateNotifier<PlayerState> {
       currentIndex: newIndex,
     );
   }
+
+  void pauseSong() {
+    if (state.isPlaying) {
+      state = state.copyWith(isPlaying: false);
+    }
+  }
+
+  void resumeSong() {
+    if (!state.isPlaying && state.currentSong != null) {
+      state = state.copyWith(isPlaying: true);
+    }
+  }
+
+  void skipToNext() {
+    // Implement next song logic here
+    // For now, just pause the current song
+    pauseSong();
+  }
 } 

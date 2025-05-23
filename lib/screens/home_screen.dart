@@ -14,6 +14,7 @@ import '../utils/image_helpers.dart';
 import '../widgets/user_avatar.dart';
 import '../models/song.dart';
 import '../features/player/player_controller.dart';
+import '../widgets/mini_player.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -132,24 +133,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         // We'll handle bottom padding ourselves
         bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              _buildHeader(context),
-              const SizedBox(height: 16),
-              _buildContinueListening(context),
-              const SizedBox(height: 30),
-              _buildYourTopMixes(context),
-              const SizedBox(height: 30),
-              _buildRecentListening(context),
-              // Add a bottom spacing to account for the navigation bar
-              SizedBox(
-                  height: 70 + bottomPadding), // Fixed to a more reasonable size
-            ],
-          ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16),
+                    _buildHeader(context),
+                    const SizedBox(height: 16),
+                    _buildContinueListening(context),
+                    const SizedBox(height: 30),
+                    _buildYourTopMixes(context),
+                    const SizedBox(height: 30),
+                    _buildRecentListening(context),
+                    // Add a bottom spacing to account for the navigation bar and mini player
+                    SizedBox(height: 70 + bottomPadding + 64), // Added 64 for mini player
+                  ],
+                ),
+              ),
+            ),
+            // Mini Player
+            const MiniPlayer(),
+          ],
         ),
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -656,7 +664,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }) {
     return GestureDetector(
       onTap: () {
-        _playSong(context, ref, songId, title, subtitle, imageUrl);
+        _playSongAndNavigate(context, ref, songId, title, subtitle, imageUrl);
       },
       child: Row(
         children: [
@@ -707,7 +715,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: Colors.white,
             ),
             onPressed: () {
-              _playSong(context, ref, songId, title, subtitle, imageUrl);
+              _playSongOnly(ref, songId, title, subtitle, imageUrl);
             },
           ),
         ],
@@ -715,8 +723,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
   
-  // Method to play a song and navigate to player screen
-  void _playSong(
+  // Method to only play a song without navigation
+  void _playSongOnly(
+    WidgetRef ref,
+    String songId,
+    String title,
+    String subtitle,
+    String albumArtUrl,
+  ) {
+    final artist = subtitle.contains('•') 
+        ? subtitle.split('•').last.trim() 
+        : 'Unknown Artist';
+    
+    final song = Song(
+      id: songId,
+      title: title,
+      artist: artist,
+      albumArtUrl: albumArtUrl,
+      durationInSeconds: 180,
+      albumName: 'Unknown Album',
+      lyrics: [],
+    );
+    
+    ref.read(playerControllerProvider.notifier).playSong(song);
+  }
+
+  // Method to play song and navigate to player screen
+  void _playSongAndNavigate(
     BuildContext context,
     WidgetRef ref,
     String songId,
@@ -724,26 +757,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String subtitle,
     String albumArtUrl,
   ) {
-    // Extract artist name from subtitle (format: "Song • Artist Name")
     final artist = subtitle.contains('•') 
         ? subtitle.split('•').last.trim() 
         : 'Unknown Artist';
     
-    // Create song model from the available information
     final song = Song(
       id: songId,
       title: title,
       artist: artist,
       albumArtUrl: albumArtUrl,
-      durationInSeconds: 180, // Default 3 minutes if we don't know duration
+      durationInSeconds: 180,
       albumName: 'Unknown Album',
       lyrics: [],
     );
     
-    // Play the song and navigate to player screen
     ref.read(playerControllerProvider.notifier).playSong(song);
-    
-    // Navigate to the music player screen
     context.router.push(MusicPlayerRoute(song: song));
   }
 
