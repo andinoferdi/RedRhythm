@@ -223,14 +223,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           _rememberMe = !_rememberMe;
                         });
                       },
-                      child: const Text(
-                        'Remember me',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          color: Colors.white,
-                        ),
+                      child:                     const Text(
+                      'Stay logged in',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        color: Colors.white,
                       ),
+                    ),
                     ),
                   ],
                 ),

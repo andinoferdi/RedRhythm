@@ -28,12 +28,15 @@ class PocketBaseService {
   /// Initialize authentication from secure storage
   Future<void> _initAuth() async {
     try {
+      print('PocketBase: Initializing auth from storage...');
       // Check if we should remember the user
       final rememberStr = await _storage.read(key: 'remember_me');
       _shouldRemember = rememberStr == 'true';
+      print('PocketBase: Remember me preference: $_shouldRemember');
       
       // If we shouldn't remember, don't load any auth data
       if (!_shouldRemember) {
+        print('PocketBase: Remember me disabled, clearing stored auth');
         await _storage.delete(key: 'pb_auth');
         await _storage.delete(key: 'pb_auth_token');
         await _storage.delete(key: 'pb_auth_model');
@@ -43,44 +46,52 @@ class PocketBaseService {
       // Try to load the auth store data from secure storage
       final authJson = await _storage.read(key: 'pb_auth');
       final authToken = await _storage.read(key: 'pb_auth_token');
+      print('PocketBase: Stored auth token found: ${authToken != null}');
       
       if (authJson != null && authToken != null) {
+        print('PocketBase: Restoring auth from storage...');
         // If we have stored auth data, restore it
-        _pb.authStore.save(authToken, authJson);
-        
-        // Try to load the model as well
-        final modelJson = await _storage.read(key: 'pb_auth_model');
-        if (modelJson != null) {
-          try {
-            // Try to parse and set the model
-            final modelData = jsonDecode(modelJson);
-            if (modelData is Map<String, dynamic>) {
-              // We can't directly set the model, we'll rely on auth refresh
-              // to populate the model correctly
-            }
-          } catch (e) {
-            debugPrint('Error parsing auth model: $e');
+        try {
+          // Try to parse the stored model data
+          final modelJson = await _storage.read(key: 'pb_auth_model');
+          dynamic modelData;
+          if (modelJson != null) {
+            modelData = jsonDecode(modelJson);
           }
+          
+          _pb.authStore.save(authToken, modelData);
+          print('PocketBase: Auth restored successfully - Token: ${authToken.substring(0, 10)}...');
+        } catch (e) {
+          print('PocketBase: Error restoring auth: $e');
+          // If restore fails, clear the stored data
+          await _clearStoredAuth();
+          return;
         }
         
         // Verify the token is still valid
         if (_pb.authStore.isValid) {
+          print('PocketBase: Auth token appears valid, attempting refresh...');
           // Try to refresh the auth if possible
           try {
             await _pb.collection('users').authRefresh();
+            print('PocketBase: Auth token refreshed successfully');
           } catch (e) {
+            print('PocketBase: Auth refresh failed: $e');
             // Clear the auth store if the refresh failed
             _pb.authStore.clear();
             await _clearStoredAuth();
           }
         } else {
+          print('PocketBase: Auth token invalid, clearing stored auth');
           // Clear the auth store if the token is invalid
           _pb.authStore.clear();
           await _clearStoredAuth();
         }
+      } else {
+        print('PocketBase: No stored auth data found');
       }
     } catch (e) {
-      debugPrint('Error initializing auth: $e');
+      print('PocketBase: Error initializing auth: $e');
       // Clear auth on any error
       _pb.authStore.clear();
       await _clearStoredAuth();
@@ -89,9 +100,11 @@ class PocketBaseService {
     // Subscribe to auth changes to persist the state
     _pb.authStore.onChange.listen((e) async {
       if (_pb.authStore.isValid && _shouldRemember) {
+        print('PocketBase: Auth changed, saving to storage...');
         // Only save if remember me is enabled
         await _saveAuthToStorage();
       } else if (!_pb.authStore.isValid) {
+        print('PocketBase: Auth cleared, removing from storage...');
         // Always clear auth data when logging out
         await _clearStoredAuth();
       }
@@ -101,32 +114,44 @@ class PocketBaseService {
   /// Save auth data to secure storage
   Future<void> _saveAuthToStorage() async {
     try {
+      print('PocketBase: Saving auth data to secure storage...');
+      
+      if (_pb.authStore.token.isEmpty) {
+        print('PocketBase: No token to save');
+        return;
+      }
+      
       // Save the token
       await _storage.write(
         key: 'pb_auth_token',
         value: _pb.authStore.token,
       );
       
-      // Save the auth data
+      // Save the auth data (using token for now)
       await _storage.write(
         key: 'pb_auth',
-        value: _pb.authStore.token, // Use token as cookie data
+        value: _pb.authStore.token,
       );
       
-      // Store model separately if needed
+      // Store model data if available
       if (_pb.authStore.model != null) {
         try {
           final recordModel = _pb.authStore.model as RecordModel;
           await _storage.write(
             key: 'pb_auth_model',
-            value: jsonEncode(recordModel.data),
+            value: jsonEncode(recordModel.toJson()),
           );
+          print('PocketBase: Auth data saved successfully - Token: ${_pb.authStore.token.substring(0, 10)}...');
         } catch (e) {
-          debugPrint('Error encoding auth model: $e');
+          print('PocketBase: Error encoding auth model: $e');
+          // Save without model if encoding fails
+          print('PocketBase: Auth token saved without model data');
         }
+      } else {
+        print('PocketBase: Auth token saved without model data');
       }
     } catch (e) {
-      debugPrint('Error saving auth data: $e');
+      print('PocketBase: Error saving auth data: $e');
     }
   }
   
@@ -199,17 +224,32 @@ class PocketBaseService {
   /// Logout the current user
   Future<void> logout() async {
     _pb.authStore.clear();
+    await _clearStoredAuth();
+    _shouldRemember = false;
   }
 
   Future<void> initialize() async {
     if (!_isInitialized) {
       final url = await determinePocketBaseUrl();
-      // Update the base URL instead of creating a new instance
-      _pb.authStore.clear(); // Clear auth before changing URL
+      // Store current auth state before changing URL
+      final wasAuthenticated = _pb.authStore.isValid;
+      final currentToken = _pb.authStore.token;
+      final currentModel = _pb.authStore.model;
+      
+      // Update the base URL
       _pb.baseUrl = url;
+      
+      // Restore auth state if it was valid
+      if (wasAuthenticated && currentToken.isNotEmpty) {
+        print('PocketBase: Restoring auth state after URL change');
+        _pb.authStore.save(currentToken, currentModel);
+      }
+      
       _isInitialized = true;
-      // Re-initialize auth after changing the URL
-      await _initAuth();
+      // Only initialize auth if we don't have valid auth already
+      if (!_pb.authStore.isValid) {
+        await _initAuth();
+      }
     }
   }
 

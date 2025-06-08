@@ -95,7 +95,14 @@ class UserRepository {
   
   /// Logout the current user
   Future<void> logout() async {
-    _pb.authStore.clear();
+    try {
+      // Clear the auth store
+      _pb.authStore.clear();
+    } catch (e) {
+      // Always clear auth even if server logout fails
+      _pb.authStore.clear();
+      throw Exception('Logout failed: $e');
+    }
   }
   
   /// Check if user is authenticated

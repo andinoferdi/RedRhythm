@@ -3,6 +3,11 @@ allprojects {
         google()
         mavenCentral()
     }
+    
+    // Global Java compile options to suppress warnings
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ["-Xlint:-options", "-Xlint:-deprecation"]
+    }
 }
 
 rootProject.buildDir = "../build"
