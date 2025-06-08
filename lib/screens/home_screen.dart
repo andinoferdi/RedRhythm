@@ -33,22 +33,39 @@ Future<bool> isHostReachable(String url) async {
 
 // Test and determine the best PocketBase URL
 Future<String> determinePocketBaseUrl() async {
+  // Ganti dengan IP komputer Anda
+  const String localComputerIP = '192.168.1.100'; // Sesuaikan dengan IP komputer Anda
+  
   final List<String> possibleUrls = [
-    'http://10.0.2.2:8090',      // Standard Android emulator
-    'http://127.0.0.1:8090',     // iOS simulator or local
+    'http://$localComputerIP:8090',  // IP komputer di jaringan lokal
+    'http://10.0.2.2:8090',         // Standard Android emulator
+    'http://127.0.0.1:8090',        // iOS simulator or local
   ];
   
-  // If you're using a physical device, add your computer's IP here
-  // possibleUrls.add('http://192.168.1.100:8090');
-  
   for (final url in possibleUrls) {
-    if (await isHostReachable('$url/api/health')) {
-      return url;
+    print('Mencoba URL: $url');
+    try {
+      print('Memeriksa koneksi ke $url/api/health');
+      final response = await http.get(Uri.parse('$url/api/health')).timeout(
+        const Duration(seconds: 2), // Kurangi timeout untuk pengujian lebih cepat
+        onTimeout: () {
+          print('Timeout saat menghubungi $url');
+          return http.Response('Timeout', 408);
+        },
+      );
+      
+      if (response.statusCode < 400) {
+        print('Berhasil terhubung ke $url');
+        return url;
+      }
+    } catch (e) {
+      print('Error saat menghubungi $url: $e');
     }
   }
   
-  // Default to Android emulator address if nothing works
-  return Platform.isAndroid ? 'http://10.0.2.2:8090' : 'http://127.0.0.1:8090';
+  // Default ke IP lokal jika semua gagal
+  print('Semua URL gagal, menggunakan IP lokal');
+  return 'http://$localComputerIP:8090';
 }
 
 // PocketBase instance with lazy initialization

@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' show min;
+import 'dart:io';
 
 /// Service class for PocketBase API interactions
 class PocketBaseService {
@@ -214,25 +215,95 @@ class PocketBaseService {
 
   // Test and determine the best PocketBase URL
   Future<String> determinePocketBaseUrl() async {
-    print("Menentukan URL PocketBase...");
-    final List<String> possibleUrls = [
-      'http://10.0.2.2:8090',      // Standard Android emulator
-      'http://127.0.0.1:8090',     // iOS simulator or local
-      'http://192.168.122.1:8090', // WSL IP or other local network
-      'http://localhost:8090',     // localhost direct
-    ];
+    print("Determining PocketBase URL...");
     
-    for (final url in possibleUrls) {
-      print("Mencoba URL: $url");
-      if (await isHostReachable('$url/api/health')) {
-        print("URL berhasil terhubung: $url");
-        return url;
+    // Get the computer's IP address on the local network
+    const String localComputerIP = '10.11.0.69'; // Your computer's actual IP address
+    
+    final List<String> possibleUrls = [];
+    
+    if (Platform.isAndroid) {
+      if (!kIsWeb) {
+        // For physical Android devices, try the local network IP first
+        possibleUrls.add('http://$localComputerIP:8090');
+        // For Android emulator
+        possibleUrls.add('http://10.0.2.2:8090');
+      }
+    } else if (Platform.isIOS) {
+      if (!kIsWeb) {
+        // For physical iOS devices, try the local network IP first
+        possibleUrls.add('http://$localComputerIP:8090');
+        // For iOS simulator
+        possibleUrls.add('http://127.0.0.1:8090');
       }
     }
     
-    print("Semua URL gagal, menggunakan default");
-    // Default to Android emulator address if nothing works
-    return Platform.isAndroid ? 'http://10.0.2.2:8090' : 'http://127.0.0.1:8090';
+    // Add localhost as fallback
+    possibleUrls.add('http://localhost:8090');
+    
+    for (final url in possibleUrls) {
+      print("Trying URL: $url");
+      try {
+        // First try a basic HEAD request
+        try {
+          print("Attempting HEAD request to $url");
+          final headResponse = await http.head(Uri.parse(url)).timeout(
+            const Duration(seconds: 2),
+            onTimeout: () {
+              print("HEAD request timeout for $url");
+              return http.Response('Timeout', 408);
+            },
+          );
+          print("HEAD request status: ${headResponse.statusCode}");
+        } catch (e) {
+          print("HEAD request failed: $e");
+        }
+        
+        // Then try the health check
+        print("Checking connection to $url/api/health");
+        final response = await http.get(
+          Uri.parse('$url/api/health'),
+          headers: {
+            'Accept': 'application/json',
+            'Origin': 'http://localhost',
+          },
+        ).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print("Health check timeout after 5 seconds");
+            return http.Response('Timeout', 408);
+          },
+        );
+        
+        print("Response status: ${response.statusCode}");
+        print("Response headers: ${response.headers}");
+        
+        if (response.statusCode < 400) {
+          print("Successfully connected to $url");
+          print("Response body: ${response.body}");
+          return url;
+        } else {
+          print("Failed with status ${response.statusCode}");
+          if (response.body.isNotEmpty) {
+            print("Error body: ${response.body}");
+          }
+        }
+      } catch (e) {
+        print("Connection error: $e");
+        if (e is SocketException) {
+          print("Socket details - Address: ${e.address}, Port: ${e.port}");
+        }
+      }
+    }
+    
+    // If all attempts fail, return the most likely URL based on platform
+    print("All URLs failed, using default for platform");
+    if (Platform.isAndroid) {
+      return 'http://$localComputerIP:8090'; // Return local network IP for physical devices
+    } else if (Platform.isIOS) {
+      return 'http://127.0.0.1:8090';
+    }
+    return 'http://localhost:8090';
   }
 
   // Helper function to check if host is reachable
