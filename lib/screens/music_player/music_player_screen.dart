@@ -335,22 +335,41 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               )
             : Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(33, 33, 33, 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.greyDark,
-                    width: 0.5,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFE53E3E), // Red primary
+                      const Color(0xFFD53F8C), // Red-pink
+                      const Color(0xFFC53030), // Darker red
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFE53E3E).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: Text(
                   currentSong.lyrics!,
                   style: const TextStyle(
-                    color: AppColors.text,
-                    fontSize: 15,
-                    height: 1.7,
+                    color: Colors.white,
+                    fontSize: 16,
+                    height: 1.8,
                     fontFamily: 'Poppins',
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black26,
+                        offset: Offset(1, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
                   ),
                   textAlign: TextAlign.left,
                 ),
