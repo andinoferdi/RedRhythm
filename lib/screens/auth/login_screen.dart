@@ -5,6 +5,7 @@ import '../../controllers/auth_controller.dart';
 import '../../states/auth_state.dart';
 import '../../routes/app_router.dart';
 import '../../services/pocketbase_service.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class LoginScreen extends ConsumerStatefulWidget {
@@ -206,10 +207,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: _rememberMe ? const Color(0xFFE71E27) : Colors.white,
+                            color: _rememberMe ? AppColors.primary : AppColors.white,
                             width: 2,
                           ),
-                          color: _rememberMe ? const Color(0xFFE71E27) : Colors.transparent,
+                                                      color: _rememberMe ? AppColors.primary : AppColors.transparent,
                         ),
                         child: _rememberMe
                             ? const Icon(Icons.check, size: 16, color: Colors.white)
@@ -243,7 +244,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? null
                         : _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE71E27),
+                                              backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -335,7 +336,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 16,
-                        color: Color(0xFFE71E27),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -362,7 +363,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           fontFamily: 'Poppins',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFE71E27),
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -390,7 +391,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+                                color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
@@ -406,7 +407,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         autocorrect: !isPassword,
         textInputAction: textInputAction,
         onFieldSubmitted: onFieldSubmitted,
-        cursorColor: const Color(0xFFE71E27),
+                                  cursorColor: AppColors.primary,
         showCursor: true,
         readOnly: false,
         enableIMEPersonalizedLearning: true,
@@ -450,14 +451,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE71E27), width: 1),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.red, width: 2),
           ),
           filled: true,
-          fillColor: const Color(0xFF1E1E1E),
+                              fillColor: AppColors.surface,
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           errorStyle: const TextStyle(
             color: Colors.red,

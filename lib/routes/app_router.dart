@@ -22,6 +22,7 @@ part 'app_router.gr.dart';
   replaceInRouteName: 'Screen,Route',
 )
 class AppRouter extends _$AppRouter {
+  AppRouter({super.navigatorKey});
   @override
   RouteType get defaultRouteType => RouteType.custom(
     // Custom fade transition builder
@@ -62,8 +63,8 @@ class AppRouter extends _$AppRouter {
   ];
 }
 
-// For convenience, this can be used to access the router from anywhere
-final appRouter = AppRouter();
+// For convenience, this can be used to access the router from anywhere  
+// Note: We create it later after navigatorKey is available
 
 // Constants for named routes
 class AppRoutes {

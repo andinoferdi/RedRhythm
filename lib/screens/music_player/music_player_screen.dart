@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
 import '../../states/player_state.dart';
 import '../../models/song.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -25,11 +25,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     
     if (currentSong == null) {
       return const Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.background,
         body: Center(
           child: Text(
             'No song is currently playing',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: AppColors.text),
           ),
         ),
       );
@@ -44,12 +44,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.text),
           onPressed: () => context.router.maybePop(),
         ),
         title: const Text(
@@ -58,13 +58,13 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             fontFamily: 'Poppins',
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: const Icon(Icons.more_vert, color: AppColors.text),
             onPressed: () {},
           ),
         ],
@@ -91,7 +91,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       color: const Color.fromRGBO(0, 0, 0, 0.5),
                       child: const Center(
                         child: CircularProgressIndicator(
-                          color: Color(0xFFE71E27),
+                          color: AppColors.primary,
                         ),
                       ),
                     )
@@ -106,7 +106,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   Text(
                     currentSong.title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.text,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Poppins',
@@ -117,7 +117,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   Text(
                     currentSong.artist,
                     style: const TextStyle(
-                      color: Colors.grey,
+                      color: AppColors.greyLight,
                       fontSize: 18,
                       fontFamily: 'Poppins',
                     ),
@@ -135,8 +135,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   Slider(
                     value: playerState.currentPosition.inSeconds.toDouble(),
                     max: currentSong.duration.inSeconds.toDouble(),
-                    activeColor: const Color(0xFFE71E27),
-                    inactiveColor: Colors.grey.shade800,
+                    activeColor: AppColors.primary,
+                    inactiveColor: AppColors.greyDark,
                     onChanged: (value) {
                       ref.read(playerControllerProvider.notifier).seekTo(
                         Duration(seconds: value.toInt()),
@@ -152,11 +152,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       children: [
                         Text(
                           _formatDuration(playerState.currentPosition),
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: AppColors.greyLight),
                         ),
                         Text(
                           _formatDuration(currentSong.duration),
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: AppColors.greyLight),
                         ),
                       ],
                     ),
@@ -171,7 +171,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       IconButton(
                         icon: Icon(
                           Icons.shuffle,
-                          color: playerState.shuffleMode ? const Color(0xFFE71E27) : Colors.white,
+                          color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
                           size: 24,
                         ),
                         onPressed: () {
@@ -181,7 +181,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       IconButton(
                         icon: const Icon(
                           Icons.skip_previous,
-                          color: Colors.white,
+                          color: AppColors.text,
                           size: 36,
                         ),
                         onPressed: () {
@@ -192,7 +192,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                         width: 70,
                         height: 70,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFE71E27),
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -200,7 +200,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                             playerState.isBuffering
                                 ? Icons.hourglass_empty
                                 : playerState.isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
+                            color: AppColors.textOnPrimary,
                             size: 36,
                           ),
                           onPressed: () {
@@ -220,7 +220,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       IconButton(
                         icon: const Icon(
                           Icons.skip_next,
-                          color: Colors.white,
+                          color: AppColors.text,
                           size: 36,
                         ),
                         onPressed: () {
@@ -235,8 +235,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                                   ? Icons.repeat_one
                                   : Icons.repeat,
                           color: playerState.repeatMode == RepeatMode.off
-                              ? Colors.white
-                              : const Color(0xFFE71E27),
+                              ? AppColors.text
+                              : AppColors.primary,
                           size: 24,
                         ),
                         onPressed: () {
@@ -274,14 +274,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           children: [
             const Icon(
               Icons.lyrics_outlined,
-              color: Color(0xFFE71E27),
+              color: AppColors.primary,
               size: 24,
             ),
             const SizedBox(width: 8),
             const Text(
               'Lyrics',
               style: TextStyle(
-                color: Color(0xFFE71E27),
+                color: AppColors.primary,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Poppins',
@@ -300,7 +300,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: const Color.fromRGBO(33, 33, 33, 0.3),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.grey.shade800,
+                    color: AppColors.greyDark,
                     width: 0.5,
                   ),
                 ),
@@ -309,13 +309,13 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     Icon(
                       Icons.music_note_outlined,
                       size: 48,
-                      color: Colors.grey,
+                      color: AppColors.greyLight,
                     ),
                     SizedBox(height: 16),
                     Text(
                       'No lyrics available',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: AppColors.greyLight,
                         fontSize: 16,
                         fontFamily: 'Poppins',
                       ),
@@ -324,7 +324,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     Text(
                       'Lyrics will appear here when available',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: AppColors.greyLight,
                         fontSize: 12,
                         fontFamily: 'Poppins',
                       ),
@@ -340,14 +340,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: const Color.fromRGBO(33, 33, 33, 0.3),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.grey.shade800,
+                    color: AppColors.greyDark,
                     width: 0.5,
                   ),
                 ),
                 child: Text(
                   currentSong.lyrics!,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.text,
                     fontSize: 15,
                     height: 1.7,
                     fontFamily: 'Poppins',
@@ -362,8 +362,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
         Center(
           child: Text(
             '♪ ${currentSong.title} - ${currentSong.artist} ♪',
-            style: TextStyle(
-              color: Colors.grey.shade600,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
               fontSize: 12,
               fontStyle: FontStyle.italic,
               fontFamily: 'Poppins',

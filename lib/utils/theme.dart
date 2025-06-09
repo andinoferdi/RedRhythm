@@ -145,7 +145,7 @@ class AppTheme {
   // Input decoration theme
   static InputDecorationTheme get _inputDecorationTheme => InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        fillColor: AppColors.textField,
         contentPadding: const EdgeInsets.symmetric(
           vertical: 16,
           horizontal: 16,
@@ -164,19 +164,19 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.textFieldRadius),
-          borderSide: const BorderSide(color: Colors.red, width: 1),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
-        hintStyle: TextStyle(
-          color: const Color.fromRGBO(255, 255, 255, 0.6),
+        hintStyle: const TextStyle(
+          color: AppColors.textDisabled,
           fontFamily: 'Poppins',
         ),
-        prefixIconColor: const Color.fromRGBO(255, 255, 255, 0.6),
-        suffixIconColor: const Color.fromRGBO(255, 255, 255, 0.6),
+        prefixIconColor: AppColors.textDisabled,
+        suffixIconColor: AppColors.textDisabled,
       );
 
   // Card theme
   static CardTheme get _cardTheme => CardTheme(
-        color: const Color(0xFF1E1E1E),
+        color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
@@ -193,9 +193,9 @@ class AppTheme {
   // Bottom navigation bar theme
   static BottomNavigationBarThemeData get _bottomNavBarTheme =>
       const BottomNavigationBarThemeData(
-        backgroundColor: Colors.black,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: Colors.white,
+        backgroundColor: AppColors.navBackground,
+        selectedItemColor: AppColors.navSelected,
+        unselectedItemColor: AppColors.navUnselected, 
         showSelectedLabels: true,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
@@ -218,8 +218,8 @@ class AppTheme {
       );
 
   static ButtonStyle get secondaryButtonStyle => ElevatedButton.styleFrom(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.black,
         minimumSize: const Size(double.infinity, AppConstants.buttonHeight),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
@@ -232,8 +232,8 @@ class AppTheme {
       );
 
   static ButtonStyle get outlineButtonStyle => OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: const BorderSide(color: Colors.white, width: 1),
+        foregroundColor: AppColors.white,
+        side: const BorderSide(color: AppColors.white, width: 1),
         minimumSize: const Size(double.infinity, AppConstants.buttonHeight),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
@@ -250,26 +250,26 @@ class AppTheme {
         fontFamily: 'Poppins',
         fontSize: AppConstants.titleFontSize,
         fontWeight: FontWeight.w600,
-        color: Colors.white,
+        color: AppColors.text,
       );
 
   static TextStyle get subheadingStyle => const TextStyle(
         fontFamily: 'Poppins',
         fontSize: AppConstants.extraLargeFontSize,
         fontWeight: FontWeight.w600,
-        color: Colors.white,
+        color: AppColors.text,
       );
 
   static TextStyle get bodyStyle => const TextStyle(
         fontFamily: 'Poppins',
         fontSize: AppConstants.mediumFontSize,
-        color: Colors.white,
+        color: AppColors.text,
       );
 
   static TextStyle get captionStyle => const TextStyle(
         fontFamily: 'Poppins',
         fontSize: AppConstants.smallFontSize,
-        color: Color.fromRGBO(255, 255, 255, 0.7),
+        color: AppColors.textSecondary,
       );
 
   static TextStyle get linkStyle => const TextStyle(

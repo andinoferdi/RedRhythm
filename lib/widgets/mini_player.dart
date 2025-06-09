@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'dart:ui';
 import '../controllers/player_controller.dart';
 import '../routes/app_router.dart';
+import '../utils/app_colors.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
 
@@ -47,7 +48,7 @@ class MiniPlayer extends ConsumerWidget {
                   child: LinearProgressIndicator(
                     value: playerState.currentPosition.inMilliseconds /
                         (currentSong.duration.inMilliseconds == 0 ? 1 : currentSong.duration.inMilliseconds),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppColors.text),
                     backgroundColor: const Color.fromRGBO(255, 255, 255, 0.1),
                   ),
                 ),
@@ -77,7 +78,7 @@ class MiniPlayer extends ConsumerWidget {
                             Text(
                               currentSong.title,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: AppColors.text,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -87,8 +88,8 @@ class MiniPlayer extends ConsumerWidget {
                             const SizedBox(height: 2),
                             Text(
                               currentSong.artist,
-                              style: TextStyle(
-                                color: Colors.grey[400],
+                              style: const TextStyle(
+                                color: AppColors.greyLight,
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -103,7 +104,7 @@ class MiniPlayer extends ConsumerWidget {
                           IconButton(
                             icon: Icon(
                               playerState.isPlaying ? Icons.pause : Icons.play_arrow,
-                              color: Colors.white,
+                              color: AppColors.text,
                             ),
                             onPressed: () {
                               if (playerState.isPlaying) {
@@ -114,7 +115,7 @@ class MiniPlayer extends ConsumerWidget {
                             },
                           ),
                           IconButton(
-                            icon: const Icon(Icons.skip_next, color: Colors.white),
+                            icon: const Icon(Icons.skip_next, color: AppColors.text),
                             onPressed: () {
                               ref.read(playerControllerProvider.notifier).skipNext();
                             },

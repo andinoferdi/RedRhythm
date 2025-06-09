@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../utils/app_colors.dart';
+
 class TrackInfo extends StatelessWidget {
   final String title;
   final String artist;
@@ -22,7 +24,7 @@ class TrackInfo extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.text,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -33,7 +35,7 @@ class TrackInfo extends StatelessWidget {
               Text(
                 artist,
                 style: const TextStyle(
-                  color: Colors.grey,
+                  color: AppColors.greyLight,
                   fontSize: 16,
                 ),
               ),
@@ -45,14 +47,14 @@ class TrackInfo extends StatelessWidget {
             IconButton(
               icon: const Icon(
                 Icons.share_outlined,
-                color: Colors.white,
+                color: AppColors.text,
               ),
               onPressed: () {},
             ),
             IconButton(
               icon: const Icon(
                 Icons.favorite_border,
-                color: Colors.white,
+                color: AppColors.text,
               ),
               onPressed: () {},
             ),

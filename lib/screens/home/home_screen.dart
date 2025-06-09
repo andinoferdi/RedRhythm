@@ -13,9 +13,9 @@ import '../../controllers/play_history_controller.dart';
 import '../../controllers/genre_controller.dart';
 import '../../utils/image_helpers.dart';
 import '../../widgets/user_avatar.dart';
-import '../../models/song.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
+import '../../utils/app_colors.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -145,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.surfaceDark,
       // Use resizeToAvoidBottomInset: false to prevent keyboard from pushing up content
       resizeToAvoidBottomInset: false,
       body: SafeArea(
@@ -354,7 +354,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: [Color(0xFF1E1E1E), Color(0xFF0D0D0D)],
+                      colors: AppColors.homeGradient,
                     ),
                     imageUrl: genre.iconUrl,
                   );
@@ -429,7 +429,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E1E),
+                          backgroundColor: AppColors.surface,
           title: const Text(
             'Profile Options',
             style: TextStyle(color: Colors.white),

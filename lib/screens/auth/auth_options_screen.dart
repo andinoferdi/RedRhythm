@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../routes/app_router.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class AuthOptionsScreen extends StatelessWidget {
@@ -49,7 +50,7 @@ class AuthOptionsScreen extends StatelessWidget {
                     context.router.push(const LoginRoute());
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE71E27),
+                                            backgroundColor: AppColors.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -87,7 +88,7 @@ class AuthOptionsScreen extends StatelessWidget {
                         fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFE71E27),
+                                                    color: AppColors.primary,
                       ),
                     ),
                   ),

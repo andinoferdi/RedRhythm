@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../utils/image_helpers.dart';
+import '../utils/app_colors.dart';
 
 /// A reusable widget to display the user's avatar
 class UserAvatar extends ConsumerWidget {
@@ -30,8 +31,8 @@ class UserAvatar extends ConsumerWidget {
     required this.baseUrl,
     this.size = 50,
     this.iconSize = 30,
-    this.borderColor = const Color(0xFF424242), // Grey shade 800
-    this.backgroundColor = const Color(0xFF424242), // Grey shade 800
+    this.borderColor = AppColors.greyDark,
+    this.backgroundColor = AppColors.greyDark,
   });
   
   @override
@@ -57,7 +58,7 @@ class UserAvatar extends ConsumerWidget {
               errorBuilder: (context, error, stackTrace) {
                 return Icon(
                   Icons.person,
-                  color: Colors.white,
+                  color: AppColors.text,
                   size: iconSize,
                 );
               },
@@ -68,7 +69,7 @@ class UserAvatar extends ConsumerWidget {
                     width: size * 0.48, // Scale the indicator based on avatar size
                     height: size * 0.48,
                     child: const CircularProgressIndicator(
-                      color: Colors.white,
+                      color: AppColors.text,
                       strokeWidth: 2.0,
                     ),
                   ),
@@ -78,7 +79,7 @@ class UserAvatar extends ConsumerWidget {
           )
         : Icon(
             Icons.person,
-            color: Colors.white,
+            color: AppColors.text,
             size: iconSize,
           ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/music_player_provider.dart';
+import '../../../utils/app_colors.dart';
 
 class PlaybackControls extends StatelessWidget {
   const PlaybackControls({super.key});
@@ -27,7 +28,7 @@ class PlaybackControls extends StatelessWidget {
     return IconButton(
       icon: Icon(
         Icons.shuffle,
-        color: provider.isShuffleEnabled ? Colors.red : Colors.white70,
+                      color: provider.isShuffleEnabled ? AppColors.primary : AppColors.textSecondary,
         size: 24,
       ),
       onPressed: () => provider.toggleShuffle(),
@@ -56,7 +57,7 @@ class PlaybackControls extends StatelessWidget {
       child: IconButton(
         icon: Icon(
           provider.isPlaying ? Icons.pause : Icons.play_arrow,
-          color: Colors.white,
+          color: AppColors.text,
           size: 36,
         ),
         onPressed: () => provider.togglePlayPause(),

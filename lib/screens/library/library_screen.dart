@@ -28,7 +28,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     return ChangeNotifierProvider(
       create: (_) => LibraryController(),
       child: Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: AppColors.surfaceDark,
         body: SafeArea(
           bottom: false,
           child: Column(

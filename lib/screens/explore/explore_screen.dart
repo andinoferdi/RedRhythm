@@ -5,6 +5,7 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
 import '../../widgets/user_avatar.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class ExploreScreen extends ConsumerWidget {
@@ -16,7 +17,7 @@ class ExploreScreen extends ConsumerWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.surfaceDark,
       body: SafeArea(
         bottom: false, // Don't apply bottom safe area to avoid double padding
         child: SingleChildScrollView(
@@ -81,11 +82,11 @@ class ExploreScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            Row(
+                          Row(
               children: const [
                 Icon(
                   Icons.search,
-                  color: Colors.white,
+                  color: AppColors.text,
                   size: 28, // Match size with Library screen
                 ),
               ],
@@ -102,23 +103,23 @@ class ExploreScreen extends ConsumerWidget {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.grey.shade800, width: 1),
+          border: Border.all(color: AppColors.greyDark, width: 1),
         ),
         child: Row(
           children: [
             const SizedBox(width: 16),
             Icon(
               Icons.search,
-              color: Colors.grey.shade400,
+              color: AppColors.greyLight,
               size: 24,
             ),
             const SizedBox(width: 12),
             Text(
               'Songs, Artists, Podcasts & More',
               style: TextStyle(
-                color: Colors.grey.shade400,
+                color: AppColors.greyLight,
                 fontSize: 16,
               ),
             ),
@@ -137,7 +138,7 @@ class ExploreScreen extends ConsumerWidget {
           child: Text(
             'Your Top Genres',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.text,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -155,11 +156,11 @@ class ExploreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _buildGenreCard(
-                  'Kpop', const Color(0xFF8BC34A), Icons.music_note),
+                  'Kpop', AppColors.genreKpop, Icons.music_note),
               _buildGenreCard(
-                  'Indie', const Color(0xFFE91E63), Icons.music_video),
-              _buildGenreCard('R&B', const Color(0xFF5C6BC0), Icons.piano),
-              _buildGenreCard('Pop', const Color(0xFFE67E22), Icons.mic),
+                  'Indie', AppColors.genreIndie, Icons.music_video),
+              _buildGenreCard('R&B', AppColors.genreRnB, Icons.piano),
+              _buildGenreCard('Pop', AppColors.genrePop, Icons.mic),
             ],
           ),
         ),
@@ -176,7 +177,7 @@ class ExploreScreen extends ConsumerWidget {
           child: Text(
             'Browse All',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.text,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -194,18 +195,18 @@ class ExploreScreen extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               _buildGenreCard(
-                  'Made\nfor You', const Color(0xFF039BE5), Icons.person),
+                  'Made\nfor You', AppColors.info, Icons.person),
               _buildGenreCard(
-                  'RELEASED', const Color(0xFF9C27B0), Icons.new_releases,
+                  'RELEASED', AppColors.genreReleased, Icons.new_releases,
                   isGradient: true),
               _buildGenreCard(
-                  'Music\nCharts', const Color(0xFF3F51B5), Icons.equalizer),
+                  'Music\nCharts', AppColors.genreCharts, Icons.equalizer),
               _buildGenreCard(
-                  'Podcasts', const Color(0xFFD32F2F), Icons.podcasts),
+                  'Podcasts', AppColors.genrePodcasts, Icons.podcasts),
               _buildGenreCard(
-                  'Bollywood', const Color(0xFFFF9800), Icons.movie),
+                  'Bollywood', AppColors.genreBollywood, Icons.movie),
               _buildGenreCard(
-                  'Pop\nFusion', const Color(0xFF009688), Icons.queue_music),
+                  'Pop\nFusion', AppColors.genrePopFusion, Icons.queue_music),
             ],
           ),
         ),
@@ -253,14 +254,14 @@ class ExploreScreen extends ConsumerWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textOnPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Icon(
                   icon,
-                                              color: const Color.fromRGBO(255, 255, 255, 0.8),
+                  color: AppColors.textOnPrimary,
                   size: 32,
                 ),
               ],

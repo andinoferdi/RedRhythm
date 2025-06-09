@@ -6,6 +6,7 @@ import 'dart:async';
 import '../../routes/app_router.dart';
 import '../../controllers/auth_controller.dart';
 import '../../states/auth_state.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class SplashScreen extends ConsumerStatefulWidget {
@@ -119,7 +120,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     });
     
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -138,7 +139,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             // Show loading indicator when appropriate
             if (authState.isLoading || !_minTimeElapsed)
               const CircularProgressIndicator(
-                color: Color(0xFFE71E27),
+                color: AppColors.primary,
                 strokeWidth: 2,
               ),
             if (authState.error != null && !authState.isLoading)
@@ -147,7 +148,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 child: Text(
                   'Initializing...',
                   style: const TextStyle(
-                    color: Colors.white70,
+                    color: AppColors.textSecondary,
                     fontSize: 14,
                   ),
                 ),

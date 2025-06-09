@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/auth_controller.dart';
 import '../../states/auth_state.dart';
 import '../../routes/app_router.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -265,10 +266,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(
-                            color: _agreeTerms ? const Color(0xFFE71E27) : Colors.white,
+                            color: _agreeTerms ? AppColors.primary : AppColors.white,
                             width: 2,
                           ),
-                          color: _agreeTerms ? const Color(0xFFE71E27) : Colors.transparent,
+                                                      color: _agreeTerms ? AppColors.primary : AppColors.transparent,
                         ),
                         child: _agreeTerms
                             ? const Icon(Icons.check, size: 16, color: Colors.white)
@@ -297,7 +298,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ? null
                         : _handleRegister,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE71E27),
+                                              backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -336,7 +337,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           fontFamily: 'Poppins',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFFE71E27),
+                                                      color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -364,7 +365,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+                                color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.transparent),
       ),
@@ -380,7 +381,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         autocorrect: !isPassword,
         textInputAction: textInputAction,
         onFieldSubmitted: onFieldSubmitted,
-        cursorColor: const Color(0xFFE71E27),
+                                  cursorColor: AppColors.primary,
         showCursor: true,
         readOnly: false,
         enableIMEPersonalizedLearning: true,
@@ -424,14 +425,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE71E27), width: 1),
+            borderSide: const BorderSide(color: AppColors.primary, width: 1),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.red, width: 2),
           ),
           filled: true,
-          fillColor: const Color(0xFF1E1E1E),
+                              fillColor: AppColors.surface,
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           errorStyle: const TextStyle(
             color: Colors.red,

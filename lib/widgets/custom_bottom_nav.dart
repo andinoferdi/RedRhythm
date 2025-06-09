@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '../routes/app_router.dart';
+import '../utils/app_colors.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -17,14 +18,14 @@ class CustomBottomNav extends StatelessWidget {
     return Container(
       height: 80 + bottomPadding,
       decoration: const BoxDecoration(
-        color: Colors.black,
+        color: AppColors.navBackground,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: AppColors.divider,
             blurRadius: 10,
             spreadRadius: 5,
           ),
@@ -85,7 +86,7 @@ class CustomBottomNav extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1E1E1E) : Colors.transparent,
+          color: isSelected ? AppColors.navIndicator : AppColors.transparent,
           borderRadius: BorderRadius.circular(15),
         ),
         child: Column(
@@ -93,14 +94,14 @@ class CustomBottomNav extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? const Color(0xFFE71E27) : Colors.grey,
+              color: isSelected ? AppColors.navSelected : AppColors.grey,
               size: 28,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFFE71E27) : Colors.grey,
+                color: isSelected ? AppColors.navSelected : AppColors.grey,
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),

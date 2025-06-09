@@ -7,9 +7,13 @@ import 'routes/app_router.dart';
 import 'services/pocketbase_service.dart';
 import 'core/di/service_locator.dart';
 import 'controllers/auth_controller.dart';
+import 'utils/theme.dart';
 
 // Global navigator key for accessing the navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+// Global app router instance using the navigator key
+final appRouter = AppRouter(navigatorKey: navigatorKey);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -113,33 +117,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           child: child!,
         );
       },
-      theme: ThemeData(
-        primaryColor: const Color(0xFFE71E27),
-        colorScheme: ColorScheme.dark(
-          primary: const Color(0xFFE71E27),
-          secondary: Colors.red.shade400,
-          surfaceContainer: Colors.black,
-          surface: const Color(0xFF121212),
-        ),
-        fontFamily: 'Poppins',
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.black,
-        // Transisi halaman dikendalikan oleh Auto Router
-        textButtonTheme: TextButtonThemeData(
-          style: ButtonStyle(
-            foregroundColor: const WidgetStatePropertyAll(Colors.white),
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE71E27),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.theme,
     );
   }
 }

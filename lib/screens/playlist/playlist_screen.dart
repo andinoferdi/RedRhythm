@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import '../../models/song.dart';
 import '../../data/sample_songs.dart';
 import '../music_player/music_player_screen.dart';
+import '../../utils/app_colors.dart';
 
 @RoutePage()
 class PlaylistScreen extends StatelessWidget {
@@ -11,9 +12,9 @@ class PlaylistScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.background,
         title: const Text(
           'Lofi Loft',
           style: TextStyle(

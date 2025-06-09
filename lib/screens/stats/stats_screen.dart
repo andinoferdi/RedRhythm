@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 
+import '../../utils/app_colors.dart';
+
 @RoutePage()
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -18,9 +20,9 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         elevation: 0,
         title: const Text(
           'Your Listening Stats',
@@ -28,11 +30,11 @@ class _StatsScreenState extends State<StatsScreen> {
             fontFamily: 'Poppins',
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.text),
           onPressed: () => context.router.maybePop(),
         ),
       ),
@@ -155,7 +157,7 @@ class _StatsScreenState extends State<StatsScreen> {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF121212),
+            color: AppColors.surfaceDark,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
