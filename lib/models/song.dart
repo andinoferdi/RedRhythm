@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../services/pocketbase_service.dart';
 
 part 'song.g.dart';
 part 'song.freezed.dart';
@@ -13,7 +15,7 @@ class Song with _$Song {
     required String albumArtUrl,
     required int durationInSeconds,
     required String albumName,
-    required List<String> lyrics,
+    String? lyrics,
     String? playlistId,
     String? audioFileUrl,
     String? audioFileName,
@@ -24,14 +26,36 @@ class Song with _$Song {
   /// Create a Song from a PocketBase record
   static Song fromRecord(RecordModel record) {
     // Get expanded artist and album if available
-    final artistRecord = record.expand['artist']?[0];
-    final albumRecord = record.expand['album']?[0];
+    final artistRecord = record.expand['artist_id']?[0];
+    final albumRecord = record.expand['album_id']?[0];
     
-    // Extract data from record
+    // Extract artist name
     final artistName = artistRecord?.data['name'] as String? ?? 'Unknown Artist';
-    final albumName = albumRecord?.data['name'] as String? ?? 'Unknown Album';
-    final albumArtUrl = albumRecord?.data['cover_url'] as String? ?? '';
-    final lyrics = (record.data['lyrics'] as String?)?.split('\n') ?? <String>[];
+    
+    // Extract album name - try 'title' first, then 'name'
+    String albumName = 'Unknown Album';
+    if (albumRecord != null) {
+      albumName = albumRecord.data['title'] as String? ?? 
+                  albumRecord.data['name'] as String? ?? 
+                  'Unknown Album';
+    }
+    
+    // Extract album cover URL
+    String albumArtUrl = '';
+    if (albumRecord != null && albumRecord.data['cover_image'] != null) {
+      try {
+        final coverImage = albumRecord.data['cover_image'];
+        if (coverImage is String && coverImage.isNotEmpty) {
+          // Generate proper PocketBase file URL using service
+          final pbService = PocketBaseService();
+          albumArtUrl = '${pbService.pb.baseUrl}/api/files/${albumRecord.collectionId}/${albumRecord.id}/$coverImage';
+        }
+      } catch (e) {
+        debugPrint('Error generating album cover URL: $e');
+      }
+    }
+    
+    final lyrics = record.data['lyrics'] as String?;
     
     // Get audio file information
     String? audioFileName;

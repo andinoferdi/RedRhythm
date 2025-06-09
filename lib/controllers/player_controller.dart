@@ -112,6 +112,26 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
   
+  /// Play song by ID (load full data from PocketBase)
+  Future<void> playSongById(String songId) async {
+    try {
+      debugPrint('Loading song by ID: $songId');
+      
+      final pbService = PocketBaseService();
+      final record = await pbService.pb.collection('songs').getOne(
+        songId,
+        expand: 'artist_id,album_id',
+      );
+      
+      final song = Song.fromRecord(record);
+      debugPrint('Loaded song from PocketBase: ${song.title}');
+      
+      await playSong(song);
+    } catch (e) {
+      debugPrint('Error loading song by ID: $e');
+    }
+  }
+
   /// Play a song
   Future<void> playSong(Song song) async {
     // Get audio URL

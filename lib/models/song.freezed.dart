@@ -26,7 +26,7 @@ mixin _$Song {
   String get albumArtUrl => throw _privateConstructorUsedError;
   int get durationInSeconds => throw _privateConstructorUsedError;
   String get albumName => throw _privateConstructorUsedError;
-  List<String> get lyrics => throw _privateConstructorUsedError;
+  String? get lyrics => throw _privateConstructorUsedError;
   String? get playlistId => throw _privateConstructorUsedError;
   String? get audioFileUrl => throw _privateConstructorUsedError;
   String? get audioFileName => throw _privateConstructorUsedError;
@@ -52,7 +52,7 @@ abstract class $SongCopyWith<$Res> {
       String albumArtUrl,
       int durationInSeconds,
       String albumName,
-      List<String> lyrics,
+      String? lyrics,
       String? playlistId,
       String? audioFileUrl,
       String? audioFileName});
@@ -79,7 +79,7 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
     Object? albumArtUrl = null,
     Object? durationInSeconds = null,
     Object? albumName = null,
-    Object? lyrics = null,
+    Object? lyrics = freezed,
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
     Object? audioFileName = freezed,
@@ -109,10 +109,10 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
               as String,
-      lyrics: null == lyrics
+      lyrics: freezed == lyrics
           ? _value.lyrics
           : lyrics // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+              as String?,
       playlistId: freezed == playlistId
           ? _value.playlistId
           : playlistId // ignore: cast_nullable_to_non_nullable
@@ -143,7 +143,7 @@ abstract class _$$SongImplCopyWith<$Res> implements $SongCopyWith<$Res> {
       String albumArtUrl,
       int durationInSeconds,
       String albumName,
-      List<String> lyrics,
+      String? lyrics,
       String? playlistId,
       String? audioFileUrl,
       String? audioFileName});
@@ -167,7 +167,7 @@ class __$$SongImplCopyWithImpl<$Res>
     Object? albumArtUrl = null,
     Object? durationInSeconds = null,
     Object? albumName = null,
-    Object? lyrics = null,
+    Object? lyrics = freezed,
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
     Object? audioFileName = freezed,
@@ -197,10 +197,10 @@ class __$$SongImplCopyWithImpl<$Res>
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
               as String,
-      lyrics: null == lyrics
-          ? _value._lyrics
+      lyrics: freezed == lyrics
+          ? _value.lyrics
           : lyrics // ignore: cast_nullable_to_non_nullable
-              as List<String>,
+              as String?,
       playlistId: freezed == playlistId
           ? _value.playlistId
           : playlistId // ignore: cast_nullable_to_non_nullable
@@ -227,11 +227,10 @@ class _$SongImpl implements _Song {
       required this.albumArtUrl,
       required this.durationInSeconds,
       required this.albumName,
-      required final List<String> lyrics,
+      this.lyrics,
       this.playlistId,
       this.audioFileUrl,
-      this.audioFileName})
-      : _lyrics = lyrics;
+      this.audioFileName});
 
   factory _$SongImpl.fromJson(Map<String, dynamic> json) =>
       _$$SongImplFromJson(json);
@@ -248,14 +247,8 @@ class _$SongImpl implements _Song {
   final int durationInSeconds;
   @override
   final String albumName;
-  final List<String> _lyrics;
   @override
-  List<String> get lyrics {
-    if (_lyrics is EqualUnmodifiableListView) return _lyrics;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_lyrics);
-  }
-
+  final String? lyrics;
   @override
   final String? playlistId;
   @override
@@ -282,7 +275,7 @@ class _$SongImpl implements _Song {
                 other.durationInSeconds == durationInSeconds) &&
             (identical(other.albumName, albumName) ||
                 other.albumName == albumName) &&
-            const DeepCollectionEquality().equals(other._lyrics, _lyrics) &&
+            (identical(other.lyrics, lyrics) || other.lyrics == lyrics) &&
             (identical(other.playlistId, playlistId) ||
                 other.playlistId == playlistId) &&
             (identical(other.audioFileUrl, audioFileUrl) ||
@@ -301,7 +294,7 @@ class _$SongImpl implements _Song {
       albumArtUrl,
       durationInSeconds,
       albumName,
-      const DeepCollectionEquality().hash(_lyrics),
+      lyrics,
       playlistId,
       audioFileUrl,
       audioFileName);
@@ -330,7 +323,7 @@ abstract class _Song implements Song {
       required final String albumArtUrl,
       required final int durationInSeconds,
       required final String albumName,
-      required final List<String> lyrics,
+      final String? lyrics,
       final String? playlistId,
       final String? audioFileUrl,
       final String? audioFileName}) = _$SongImpl;
@@ -350,7 +343,7 @@ abstract class _Song implements Song {
   @override
   String get albumName;
   @override
-  List<String> get lyrics;
+  String? get lyrics;
   @override
   String? get playlistId;
   @override

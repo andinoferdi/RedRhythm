@@ -17,7 +17,7 @@ class SongRepository {
       final response = await _pb.collection('songs').getList(
         page: 1,
         perPage: 100,
-        expand: 'artist,album',
+        expand: 'artist_id,album_id',
       );
       
       return response.items.map((record) => Song.fromRecord(record)).toList();
@@ -32,8 +32,8 @@ class SongRepository {
       final response = await _pb.collection('songs').getList(
         page: 1,
         perPage: 100,
-        filter: 'artist.id = "$artistId"',
-        expand: 'artist,album',
+        filter: 'artist_id = "$artistId"',
+        expand: 'artist_id,album_id',
       );
       
       return response.items.map((record) => Song.fromRecord(record)).toList();
@@ -48,8 +48,8 @@ class SongRepository {
       final response = await _pb.collection('songs').getList(
         page: 1,
         perPage: 100,
-        filter: 'album.id = "$albumId"',
-        expand: 'artist,album',
+        filter: 'album_id = "$albumId"',
+        expand: 'artist_id,album_id',
       );
       
       return response.items.map((record) => Song.fromRecord(record)).toList();
@@ -65,7 +65,7 @@ class SongRepository {
         page: 1,
         perPage: 100,
         filter: 'playlist.id = "$playlistId"',
-        expand: 'song,song.artist,song.album',
+        expand: 'song,song.artist_id,song.album_id',
       );
       
       return response.items
@@ -90,8 +90,8 @@ class SongRepository {
       final response = await _pb.collection('songs').getList(
         page: 1,
         perPage: 100,
-        filter: 'title ~ "$query" || artist.name ~ "$query" || album.name ~ "$query"',
-        expand: 'artist,album',
+        filter: 'title ~ "$query" || artist_id.name ~ "$query" || album_id.title ~ "$query"',
+        expand: 'artist_id,album_id',
       );
       
       return response.items.map((record) => Song.fromRecord(record)).toList();

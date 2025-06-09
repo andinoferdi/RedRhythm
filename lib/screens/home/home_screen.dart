@@ -749,21 +749,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String subtitle,
     String albumArtUrl,
   ) {
-    final artist = subtitle.contains('•') 
-        ? subtitle.split('•').last.trim() 
-        : 'Unknown Artist';
-    
-    final song = Song(
-      id: songId,
-      title: title,
-      artist: artist,
-      albumArtUrl: albumArtUrl,
-      durationInSeconds: 180,
-      albumName: 'Unknown Album',
-      lyrics: [],
-    );
-    
-    ref.read(playerControllerProvider.notifier).playSong(song);
+    // Use playSongById to load full song data from PocketBase including lyrics
+    ref.read(playerControllerProvider.notifier).playSongById(songId);
   }
 
   // Method to play song and navigate to player screen
@@ -775,22 +762,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String subtitle,
     String albumArtUrl,
   ) {
-    final artist = subtitle.contains('•') 
-        ? subtitle.split('•').last.trim() 
-        : 'Unknown Artist';
+    // Use playSongById to load full song data from PocketBase including lyrics
+    ref.read(playerControllerProvider.notifier).playSongById(songId);
     
-    final song = Song(
-      id: songId,
-      title: title,
-      artist: artist,
-      albumArtUrl: albumArtUrl,
-      durationInSeconds: 180,
-      albumName: 'Unknown Album',
-      lyrics: [],
-    );
-    
-    ref.read(playerControllerProvider.notifier).playSong(song);
-    context.router.push(MusicPlayerRoute(song: song));
+    // Navigate to music player (song will be available in playerState)
+    context.router.push(MusicPlayerRoute(song: null));
   }
 
   Widget _buildMixCard(
