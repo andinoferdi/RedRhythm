@@ -3,8 +3,8 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../repositories/genre_repository.dart';
-import '../../features/auth/auth_controller.dart';
-import '../../features/player/player_controller.dart';
+import '../../controllers/auth_controller.dart';
+import '../../controllers/player_controller.dart';
 
 /// Sets up dependency injection using GetIt
 Future<void> setupServiceLocator() async {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 import 'dart:ui';
-import '../features/player/player_controller.dart';
+import '../controllers/player_controller.dart';
 import '../routes/app_router.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
@@ -28,10 +28,10 @@ class MiniPlayer extends ConsumerWidget {
       child: Container(
         height: 64,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
+                        color: const Color.fromRGBO(0, 0, 0, 0.5),
           border: Border(
             top: BorderSide(
-              color: Colors.white.withOpacity(0.1),
+                              color: const Color.fromRGBO(255, 255, 255, 0.1),
               width: 0.5,
             ),
           ),
@@ -48,7 +48,7 @@ class MiniPlayer extends ConsumerWidget {
                     value: playerState.currentPosition.inMilliseconds /
                         (currentSong.duration.inMilliseconds == 0 ? 1 : currentSong.duration.inMilliseconds),
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    backgroundColor: Colors.white.withOpacity(0.1),
+                    backgroundColor: const Color.fromRGBO(255, 255, 255, 0.1),
                   ),
                 ),
                 // Content

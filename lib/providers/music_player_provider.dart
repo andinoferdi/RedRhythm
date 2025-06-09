@@ -8,7 +8,7 @@ class MusicPlayerProvider extends ChangeNotifier {
   int _currentIndex = 0;
   Duration _currentPosition = Duration.zero;
   bool _isPlaying = false;
-  bool _isBuffering = false;
+  final bool _isBuffering = false;
   bool _isShuffleEnabled = false;
   bool _isRepeatEnabled = false;
 

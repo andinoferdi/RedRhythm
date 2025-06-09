@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/custom_bottom_nav.dart';
-import 'library_controller.dart';
+import '../../controllers/library_controller.dart';
 import 'library_tab_selector.dart';
 import 'library_tab_enum.dart';
 import 'playlist_tab.dart';

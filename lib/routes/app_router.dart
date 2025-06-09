@@ -1,19 +1,19 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import '../models/song.dart';
-import '../screens/splash_screen.dart';
-import '../screens/onboarding_screen.dart';
-import '../screens/auth_options_screen.dart';
-import '../screens/login_screen.dart';
-import '../screens/register_screen.dart';
-import '../screens/forgot_password_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/explore_screen.dart';
+import '../screens/splash/splash_screen.dart';
+import '../screens/onboarding/onboarding_screen.dart';
+import '../screens/auth/auth_options_screen.dart';
+import '../screens/auth/login_screen.dart';
+import '../screens/auth/register_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
+import '../screens/home/home_screen.dart';
+import '../screens/explore/explore_screen.dart';
 import '../screens/library/library_screen.dart';
-import '../screens/stats_screen.dart';
-import '../screens/music_player_screen.dart';
-import '../screens/playlist_screen.dart';
-import '../features/auth/auth_wrapper.dart';
+import '../screens/stats/stats_screen.dart';
+import '../screens/music_player/music_player_screen.dart';
+import '../screens/playlist/playlist_screen.dart';
+import '../widgets/auth_wrapper.dart';
 
 part 'app_router.gr.dart';
 

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
 import 'routes/app_router.dart';
 import 'services/pocketbase_service.dart';
 import 'core/di/service_locator.dart';
-import 'features/auth/auth_controller.dart';
+import 'controllers/auth_controller.dart';
 
 // Global navigator key for accessing the navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -60,24 +61,24 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         // App kembali aktif dari background
-        print('App resumed - checking auth state');
+        debugPrint('App resumed - checking auth state');
         _checkAuthOnResume();
         break;
       case AppLifecycleState.paused:
         // App masuk ke background
-        print('App paused');
+        debugPrint('App paused');
         break;
       case AppLifecycleState.inactive:
         // App inactive (misalnya ada notifikasi masuk)
-        print('App inactive');
+        debugPrint('App inactive');
         break;
       case AppLifecycleState.detached:
         // App akan ditutup
-        print('App detached');
+        debugPrint('App detached');
         break;
       case AppLifecycleState.hidden:
         // App tersembunyi
-        print('App hidden');
+        debugPrint('App hidden');
         break;
     }
   }
@@ -88,7 +89,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       final authController = ref.read(authControllerProvider.notifier);
       await authController.reinitializeAuth();
     } catch (e) {
-      print('Error checking auth on resume: $e');
+      debugPrint('Error checking auth on resume: $e');
     }
   }
 
@@ -126,7 +127,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         // Transisi halaman dikendalikan oleh Auto Router
         textButtonTheme: TextButtonThemeData(
           style: ButtonStyle(
-            foregroundColor: const MaterialStatePropertyAll(Colors.white),
+            foregroundColor: const WidgetStatePropertyAll(Colors.white),
           ),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(

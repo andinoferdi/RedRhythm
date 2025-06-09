@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pocketbase_service.dart';
 
@@ -172,7 +173,7 @@ class UserRepository {
       // Pastikan email dalam format lowercase untuk menghindari masalah case sensitivity
       final emailLowercase = email.toLowerCase().trim();
       
-      print("Mencari email: $emailLowercase");
+      debugPrint("Mencari email: $emailLowercase");
       
       // Coba dengan filter yang lebih sederhana
       final result = await _pb.collection('users').getList(
@@ -181,31 +182,31 @@ class UserRepository {
         perPage: 10,  // Meningkatkan jumlah hasil untuk debugging
       );
       
-      print("Hasil pencarian: ${result.items.length} item ditemukan");
+      debugPrint("Hasil pencarian: ${result.items.length} item ditemukan");
       
       // Debug output - lihat semua email yang ditemukan
       for (final item in result.items) {
-        print("Email ditemukan: ${item.data['email']}");
+        debugPrint("Email ditemukan: ${item.data['email']}");
       }
       
       if (result.items.isEmpty) {
-        print("Tidak ada email yang ditemukan");
+        debugPrint("Tidak ada email yang ditemukan");
         return null;
       }
       
       // Cari email yang tepat sama
       for (final item in result.items) {
         if (item.data['email'].toString().toLowerCase() == emailLowercase) {
-          print("Email yang cocok ditemukan: ${item.id}");
+          debugPrint("Email yang cocok ditemukan: ${item.id}");
           return item;
         }
       }
       
       // Jika tidak ada yang cocok persis
-      print("Tidak ada email yang cocok persis");
+      debugPrint("Tidak ada email yang cocok persis");
       return null;
     } catch (e) {
-      print("Error saat mencari email: $e");
+      debugPrint("Error saat mencari email: $e");
       // Untuk debugging, lemparkan error agar dapat dilihat
       throw Exception("Error mencari email: $e");
     }
@@ -239,11 +240,11 @@ class UserRepository {
   /// Reset password directly with email (tanpa memerlukan user ID)
   Future<Map<String, dynamic>> resetPasswordDirect(String email, String newPassword) async {
     try {
-      print("Mencoba reset password langsung untuk: $email");
+      debugPrint("Mencoba reset password langsung untuk: $email");
       
       // Pendekatan 1: Menggunakan filter yang lebih tepat untuk menemukan user
       try {
-        print("Mencoba menemukan user dengan email exact match");
+        debugPrint("Mencoba menemukan user dengan email exact match");
         
         // Cari user dengan filter yang lebih tepat
         final searchResult = await _pb.collection('users').getList(
@@ -251,11 +252,11 @@ class UserRepository {
           sort: '-created',
         );
         
-        print("Hasil pencarian exact: ${searchResult.items.length} users");
+        debugPrint("Hasil pencarian exact: ${searchResult.items.length} users");
         
         if (searchResult.items.isNotEmpty) {
           final userId = searchResult.items[0].id;
-          print("Ditemukan user dengan ID: $userId");
+          debugPrint("Ditemukan user dengan ID: $userId");
           
           // Update password user
           await _pb.collection('users').update(
@@ -269,27 +270,27 @@ class UserRepository {
           return {'success': true, 'method': 'exact_match_update'};
         }
       } catch (e) {
-        print("Error pada exact match: $e");
+        debugPrint("Error pada exact match: $e");
       }
       
       // Pendekatan 2: Menggunakan API sendiri untuk pengubahan password langsung
       try {
-        print("Mencoba API admin untuk reset password");
+        debugPrint("Mencoba API admin untuk reset password");
         
         // Mencari user dengan email di database (case insensitive)
         final emailLower = email.toLowerCase();
         final users = await _pb.collection('users').getList(
-          filter: 'LOWER(email) ~ "${emailLower}"',
+          filter: 'LOWER(email) ~ "$emailLower"',
           sort: '-created',
         );
         
-        print("Ditemukan ${users.items.length} users dengan email yang mirip");
+        debugPrint("Ditemukan ${users.items.length} users dengan email yang mirip");
         
         // Temukan yang cocok persis
         for (final user in users.items) {
           final userEmail = user.data['email'].toString().toLowerCase();
           if (userEmail == emailLower) {
-            print("Match ditemukan: ${user.id}");
+            debugPrint("Match ditemukan: ${user.id}");
             
             // Update password
             await _pb.collection('users').update(
@@ -304,12 +305,12 @@ class UserRepository {
           }
         }
       } catch (e) {
-        print("Error pada admin reset: $e");
+        debugPrint("Error pada admin reset: $e");
       }
       
       // Pendekatan 3: Menggunakan collection API langsung
       try {
-        print("Mencoba collection API langsung untuk reset password");
+        debugPrint("Mencoba collection API langsung untuk reset password");
         
         // Gunakan getFullList dengan filter yang lebih spesifik
         final records = await _pb.collection('users').getFullList(
@@ -318,7 +319,7 @@ class UserRepository {
         
         if (records.isNotEmpty) {
           final userId = records[0].id;
-          print("Ditemukan user ID dari collection API: $userId");
+          debugPrint("Ditemukan user ID dari collection API: $userId");
           
           // Reset password
           await _pb.collection('users').update(
@@ -332,7 +333,7 @@ class UserRepository {
           return {'success': true, 'method': 'direct_collection_api'};
         }
       } catch (e) {
-        print("Error pada collection API: $e");
+        debugPrint("Error pada collection API: $e");
       }
       
       // Jika sampai di sini, berarti tidak berhasil mengubah password
@@ -341,11 +342,11 @@ class UserRepository {
         'error': 'Tidak dapat menemukan akun dengan email $email. Silakan periksa alamat email Anda.'
       };
     } catch (e) {
-      print("Error utama saat reset password: $e");
+      debugPrint("Error utama saat reset password: $e");
       
       return {
         'success': false,
-        'error': 'Gagal reset password: ${e.toString()}'
+        'error': 'Gagal reset password: $e'
       };
     }
   }

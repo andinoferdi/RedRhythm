@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'library_controller.dart';
+import '../../controllers/library_controller.dart';
 import 'library_tab_enum.dart';
-import '../../utils/app_colors.dart';
+
 
 class LibraryTabSelector extends StatelessWidget {
   const LibraryTabSelector({super.key});
@@ -24,10 +24,10 @@ class LibraryTabSelector extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3)),
                       borderRadius: BorderRadius.circular(30),
                       color: isSelected 
-                        ? AppColors.primary.withOpacity(0.8) 
+                        ? const Color.fromRGBO(251, 176, 60, 0.8) 
                         : Colors.transparent,
                     ),
                     child: Text(
