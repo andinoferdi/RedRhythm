@@ -12,6 +12,8 @@ import 'add_songs_screen.dart';
 import '../../controllers/player_controller.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
+import '../../widgets/animated_sound_bars.dart';
+import '../../widgets/custom_bottom_nav.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   final RecordModel playlist;
@@ -32,12 +34,15 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   List<Song> _songs = [];
   String? _errorMessage;
   late RecordModel _currentPlaylist;
+  RecordModel? _creatorUser;
+  bool _isLoadingCreator = true;
 
   @override
   void initState() {
     super.initState();
     _currentPlaylist = widget.playlist;
     _fetchPlaylistSongs();
+    _fetchCreatorInfo();
   }
 
   Future<void> _fetchPlaylistSongs() async {
@@ -61,6 +66,30 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       setState(() {
         _errorMessage = 'Failed to load songs: ${e.toString()}';
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _fetchCreatorInfo() async {
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+
+      final creatorId = _currentPlaylist.data['user_id'] as String?;
+      if (creatorId != null && creatorId.isNotEmpty) {
+        final creator = await pbService.pb.collection('users').getOne(creatorId);
+        setState(() {
+          _creatorUser = creator;
+          _isLoadingCreator = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingCreator = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoadingCreator = false;
       });
     }
   }
@@ -117,8 +146,19 @@ void _playSong(Song song, int index) {
 
   /// Play all songs in playlist starting from first
 void _playAllSongs() {
-  if (_songs.isNotEmpty) {
-    // Set up queue with all playlist songs starting from first
+  if (_songs.isEmpty) return;
+  
+  final playerState = ref.read(playerControllerProvider);
+  final isPlaylistPlaying = _songs.any((song) => song.id == playerState.currentSong?.id);
+  
+  if (isPlaylistPlaying && playerState.isPlaying) {
+    // Pause current playback
+    ref.read(playerControllerProvider.notifier).pause();
+  } else if (isPlaylistPlaying && !playerState.isPlaying) {
+    // Resume current playback
+    ref.read(playerControllerProvider.notifier).resume();
+  } else {
+    // Start playing from first song
     ref.read(playerControllerProvider.notifier).playQueue(_songs, 0);
   }
 }
@@ -126,6 +166,7 @@ void _playAllSongs() {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -142,6 +183,12 @@ void _playAllSongs() {
                   child: _buildPlayButton(),
                 ),
                 _buildSongsList(),
+                // Add bottom spacing for navigation bar and mini player
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 70 + bottomPadding + (playerState.currentSong != null ? 64 : 0),
+                  ),
+                ),
               ],
             ),
           ),
@@ -149,6 +196,10 @@ void _playAllSongs() {
           if (playerState.currentSong != null)
             const MiniPlayer(),
         ],
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: 2, // Library tab index
+        bottomPadding: bottomPadding,
       ),
     );
   }
@@ -226,6 +277,79 @@ void _playAllSongs() {
     );
   }
 
+  Widget _buildCreatorAvatar() {
+    if (_isLoadingCreator) {
+      return CircleAvatar(
+        radius: 12,
+        backgroundColor: Colors.grey[700],
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.grey[400],
+          ),
+        ),
+      );
+    }
+
+    final avatarUrl = _creatorUser?.data['avatar'] as String?;
+    final pbService = PocketBaseService();
+    
+    if (avatarUrl != null && avatarUrl.isNotEmpty && _creatorUser != null) {
+      final imageUrl = pbService.pb.files.getUrl(_creatorUser!, avatarUrl).toString();
+      return CircleAvatar(
+        radius: 12,
+        backgroundImage: NetworkImage(imageUrl),
+        onBackgroundImageError: (exception, stackTrace) {
+          // Fallback to default avatar
+        },
+        child: null,
+      );
+    }
+
+    return CircleAvatar(
+      radius: 12,
+      backgroundColor: Colors.grey[700],
+      child: const Icon(
+        Icons.person,
+        size: 16,
+        color: Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildCreatorText() {
+    if (_isLoadingCreator) {
+      return Text(
+        'Loading...',
+        style: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
+
+    final username = _creatorUser?.data['username'] as String?;
+    final currentUserId = PocketBaseService().currentUser?.id;
+    final creatorId = _currentPlaylist.data['user_id'] as String?;
+    
+    final isCurrentUser = currentUserId == creatorId;
+    final displayName = isCurrentUser 
+        ? 'kamu' 
+        : (username ?? 'Unknown User');
+
+    return Text(
+      'Dibuat oleh $displayName',
+      style: TextStyle(
+        color: Colors.grey[400],
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
   Widget _buildPlaylistInfo() {
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -271,24 +395,9 @@ void _playAllSongs() {
           ],
           Row(
             children: [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Colors.grey[700],
-                child: const Icon(
-                  Icons.person,
-                  size: 16,
-                  color: Colors.white,
-                ),
-              ),
+              _buildCreatorAvatar(),
               const SizedBox(width: 8),
-              Text(
-                'Dibuat oleh kamu',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              _buildCreatorText(),
               const SizedBox(width: 16),
               Text(
                 '${_songs.length} lagu',
@@ -305,6 +414,9 @@ void _playAllSongs() {
   }
 
   Widget _buildPlayButton() {
+    final playerState = ref.watch(playerControllerProvider);
+    final isPlaylistPlaying = _songs.any((song) => song.id == playerState.currentSong?.id);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -312,10 +424,15 @@ void _playAllSongs() {
           Flexible(
             child: ElevatedButton.icon(
               onPressed: _songs.isNotEmpty ? _playAllSongs : null,
-              icon: const Icon(Icons.play_arrow, color: Colors.white),
-              label: const Text(
-                'Putar',
-                style: TextStyle(
+              icon: Icon(
+                isPlaylistPlaying && playerState.isPlaying 
+                    ? Icons.pause 
+                    : Icons.play_arrow, 
+                color: Colors.white,
+              ),
+              label: Text(
+                isPlaylistPlaying && playerState.isPlaying ? 'Jeda' : 'Putar',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -457,6 +574,10 @@ void _playAllSongs() {
   }
 
   Widget _buildSongItem(Song song, int index) {
+    final playerState = ref.watch(playerControllerProvider);
+    final isCurrentSong = playerState.currentSong?.id == song.id;
+    final isPlaying = isCurrentSong && playerState.isPlaying;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: ClipRRect(
@@ -478,8 +599,8 @@ void _playAllSongs() {
       ),
       title: Text(
         song.title,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: isCurrentSong ? Colors.red : Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -491,12 +612,18 @@ void _playAllSongs() {
           fontSize: 14,
         ),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.more_vert, color: Colors.grey),
-        onPressed: () {
-          // TODO: Show song options
-        },
-      ),
+      trailing: isPlaying
+          ? const AnimatedSoundBars(
+              color: Colors.red,
+              size: 20.0,
+              isAnimating: true,
+            )
+          : IconButton(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onPressed: () {
+                // TODO: Show song options
+              },
+            ),
       onTap: () {
         _playSong(song, index);
       },

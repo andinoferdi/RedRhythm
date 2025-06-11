@@ -219,7 +219,7 @@ class __$$SongImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SongImpl implements _Song {
+class _$SongImpl with DiagnosticableTreeMixin implements _Song {
   const _$SongImpl(
       {required this.id,
       required this.title,
@@ -257,8 +257,25 @@ class _$SongImpl implements _Song {
   final String? audioFileName;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'Song'))
+      ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('title', title))
+      ..add(DiagnosticsProperty('artist', artist))
+      ..add(DiagnosticsProperty('albumArtUrl', albumArtUrl))
+      ..add(DiagnosticsProperty('durationInSeconds', durationInSeconds))
+      ..add(DiagnosticsProperty('albumName', albumName))
+      ..add(DiagnosticsProperty('lyrics', lyrics))
+      ..add(DiagnosticsProperty('playlistId', playlistId))
+      ..add(DiagnosticsProperty('audioFileUrl', audioFileUrl))
+      ..add(DiagnosticsProperty('audioFileName', audioFileName));
   }
 
   @override

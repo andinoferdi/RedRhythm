@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
 import '../../widgets/user_avatar.dart';
 import '../../utils/app_colors.dart';
+import '../../routes/app_router.dart';
 
 @RoutePage()
 class ExploreScreen extends ConsumerWidget {
@@ -28,7 +29,7 @@ class ExploreScreen extends ConsumerWidget {
               const SizedBox(height: 16), // Consistent top spacing
               _buildSearchHeader(context, ref),
               const SizedBox(height: 16), // Consistent spacing
-              _buildSearchBar(),
+              _buildSearchBar(context),
               const SizedBox(height: 24), // Adjusted spacing
               _buildYourTopGenres(),
               const SizedBox(height: 30),
@@ -97,33 +98,39 @@ class ExploreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: AppColors.greyDark, width: 1),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: 16),
-            Icon(
-              Icons.search,
-              color: AppColors.greyLight,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Songs, Artists, Podcasts & More',
-              style: TextStyle(
+      child: GestureDetector(
+        onTap: () {
+          // Navigate to search screen
+          context.router.push(const SearchRoute());
+        },
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: AppColors.greyDark, width: 1),
+          ),
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              Icon(
+                Icons.search,
                 color: AppColors.greyLight,
-                fontSize: 16,
+                size: 24,
               ),
-            ),
-          ],
+              const SizedBox(width: 12),
+              Text(
+                'Songs, Artists, Podcasts & More',
+                style: TextStyle(
+                  color: AppColors.greyLight,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

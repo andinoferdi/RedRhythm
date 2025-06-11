@@ -9,6 +9,7 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/explore/explore_screen.dart';
+import '../screens/search/search_screen.dart';
 import '../screens/library/library_screen.dart';
 import '../screens/stats/stats_screen.dart';
 import '../screens/music_player/music_player_screen.dart';
@@ -55,6 +56,7 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: ForgotPasswordRoute.page),
     AutoRoute(page: HomeRoute.page),
     AutoRoute(page: ExploreRoute.page),
+    AutoRoute(page: SearchRoute.page),
     AutoRoute(page: LibraryRoute.page),
     AutoRoute(page: StatsRoute.page),
     AutoRoute(page: MusicPlayerRoute.page, fullscreenDialog: true),
