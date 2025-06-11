@@ -11,6 +11,7 @@ import '../library/playlist_form_dialog.dart';
 import 'add_songs_screen.dart';
 import '../../controllers/player_controller.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/mini_player.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   final RecordModel playlist;
@@ -108,40 +109,45 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     }
   }
 
-  /// Play song and navigate to music player
-  void _playSongAndNavigate(Song song, int index) {
-    // Set up queue with all playlist songs
-    ref.read(playerControllerProvider.notifier).playQueue(_songs, index);
-    
-    // Navigate to music player
-    context.router.push(MusicPlayerRoute(song: song));
-  }
+  /// Play song (show in mini player, don't navigate)
+void _playSong(Song song, int index) {
+  // Set up queue with all playlist songs
+  ref.read(playerControllerProvider.notifier).playQueue(_songs, index);
+}
 
   /// Play all songs in playlist starting from first
-  void _playAllSongs() {
-    if (_songs.isNotEmpty) {
-      // Set up queue with all playlist songs starting from first
-      ref.read(playerControllerProvider.notifier).playQueue(_songs, 0);
-      
-      // Navigate to music player
-      context.router.push(MusicPlayerRoute(song: _songs.first));
-    }
+void _playAllSongs() {
+  if (_songs.isNotEmpty) {
+    // Set up queue with all playlist songs starting from first
+    ref.read(playerControllerProvider.notifier).playQueue(_songs, 0);
   }
+}
 
   @override
   Widget build(BuildContext context) {
+    final playerState = ref.watch(playerControllerProvider);
+    
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: _buildPlaylistInfo(),
+      body: Column(
+        children: [
+          Expanded(
+            child: CustomScrollView(
+              slivers: [
+                _buildSliverAppBar(),
+                SliverToBoxAdapter(
+                  child: _buildPlaylistInfo(),
+                ),
+                SliverToBoxAdapter(
+                  child: _buildPlayButton(),
+                ),
+                _buildSongsList(),
+              ],
+            ),
           ),
-          SliverToBoxAdapter(
-            child: _buildPlayButton(),
-          ),
-          _buildSongsList(),
+          // Show mini player if there's a current song
+          if (playerState.currentSong != null)
+            const MiniPlayer(),
         ],
       ),
     );
@@ -492,7 +498,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         },
       ),
       onTap: () {
-        _playSongAndNavigate(song, index);
+        _playSong(song, index);
       },
     );
   }
