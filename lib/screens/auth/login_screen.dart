@@ -6,6 +6,7 @@ import '../../states/auth_state.dart';
 import '../../routes/app_router.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/loading_button.dart';
 
 @RoutePage()
 class LoginScreen extends ConsumerStatefulWidget {
@@ -236,32 +237,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading
-                        ? null
-                        : _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      disabledBackgroundColor: Colors.grey,
-                    ),
-                    child: authState.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Log in',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
+                LoadingButton(
+                  text: 'Log in',
+                  isLoading: authState.isLoading,
+                  onPressed: _handleLogin,
                 ),
                 const SizedBox(height: 20),
                 Row(

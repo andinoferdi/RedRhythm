@@ -5,6 +5,7 @@ import '../../controllers/auth_controller.dart';
 import '../../states/auth_state.dart';
 import '../../routes/app_router.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/loading_button.dart';
 
 @RoutePage()
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -290,32 +291,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: authState.isLoading
-                        ? null
-                        : _handleRegister,
-                    style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      disabledBackgroundColor: Colors.grey,
-                    ),
-                    child: authState.isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Register',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
+                LoadingButton(
+                  text: 'Register',
+                  isLoading: authState.isLoading,
+                  onPressed: _handleRegister,
                 ),
                 const SizedBox(height: 30),
                 Row(

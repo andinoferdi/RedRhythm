@@ -6,6 +6,7 @@ import '../../routes/app_router.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../utils/app_colors.dart';
+import '../../widgets/loading_button.dart';
 
 @RoutePage()
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -396,30 +397,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 30),
           
           // Continue button
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _handleNextStep,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                disabledBackgroundColor: Colors.grey,
-              ),
-              child: _isLoading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : Text(
-                      _currentStep == 1 ? 'Lanjutkan' : 'Reset Password',
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-            ),
+          LoadingButton(
+            text: _currentStep == 1 ? 'Lanjutkan' : 'Reset Password',
+            isLoading: _isLoading,
+            onPressed: _handleNextStep,
           ),
           const SizedBox(height: 20),
           Center(
