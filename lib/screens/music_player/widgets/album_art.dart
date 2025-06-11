@@ -37,4 +37,4 @@ class AlbumArt extends StatelessWidget {
       return AssetImage(imageUrl);
     }
   }
-} 
+}

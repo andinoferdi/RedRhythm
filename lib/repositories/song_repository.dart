@@ -18,6 +18,7 @@ class SongRepository {
         page: 1,
         perPage: 100,
         expand: 'artist_id,album_id',
+        sort: 'title',
       );
       
       return response.items.map((record) => Song.fromRecord(record)).toList();
@@ -99,4 +100,4 @@ class SongRepository {
       throw Exception('Failed to search songs: $e');
     }
   }
-} 
+}

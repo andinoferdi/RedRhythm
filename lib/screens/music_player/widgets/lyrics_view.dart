@@ -39,4 +39,4 @@ class LyricsView extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -29,4 +29,4 @@ class AuthWrapper extends ConsumerWidget {
     // If user is not authenticated, navigate to auth options screen
     return AutoRouter();
   }
-} 
+}

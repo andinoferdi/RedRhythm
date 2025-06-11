@@ -7,4 +7,4 @@ export 'music_player/music_player_screen.dart';
 export 'playlist/playlist_screen.dart';
 export 'stats/stats_screen.dart';
 export 'onboarding/onboarding_screen.dart';
-export 'splash/splash_screen.dart'; 
+export 'splash/splash_screen.dart';

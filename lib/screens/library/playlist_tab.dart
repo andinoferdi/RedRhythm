@@ -3,7 +3,8 @@ import 'package:pocketbase/pocketbase.dart';
 import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
-import 'playlist_form_dialog.dart';
+import 'playlist_creation_flow.dart';
+import '../playlist/playlist_detail_screen.dart';
 
 class PlaylistTab extends StatefulWidget {
   const PlaylistTab({super.key});
@@ -16,7 +17,6 @@ class _PlaylistTabState extends State<PlaylistTab> {
   bool _isLoading = true;
   List<RecordModel> _playlists = [];
   String? _errorMessage;
-  RecordModel? _selectedPlaylist;
 
   @override
   void initState() {
@@ -49,21 +49,153 @@ class _PlaylistTabState extends State<PlaylistTab> {
     }
   }
 
-  void _showAddPlaylistDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => PlaylistFormDialog(
-        onSuccess: _fetchPlaylists,
+  void _showCreatePlaylistFlow() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlaylistCreationFlow(
+          onSuccess: _fetchPlaylists,
+        ),
       ),
     );
   }
 
-  void _showEditPlaylistDialog(RecordModel playlist) {
-    showDialog(
+  void _navigateToPlaylistDetail(RecordModel playlist) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlaylistDetailScreen(
+          playlist: playlist,
+          onPlaylistUpdated: _fetchPlaylists,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteBottomSheet(RecordModel playlist) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => PlaylistFormDialog(
-        playlist: playlist,
-        onSuccess: _fetchPlaylists,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: _buildPlaylistImage(playlist, size: 60),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Playlist',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildBottomSheetOption(
+              icon: Icons.delete_outline,
+              title: 'Hapus playlist',
+              subtitle: 'Playlist akan dihapus secara permanen',
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmDialog(playlist);
+              },
+              isDestructive: true,
+            ),
+            const SizedBox(height: 8),
+            _buildBottomSheetOption(
+              icon: Icons.share_outlined,
+              title: 'Bagikan playlist',
+              subtitle: 'Bagikan ke teman-teman',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement share functionality
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDestructive ? Colors.red : Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -74,15 +206,16 @@ class _PlaylistTabState extends State<PlaylistTab> {
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.delete_outline, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text('Hapus Playlist', style: TextStyle(color: Colors.white)),
-          ],
+        title: const Text(
+          'Hapus playlist?',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
-          'Apakah kamu yakin ingin menghapus playlist "${playlist.data['name']}"?\n\nTindakan ini tidak dapat dibatalkan.',
+          'Playlist "${playlist.data['name']}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
           style: TextStyle(color: Colors.grey[300]),
         ),
         actions: [
@@ -185,179 +318,170 @@ class _PlaylistTabState extends State<PlaylistTab> {
       );
     }
 
-    // If no playlists, show a centered add button
-    if (_playlists.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Kamu belum memiliki playlist',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
+    return Column(
+      children: [
+        // Add playlist button at top
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showCreatePlaylistFlow,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text(
+                'Tambah Playlist',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _showAddPlaylistDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('Tambah Playlist'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+          ),
+        ),
+        
+        // Playlists list
+        Expanded(
+          child: _playlists.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.queue_music,
+                        size: 64,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Belum ada playlist',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Buat playlist pertamamu sekarang',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _playlists.length,
+                  itemBuilder: (context, index) {
+                    final playlist = _playlists[index];
+                    return _buildPlaylistItem(playlist);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPlaylistItem(RecordModel playlist) {
+    return GestureDetector(
+      onTap: () => _navigateToPlaylistDetail(playlist),
+      onLongPress: () => _showDeleteBottomSheet(playlist),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: _buildPlaylistImage(playlist),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    playlist.data['description']?.isNotEmpty == true
+                        ? playlist.data['description']
+                        : 'Playlist',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],
         ),
-      );
-    }
-
-    // Otherwise, show the list of playlists with an add button at the bottom
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ..._playlists.map((playlist) => _buildPlaylistItem(
-            title: playlist.data['name'] ?? 'Playlist Tanpa Judul',
-            artist: playlist.data['description'] ?? '',
-            image: playlist.data['cover_image'] ?? '',
-            playlistId: playlist.id,
-          )),
-          const SizedBox(height: 16),
-          _buildAddPlaylistButton(),
-          const SizedBox(height: 24),
-        ],
       ),
     );
   }
 
-  Widget _buildPlaylistItem({
-    required String title,
-    required String artist,
-    required String image,
-    required String playlistId,
-  }) {
-    final playlist = _playlists.firstWhere((p) => p.id == playlistId);
-    final isSelected = _selectedPlaylist?.id == playlistId;
-    
-    // Get proper image URL using repository
+  Widget _buildPlaylistImage(RecordModel playlist, {double size = 64}) {
     final pbService = PocketBaseService();
     final repository = PlaylistRepository(pbService);
     final String imageUrl = repository.getCoverImageUrl(playlist);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedPlaylist = isSelected ? null : playlist;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.red.withValues(alpha: 0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: isSelected ? Border.all(color: Colors.red, width: 1) : null,
-          ),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8.0),
-                child: imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildPlaceholderImage();
-                      },
-                    )
-                  : _buildPlaceholderImage(),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      artist.isNotEmpty ? artist : 'Tidak ada deskripsi',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Show action buttons when selected
-              if (isSelected) ...[
-                const SizedBox(width: 12),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () => _showEditPlaylistDialog(playlist),
-                      icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.blue.withValues(alpha: 0.1),
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _showDeleteConfirmDialog(playlist),
-                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.red.withValues(alpha: 0.1),
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImage() {
     return Container(
-      width: 64,
-      height: 64,
-      color: Colors.grey[800],
-      child: const Icon(Icons.music_note, color: Colors.white),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: imageUrl.isNotEmpty
+          ? Image.network(
+              imageUrl,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholderImage(size);
+              },
+            )
+          : _buildPlaceholderImage(size),
     );
   }
 
-  Widget _buildAddPlaylistButton() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: ElevatedButton.icon(
-          onPressed: _showAddPlaylistDialog,
-          icon: const Icon(Icons.add),
-          label: const Text('Tambah Playlist'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            minimumSize: const Size(200, 45),
-          ),
-        ),
+  Widget _buildPlaceholderImage(double size) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.queue_music,
+        color: Colors.grey[400],
+        size: size * 0.4,
       ),
     );
   }
-} 
+}

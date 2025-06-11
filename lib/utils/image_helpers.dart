@@ -42,4 +42,4 @@ extension RecordModelExtensions on RecordModel {
   String getEmail([String defaultValue = '']) {
     return data['email']?.toString() ?? defaultValue;
   }
-} 
+}

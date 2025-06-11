@@ -103,4 +103,4 @@ class PlayHistoryRepository {
       rethrow;
     }
   }
-} 
+}

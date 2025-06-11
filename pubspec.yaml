@@ -57,4 +57,3 @@ flutter:
     - assets/images/
     - assets/images/playlists/
     - assets/images/profile/
-    - ngrok_config.json

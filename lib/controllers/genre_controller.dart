@@ -70,4 +70,4 @@ class GenreController extends StateNotifier<GenreState> {
 /// Provider for genre controller
 final genreControllerProvider = StateNotifierProvider<GenreController, GenreState>((ref) {
   return GenreController(GetIt.I<GenreRepository>());
-}); 
+});

@@ -36,4 +36,4 @@ class GenreRepository {
       throw Exception('Failed to load genres: ${e.toString()}');
     }
   }
-} 
+}

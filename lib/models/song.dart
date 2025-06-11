@@ -91,4 +91,4 @@ class Song with _$Song {
 /// Extension to convert duration in seconds to Duration
 extension DurationExt on Song {
   Duration get duration => Duration(seconds: durationInSeconds);
-} 
+}

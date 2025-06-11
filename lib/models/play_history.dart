@@ -111,4 +111,4 @@ class PlayHistory {
       albumCoverUrl: albumCoverUrl,
     );
   }
-} 
+}

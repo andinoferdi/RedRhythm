@@ -102,4 +102,4 @@ class MusicPlayerProvider extends ChangeNotifier {
     _isRepeatEnabled = !_isRepeatEnabled;
     notifyListeners();
   }
-} 
+}

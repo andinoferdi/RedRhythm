@@ -350,4 +350,4 @@ class UserRepository {
       };
     }
   }
-} 
+}

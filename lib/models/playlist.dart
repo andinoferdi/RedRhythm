@@ -29,4 +29,4 @@ class Playlist with _$Playlist {
       songs: songs,
     );
   }
-} 
+}

@@ -389,4 +389,4 @@ class PlayerController extends StateNotifier<PlayerState> {
     // For now, just pause the current song
     pauseSong();
   }
-} 
+}

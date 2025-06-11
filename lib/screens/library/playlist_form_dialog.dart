@@ -8,12 +8,12 @@ import '../../repositories/playlist_repository.dart';
 import '../../widgets/loading_button.dart';
 
 class PlaylistFormDialog extends StatefulWidget {
-  final RecordModel? playlist; // null for add, record for edit
+  final RecordModel playlist; // Only for edit mode
   final VoidCallback? onSuccess;
 
   const PlaylistFormDialog({
     super.key,
-    this.playlist,
+    required this.playlist,
     this.onSuccess,
   });
 
@@ -34,18 +34,16 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
   @override
   void initState() {
     super.initState();
-    if (widget.playlist != null) {
-      // Edit mode - populate fields
-      _nameController.text = widget.playlist!.data['name'] ?? '';
-      _descriptionController.text = widget.playlist!.data['description'] ?? '';
-      _isPublic = widget.playlist!.data['is_public'] ?? false;
-      
-      // Get current image URL if exists
-      final coverImage = widget.playlist!.data['cover_image'] as String?;
-      if (coverImage != null && coverImage.isNotEmpty) {
-        final pbService = PocketBaseService();
-        _currentImageUrl = pbService.pb.files.getUrl(widget.playlist!, coverImage).toString();
-      }
+    // Edit mode - populate fields
+    _nameController.text = widget.playlist.data['name'] ?? '';
+    _descriptionController.text = widget.playlist.data['description'] ?? '';
+    _isPublic = widget.playlist.data['is_public'] ?? false;
+    
+    // Get current image URL if exists
+    final coverImage = widget.playlist.data['cover_image'] as String?;
+    if (coverImage != null && coverImage.isNotEmpty) {
+      final pbService = PocketBaseService();
+      _currentImageUrl = pbService.pb.files.getUrl(widget.playlist, coverImage).toString();
     }
   }
 
@@ -55,8 +53,6 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
     _descriptionController.dispose();
     super.dispose();
   }
-
-  bool get isEditMode => widget.playlist != null;
 
   String? _validateName(String? value) {
     if (value == null || value.trim().isEmpty) {
@@ -119,26 +115,15 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
       
       final repository = PlaylistRepository(pbService);
 
-      if (isEditMode) {
-        // Update existing playlist
-        await repository.updatePlaylist(
-          playlistId: widget.playlist!.id,
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          isPublic: _isPublic,
-          coverImageFile: _selectedImage,
-        );
-        _showSuccessMessage('Playlist berhasil diperbarui!');
-      } else {
-        // Create new playlist
-        await repository.createPlaylist(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          isPublic: _isPublic,
-          coverImageFile: _selectedImage,
-        );
-        _showSuccessMessage('Playlist berhasil dibuat!');
-      }
+      // Update existing playlist
+      await repository.updatePlaylist(
+        playlistId: widget.playlist.id,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        isPublic: _isPublic,
+        coverImageFile: _selectedImage,
+      );
+      _showSuccessMessage('Playlist berhasil diperbarui!');
 
       widget.onSuccess?.call();
       if (mounted) {
@@ -206,16 +191,16 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                 // Header
                 Row(
                   children: [
-                    Icon(
-                      isEditMode ? Icons.edit : Icons.add,
+                    const Icon(
+                      Icons.edit,
                       color: Colors.red,
                       size: 28,
                     ),
                     const SizedBox(width: 12),
-                    Expanded(
+                    const Expanded(
                       child: Text(
-                        isEditMode ? 'Edit Playlist' : 'Buat Playlist Baru',
-                        style: const TextStyle(
+                        'Edit Playlist',
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -338,7 +323,7 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: LoadingButton(
-                        text: isEditMode ? 'Simpan' : 'Buat Playlist',
+                        text: 'Simpan',
                         isLoading: _isLoading,
                         onPressed: _savePlaylist,
                         backgroundColor: Colors.red,
@@ -573,4 +558,4 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
       ),
     );
   }
-} 
+}

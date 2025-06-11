@@ -44,4 +44,4 @@ class AuthState with _$AuthState {
         successMessage: message,
         isLoading: false,
       );
-} 
+}

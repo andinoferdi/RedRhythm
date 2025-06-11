@@ -177,4 +177,4 @@ class PlaylistScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

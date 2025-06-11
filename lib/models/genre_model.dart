@@ -51,4 +51,4 @@ class IconInfo {
     required this.filename,
     required this.url,
   });
-} 
+}

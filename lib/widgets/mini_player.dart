@@ -132,4 +132,4 @@ class MiniPlayer extends ConsumerWidget {
       ),
     );
   }
-} 
+}

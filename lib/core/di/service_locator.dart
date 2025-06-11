@@ -32,4 +32,4 @@ Future<void> setupServiceLocator() async {
   ));
   
   getIt.registerFactory<PlayerController>(() => PlayerController());
-} 
+}

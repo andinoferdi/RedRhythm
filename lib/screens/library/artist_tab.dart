@@ -99,4 +99,4 @@ class ArtistTab extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -25,4 +25,4 @@ class ProgressBar extends StatelessWidget {
       },
     );
   }
-} 
+}

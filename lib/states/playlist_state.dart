@@ -17,4 +17,4 @@ class PlaylistState with _$PlaylistState {
 
   factory PlaylistState.fromJson(Map<String, dynamic> json) =>
       _$PlaylistStateFromJson(json);
-} 
+}

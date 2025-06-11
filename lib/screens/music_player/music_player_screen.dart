@@ -402,4 +402,4 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return '$twoDigitMinutes:$twoDigitSeconds';
   }
-} 
+}

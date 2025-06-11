@@ -161,4 +161,4 @@ class StripedProgressBarPainter extends CustomPainter {
   bool shouldRepaint(StripedProgressBarPainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
-} 
+}

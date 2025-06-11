@@ -1,10 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:math' show min;
 import '../utils/app_config.dart';
 
 
@@ -193,7 +191,7 @@ class PocketBaseService {
   /// Retry auth refresh if we have stored credentials but auth failed during init
   Future<bool> retryAuthRefresh() async {
     try {
-      if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty && !_pb.baseUrl.contains('localhost')) {
+      if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty) {
         debugPrint('PocketBase: Retrying auth refresh...');
         await _pb.collection('users').authRefresh();
         debugPrint('PocketBase: Auth refresh retry successful');
@@ -268,8 +266,7 @@ class PocketBaseService {
     if (!_isInitialized) {
       debugPrint('PocketBase: Starting initialization...');
       
-      // Load ngrok config and determine URL first
-      await AppConfig.loadNgrokConfig();
+      // Use emulator URL directly
       final url = await determinePocketBaseUrl();
       
       debugPrint('PocketBase: Setting base URL to: $url');
@@ -286,95 +283,38 @@ class PocketBaseService {
 
   // Test and determine the best PocketBase URL
   Future<String> determinePocketBaseUrl() async {
-    debugPrint("Determining PocketBase URL...");
+    debugPrint("PocketBase: Determining URL for emulator...");
     
-    // Get possible URLs from AppConfig
+    // Get possible URLs from AppConfig (prioritizes emulator URLs)
     final List<String> possibleUrls = List.from(AppConfig.possibleUrls);
     
     for (final url in possibleUrls) {
-      debugPrint("Trying URL: $url");
       try {
-        // First try a basic HEAD request
-        try {
-          debugPrint("Attempting HEAD request to $url");
-          final headResponse = await http.head(Uri.parse(url)).timeout(
-            AppConfig.shortTimeout,
-            onTimeout: () {
-              debugPrint("HEAD request timeout for $url");
-              return http.Response('Timeout', 408);
-            },
-          );
-          debugPrint("HEAD request status: ${headResponse.statusCode}");
-        } catch (e) {
-          debugPrint("HEAD request failed: $e");
-        }
-        
-        // Then try the health check
-        debugPrint("Checking connection to $url/api/health");
-        
+        // Quick health check
         final response = await http.get(
           Uri.parse('$url/api/health'),
           headers: AppConfig.getHeadersForUrl(url),
         ).timeout(
           AppConfig.connectionTimeout,
-          onTimeout: () {
-            debugPrint("Health check timeout after ${AppConfig.connectionTimeout.inSeconds} seconds");
-            return http.Response('Timeout', 408);
-          },
+          onTimeout: () => http.Response('Timeout', 408),
         );
         
-        debugPrint("Response status: ${response.statusCode}");
-        debugPrint("Response headers: ${response.headers}");
-        
-        if (response.statusCode < 400) {
-          debugPrint("Successfully connected to $url");
-          debugPrint("Response body: ${response.body}");
+        if (response.statusCode == 200) {
+          debugPrint("PocketBase: Connected to $url");
           return url;
-        } else {
-          debugPrint("Failed with status ${response.statusCode}");
-          if (response.body.isNotEmpty) {
-            debugPrint("Error body: ${response.body}");
-          }
         }
       } catch (e) {
-        debugPrint("Connection error: $e");
-        if (e is SocketException) {
-          debugPrint("Socket details - Address: ${e.address}, Port: ${e.port}");
-        }
+        // Silently continue to next URL
       }
     }
     
-    // If all attempts fail, return default URL from AppConfig
-    debugPrint("All URLs failed, using default URL from AppConfig");
+    // If all attempts fail, return default emulator URL
+    debugPrint("PocketBase: Using default emulator URL");
     return AppConfig.defaultUrl;
   }
 
-  // Helper function to check if host is reachable
-  Future<bool> isHostReachable(String url) async {
-    try {
-      debugPrint("Memeriksa koneksi ke $url");
-      final response = await http.get(
-        Uri.parse(url),
-        headers: AppConfig.getHeadersForUrl(url),
-      ).timeout(
-        AppConfig.connectionTimeout,
-        onTimeout: () {
-          debugPrint("Timeout saat menghubungi $url");
-          return http.Response('Timeout', 408);
-        },
-      );
-      final isSuccess = response.statusCode < 400;
-      debugPrint("Respons dari $url: ${response.statusCode} (${isSuccess ? 'Sukses' : 'Gagal'})");
-      if (isSuccess) {
-        debugPrint("Respons body: ${response.body.substring(0, min(100, response.body.length))}...");
-      }
-      return isSuccess;
-    } catch (e) {
-      debugPrint("Error saat menghubungi $url: $e");
-      return false;
-    }
-  }
+
 }
 
 // Global instance for convenience
-final pocketbaseService = PocketBaseService(); 
+final pocketbaseService = PocketBaseService();

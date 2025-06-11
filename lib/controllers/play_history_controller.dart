@@ -125,4 +125,4 @@ final playHistoryControllerProvider =
 // Provider untuk recently played songs (lebih mudah digunakan di UI)
 final recentlyPlayedProvider = Provider<List<PlayHistory>>((ref) {
   return ref.watch(playHistoryControllerProvider).recentlyPlayed;
-}); 
+});

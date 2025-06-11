@@ -1,0 +1,344 @@
+import 'package:flutter/material.dart';
+import 'package:pocketbase/pocketbase.dart';
+import '../../models/song.dart';
+import '../../repositories/song_repository.dart';
+import '../../repositories/song_playlist_repository.dart';
+import '../../services/pocketbase_service.dart';
+import '../../utils/app_colors.dart';
+
+class AddSongsScreen extends StatefulWidget {
+  final RecordModel playlist;
+
+  const AddSongsScreen({super.key, required this.playlist});
+
+  @override
+  State<AddSongsScreen> createState() => _AddSongsScreenState();
+}
+
+class _AddSongsScreenState extends State<AddSongsScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Song> _allSongs = [];
+  List<Song> _filteredSongs = [];
+  Set<String> _selectedSongIds = {};
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSongs();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadSongs() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      final songRepository = SongRepository(pbService);
+      final songs = await songRepository.getAllSongs();
+      
+      setState(() {
+        _allSongs = songs;
+        _filteredSongs = songs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Gagal memuat lagu: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _filterSongs(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredSongs = _allSongs;
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredSongs = _allSongs.where((song) {
+        return song.title.toLowerCase().contains(query.toLowerCase()) ||
+               song.artist.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+  }
+
+  Future<void> _addSelectedSongs() async {
+    if (_selectedSongIds.isEmpty) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final pbService = PocketBaseService();
+      final songPlaylistRepository = SongPlaylistRepository(pbService);
+
+      int successCount = 0;
+      int failCount = 0;
+
+      for (final songId in _selectedSongIds) {
+        try {
+          await songPlaylistRepository.addSongToPlaylist(
+            playlistId: widget.playlist.id,
+            songId: songId,
+          );
+          successCount++;
+        } catch (e) {
+          failCount++;
+          debugPrint('Failed to add song $songId: $e');
+        }
+      }
+
+      if (mounted) {
+        String message;
+        if (failCount == 0) {
+          message = '$successCount lagu berhasil ditambahkan';
+        } else {
+          message = '$successCount lagu ditambahkan, $failCount gagal';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
+          ),
+        );
+
+        Navigator.pop(context, true); // Return true to indicate success
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan lagu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        title: Text(
+          'Tambah Lagu ke ${widget.playlist.data['name']}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          if (_selectedSongIds.isNotEmpty)
+            TextButton(
+              onPressed: _isLoading ? null : _addSelectedSongs,
+              child: Text(
+                'Tambah (${_selectedSongIds.length})',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _filterSongs,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Cari lagu atau artis...',
+                hintStyle: TextStyle(color: Colors.grey[400]),
+                prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+                filled: true,
+                fillColor: Colors.grey[800],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ),
+
+          // Songs List
+          Expanded(
+            child: _buildSongsList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSongsList() {
+    if (_isLoading && _allSongs.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.red),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadSongs,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_filteredSongs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.music_note,
+              size: 64,
+              color: Colors.grey[600],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _searchController.text.isEmpty 
+                  ? 'Tidak ada lagu tersedia'
+                  : 'Tidak ditemukan lagu yang cocok',
+              style: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: _filteredSongs.length,
+      itemBuilder: (context, index) {
+        final song = _filteredSongs[index];
+        final isSelected = _selectedSongIds.contains(song.id);
+        
+        return _buildSongItem(song, isSelected);
+      },
+    );
+  }
+
+  Widget _buildSongItem(Song song, bool isSelected) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.red.withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: isSelected 
+            ? Border.all(color: Colors.red.withOpacity(0.3))
+            : null,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            width: 48,
+            height: 48,
+            color: Colors.grey[800],
+            child: song.albumArtUrl.isNotEmpty
+                ? Image.network(
+                    song.albumArtUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.music_note, color: Colors.white);
+                    },
+                  )
+                : const Icon(Icons.music_note, color: Colors.white),
+          ),
+        ),
+        title: Text(
+          song.title,
+          style: TextStyle(
+            color: isSelected ? Colors.red : Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          song.artist,
+          style: TextStyle(
+            color: Colors.grey[400],
+            fontSize: 14,
+          ),
+        ),
+        trailing: Checkbox(
+          value: isSelected,
+          onChanged: (bool? value) {
+            setState(() {
+              if (value == true) {
+                _selectedSongIds.add(song.id);
+              } else {
+                _selectedSongIds.remove(song.id);
+              }
+            });
+          },
+          activeColor: Colors.red,
+          checkColor: Colors.white,
+        ),
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              _selectedSongIds.remove(song.id);
+            } else {
+              _selectedSongIds.add(song.id);
+            }
+          });
+        },
+      ),
+    );
+  }
+} 

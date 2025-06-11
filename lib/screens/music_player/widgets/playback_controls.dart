@@ -86,4 +86,4 @@ class PlaybackControls extends StatelessWidget {
       onPressed: () => provider.toggleRepeat(),
     );
   }
-} 
+}

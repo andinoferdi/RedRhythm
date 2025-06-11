@@ -102,4 +102,3 @@ class AuthOptionsScreen extends StatelessWidget {
     );
   }
 }
-
