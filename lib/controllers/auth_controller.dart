@@ -27,20 +27,24 @@ class AuthController extends StateNotifier<AuthState> {
       
       // First ensure PocketBase is initialized
       await _pocketBaseService.initialize();
-      debugPrint('AuthController: PocketBase initialized');
+      debugPrint('AuthController: PocketBase initialized with URL: ${_pocketBaseService.pb.baseUrl}');
       
       // Check remember me preference
       final rememberMe = await _pocketBaseService.getRememberMe();
       debugPrint('AuthController: Remember me preference: $rememberMe');
       
-      if (rememberMe && _pocketBaseService.isAuthenticated) {
+            if (rememberMe && _pocketBaseService.isAuthenticated) {
         debugPrint('AuthController: Found stored auth, verifying...');
         // Try to get current user from stored auth
         final user = _pocketBaseService.currentUser;
         if (user != null) {
           debugPrint('AuthController: User found in storage: ${user.id}');
-          // Verify the token is still valid by trying to refresh
+          
+          // Try auth refresh with retry logic
           try {
+            debugPrint('AuthController: Attempting auth refresh...');
+            
+            // First try normal refresh
             await _userRepository.refreshAuth();
             final freshUser = _userRepository.currentUser;
             if (freshUser != null) {
@@ -49,10 +53,33 @@ class AuthController extends StateNotifier<AuthState> {
               return;
             }
           } catch (e) {
-            debugPrint('AuthController: Auth token expired/invalid: $e');
-            // Token might be expired, clear stored auth
-            await _pocketBaseService.logout();
-            await _pocketBaseService.setRememberMe(false);
+            debugPrint('AuthController: Initial auth refresh failed: $e');
+            
+            // Try one more time with PocketBase service retry
+            final retrySuccess = await _pocketBaseService.retryAuthRefresh();
+            if (retrySuccess) {
+              final freshUser = _userRepository.currentUser;
+              if (freshUser != null) {
+                debugPrint('AuthController: Auth refresh retry successful, user authenticated');
+                state = AuthState.authenticated(freshUser);
+                return;
+              }
+            }
+            
+            // If both attempts failed, check if it's a network error
+            if (e.toString().contains('Connection') || 
+                e.toString().contains('SocketException') ||
+                e.toString().contains('NetworkException')) {
+              debugPrint('AuthController: Network error detected, keeping stored auth for later retry');
+              // Don't clear auth on network errors, just set unauthenticated state
+              state = AuthState.unauthenticated();
+              return;
+            } else {
+              debugPrint('AuthController: Auth token expired/invalid, clearing stored auth');
+              // Token might be expired, clear stored auth
+              await _pocketBaseService.logout();
+              await _pocketBaseService.setRememberMe(false);
+            }
           }
         }
       } else if (rememberMe) {
@@ -67,14 +94,23 @@ class AuthController extends StateNotifier<AuthState> {
       state = AuthState.unauthenticated();
     } catch (e) {
       debugPrint('AuthController: Error during auth initialization: $e');
-      state = AuthState.error(e.toString());
-      // Fallback to unauthenticated state after showing error
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          debugPrint('AuthController: Fallback to unauthenticated after error');
-          state = AuthState.unauthenticated();
-        }
-      });
+      
+      // Check if it's a network error
+      if (e.toString().contains('Connection') || 
+          e.toString().contains('SocketException') ||
+          e.toString().contains('NetworkException')) {
+        debugPrint('AuthController: Network error during initialization, setting unauthenticated');
+        state = AuthState.unauthenticated();
+      } else {
+        state = AuthState.error('Connection failed. Please check your network and try again.');
+        // Fallback to unauthenticated state after showing error
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) {
+            debugPrint('AuthController: Fallback to unauthenticated after error');
+            state = AuthState.unauthenticated();
+          }
+        });
+      }
     }
   }
   

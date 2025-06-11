@@ -1,0 +1,5 @@
+{
+  "ngrok_url": "https://cd9d-182-4-133-76.ngrok-free.app",
+  "last_updated": "2024-01-20",
+  "note": "Update ngrok_url dengan URL baru setiap kali restart ngrok tunnel. Jika kosong, akan fallback ke local network IP."
+} 

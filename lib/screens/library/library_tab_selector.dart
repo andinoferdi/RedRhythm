@@ -27,7 +27,7 @@ class LibraryTabSelector extends StatelessWidget {
                       border: Border.all(color: const Color.fromRGBO(255, 255, 255, 0.3)),
                       borderRadius: BorderRadius.circular(30),
                       color: isSelected 
-                        ? const Color.fromRGBO(251, 176, 60, 0.8) 
+                        ? Colors.red 
                         : Colors.transparent,
                     ),
                     child: Text(

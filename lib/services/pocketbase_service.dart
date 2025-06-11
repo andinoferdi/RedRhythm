@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math' show min;
+import '../utils/app_config.dart';
 
 
 /// Service class for PocketBase API interactions
@@ -20,8 +21,8 @@ class PocketBaseService {
   }
   
   PocketBaseService._internal() {
-    // Initialize with a default URL, will be updated when determinePocketBaseUrl is called
-    _pb = PocketBase('http://10.0.2.2:8090');
+    // Initialize with default URL from AppConfig
+    _pb = PocketBase(AppConfig.defaultUrl);
     _initAuth();
   }
   
@@ -61,40 +62,53 @@ class PocketBaseService {
           
           _pb.authStore.save(authToken, modelData);
           debugPrint('PocketBase: Auth restored successfully - Token: ${authToken.substring(0, 10)}...');
+          
+          // Verify the token is still valid ONLY if base URL is properly set
+          if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty && !_pb.baseUrl.contains('localhost')) {
+            debugPrint('PocketBase: Auth token appears valid, attempting refresh...');
+            // Try to refresh the auth if possible
+            try {
+              await _pb.collection('users').authRefresh();
+              debugPrint('PocketBase: Auth token refreshed successfully');
+            } catch (e) {
+              debugPrint('PocketBase: Auth refresh failed: $e');
+              // Don't clear auth on network errors, let controller handle it
+              if (!e.toString().contains('Connection') && 
+                  !e.toString().contains('SocketException') &&
+                  !e.toString().contains('NetworkException')) {
+                debugPrint('PocketBase: Clearing auth due to non-network error');
+                _pb.authStore.clear();
+                await _clearStoredAuth();
+              } else {
+                debugPrint('PocketBase: Keeping auth for network retry');
+              }
+            }
+          } else if (!_pb.baseUrl.isNotEmpty || _pb.baseUrl.contains('localhost')) {
+            debugPrint('PocketBase: Base URL not ready, skipping auth refresh');
+          } else {
+            debugPrint('PocketBase: Auth token invalid, clearing stored auth');
+            // Clear the auth store if the token is invalid
+            _pb.authStore.clear();
+            await _clearStoredAuth();
+          }
         } catch (e) {
           debugPrint('PocketBase: Error restoring auth: $e');
           // If restore fails, clear the stored data
           await _clearStoredAuth();
           return;
         }
-        
-        // Verify the token is still valid
-        if (_pb.authStore.isValid) {
-          debugPrint('PocketBase: Auth token appears valid, attempting refresh...');
-          // Try to refresh the auth if possible
-          try {
-            await _pb.collection('users').authRefresh();
-            debugPrint('PocketBase: Auth token refreshed successfully');
-          } catch (e) {
-            debugPrint('PocketBase: Auth refresh failed: $e');
-            // Clear the auth store if the refresh failed
-            _pb.authStore.clear();
-            await _clearStoredAuth();
-          }
-        } else {
-          debugPrint('PocketBase: Auth token invalid, clearing stored auth');
-          // Clear the auth store if the token is invalid
-          _pb.authStore.clear();
-          await _clearStoredAuth();
-        }
       } else {
         debugPrint('PocketBase: No stored auth data found');
       }
     } catch (e) {
       debugPrint('PocketBase: Error initializing auth: $e');
-      // Clear auth on any error
-      _pb.authStore.clear();
-      await _clearStoredAuth();
+      // Clear auth on any error that's not network related
+      if (!e.toString().contains('Connection') && 
+          !e.toString().contains('SocketException') &&
+          !e.toString().contains('NetworkException')) {
+        _pb.authStore.clear();
+        await _clearStoredAuth();
+      }
     }
     
     // Subscribe to auth changes to persist the state
@@ -176,6 +190,28 @@ class PocketBaseService {
     }
   }
   
+  /// Retry auth refresh if we have stored credentials but auth failed during init
+  Future<bool> retryAuthRefresh() async {
+    try {
+      if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty && !_pb.baseUrl.contains('localhost')) {
+        debugPrint('PocketBase: Retrying auth refresh...');
+        await _pb.collection('users').authRefresh();
+        debugPrint('PocketBase: Auth refresh retry successful');
+        return true;
+      }
+    } catch (e) {
+      debugPrint('PocketBase: Auth refresh retry failed: $e');
+      // Clear auth if refresh definitely fails
+      if (!e.toString().contains('Connection') && 
+          !e.toString().contains('SocketException') &&
+          !e.toString().contains('NetworkException')) {
+        _pb.authStore.clear();
+        await _clearStoredAuth();
+      }
+    }
+    return false;
+  }
+  
   /// Get current remember me preference
   Future<bool> getRememberMe() async {
     final value = await _storage.read(key: 'remember_me');
@@ -230,26 +266,21 @@ class PocketBaseService {
 
   Future<void> initialize() async {
     if (!_isInitialized) {
-      final url = await determinePocketBaseUrl();
-      // Store current auth state before changing URL
-      final wasAuthenticated = _pb.authStore.isValid;
-      final currentToken = _pb.authStore.token;
-      final currentModel = _pb.authStore.model;
+      debugPrint('PocketBase: Starting initialization...');
       
-      // Update the base URL
+      // Load ngrok config and determine URL first
+      await AppConfig.loadNgrokConfig();
+      final url = await determinePocketBaseUrl();
+      
+      debugPrint('PocketBase: Setting base URL to: $url');
+      // Set the base URL BEFORE any auth operations
       _pb.baseUrl = url;
       
-      // Restore auth state if it was valid
-      if (wasAuthenticated && currentToken.isNotEmpty) {
-        debugPrint('PocketBase: Restoring auth state after URL change');
-        _pb.authStore.save(currentToken, currentModel);
-      }
-      
       _isInitialized = true;
-      // Only initialize auth if we don't have valid auth already
-      if (!_pb.authStore.isValid) {
-        await _initAuth();
-      }
+      
+      // Now initialize auth with the correct URL
+      debugPrint('PocketBase: Initializing auth with correct URL...');
+      await _initAuth();
     }
   }
 
@@ -257,29 +288,8 @@ class PocketBaseService {
   Future<String> determinePocketBaseUrl() async {
     debugPrint("Determining PocketBase URL...");
     
-    // Get the computer's IP address on the local network
-    const String localComputerIP = '10.11.0.69'; // Your computer's actual IP address
-    
-    final List<String> possibleUrls = [];
-    
-    if (Platform.isAndroid) {
-      if (!kIsWeb) {
-        // For physical Android devices, try the local network IP first
-        possibleUrls.add('http://$localComputerIP:8090');
-        // For Android emulator
-        possibleUrls.add('http://10.0.2.2:8090');
-      }
-    } else if (Platform.isIOS) {
-      if (!kIsWeb) {
-        // For physical iOS devices, try the local network IP first
-        possibleUrls.add('http://$localComputerIP:8090');
-        // For iOS simulator
-        possibleUrls.add('http://127.0.0.1:8090');
-      }
-    }
-    
-    // Add localhost as fallback
-    possibleUrls.add('http://localhost:8090');
+    // Get possible URLs from AppConfig
+    final List<String> possibleUrls = List.from(AppConfig.possibleUrls);
     
     for (final url in possibleUrls) {
       debugPrint("Trying URL: $url");
@@ -288,7 +298,7 @@ class PocketBaseService {
         try {
           debugPrint("Attempting HEAD request to $url");
           final headResponse = await http.head(Uri.parse(url)).timeout(
-            const Duration(seconds: 2),
+            AppConfig.shortTimeout,
             onTimeout: () {
               debugPrint("HEAD request timeout for $url");
               return http.Response('Timeout', 408);
@@ -301,16 +311,14 @@ class PocketBaseService {
         
         // Then try the health check
         debugPrint("Checking connection to $url/api/health");
+        
         final response = await http.get(
           Uri.parse('$url/api/health'),
-          headers: {
-            'Accept': 'application/json',
-            'Origin': 'http://localhost',
-          },
+          headers: AppConfig.getHeadersForUrl(url),
         ).timeout(
-          const Duration(seconds: 5),
+          AppConfig.connectionTimeout,
           onTimeout: () {
-            debugPrint("Health check timeout after 5 seconds");
+            debugPrint("Health check timeout after ${AppConfig.connectionTimeout.inSeconds} seconds");
             return http.Response('Timeout', 408);
           },
         );
@@ -336,22 +344,20 @@ class PocketBaseService {
       }
     }
     
-    // If all attempts fail, return the most likely URL based on platform
-    debugPrint("All URLs failed, using default for platform");
-    if (Platform.isAndroid) {
-      return 'http://$localComputerIP:8090'; // Return local network IP for physical devices
-    } else if (Platform.isIOS) {
-      return 'http://127.0.0.1:8090';
-    }
-    return 'http://localhost:8090';
+    // If all attempts fail, return default URL from AppConfig
+    debugPrint("All URLs failed, using default URL from AppConfig");
+    return AppConfig.defaultUrl;
   }
 
   // Helper function to check if host is reachable
   Future<bool> isHostReachable(String url) async {
     try {
       debugPrint("Memeriksa koneksi ke $url");
-      final response = await http.get(Uri.parse(url)).timeout(
-        const Duration(seconds: 5),
+      final response = await http.get(
+        Uri.parse(url),
+        headers: AppConfig.getHeadersForUrl(url),
+      ).timeout(
+        AppConfig.connectionTimeout,
         onTimeout: () {
           debugPrint("Timeout saat menghubungi $url");
           return http.Response('Timeout', 408);

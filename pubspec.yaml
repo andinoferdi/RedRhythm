@@ -20,6 +20,7 @@ dependencies:
   path_provider: ^2.1.2
   auto_route: ^7.9.0
   just_audio: ^0.9.36
+  image_picker: ^1.0.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -56,3 +57,4 @@ flutter:
     - assets/images/
     - assets/images/playlists/
     - assets/images/profile/
+    - ngrok_config.json
