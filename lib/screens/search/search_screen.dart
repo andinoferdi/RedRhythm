@@ -8,7 +8,6 @@ import '../../models/song.dart';
 import '../../repositories/song_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../controllers/player_controller.dart';
-import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/animated_sound_bars.dart';
@@ -26,7 +25,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   
   List<Song> _searchResults = [];
-  List<String> _searchHistory = [];
+  List<Song> _playedSongsHistory = [];
   bool _isLoading = false;
   bool _hasSearched = false;
   String? _errorMessage;
@@ -47,41 +46,49 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Future<void> _loadSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getStringList('search_history') ?? [];
+    final historyJson = prefs.getStringList('played_songs_history') ?? [];
+    final songs = historyJson.map((jsonStr) {
+      try {
+        final Map<String, dynamic> songMap = Map<String, dynamic>.from(jsonDecode(jsonStr));
+        return Song.fromJson(songMap);
+      } catch (e) {
+        return null;
+      }
+    }).where((song) => song != null).cast<Song>().toList();
+    
     setState(() {
-      _searchHistory = historyJson;
+      _playedSongsHistory = songs;
     });
   }
 
   Future<void> _saveSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList('search_history', _searchHistory);
+    final historyJson = _playedSongsHistory.map((song) => jsonEncode(song.toJson())).toList();
+    await prefs.setStringList('played_songs_history', historyJson);
   }
 
-  Future<void> _addToHistory(String query) async {
-    if (query.trim().isEmpty) return;
-    
+  Future<void> _addSongToHistory(Song song) async {
     // Remove if already exists
-    _searchHistory.remove(query);
+    _playedSongsHistory.removeWhere((s) => s.id == song.id);
     // Add to front
-    _searchHistory.insert(0, query);
-    // Keep only last 20 searches
-    if (_searchHistory.length > 20) {
-      _searchHistory = _searchHistory.take(20).toList();
+    _playedSongsHistory.insert(0, song);
+    // Keep only last 20 songs
+    if (_playedSongsHistory.length > 20) {
+      _playedSongsHistory = _playedSongsHistory.take(20).toList();
     }
     
     await _saveSearchHistory();
     setState(() {});
   }
 
-  Future<void> _removeFromHistory(String query) async {
-    _searchHistory.remove(query);
+  Future<void> _removeFromHistory(Song song) async {
+    _playedSongsHistory.removeWhere((s) => s.id == song.id);
     await _saveSearchHistory();
     setState(() {});
   }
 
   Future<void> _clearAllHistory() async {
-    _searchHistory.clear();
+    _playedSongsHistory.clear();
     await _saveSearchHistory();
     setState(() {});
   }
@@ -102,8 +109,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       final repository = SongRepository(pbService);
       final searchResults = await repository.searchSongs(query);
 
-      await _addToHistory(query);
-
       setState(() {
         _searchResults = searchResults;
         _isLoading = false;
@@ -116,13 +121,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _onHistoryTap(String query) {
-    _searchController.text = query;
-    _performSearch(query);
+  void _onHistoryTap(Song song) {
+    // Play the song from history
+    _playSongFromHistory(song);
   }
 
   void _playSong(Song song, int index) {
     ref.read(playerControllerProvider.notifier).playQueue(_searchResults, index);
+    // Add to history when played from search results
+    _addSongToHistory(song);
+  }
+
+  void _playSongFromHistory(Song song) {
+    ref.read(playerControllerProvider.notifier).playQueue([song], 0);
   }
 
   @override
@@ -325,7 +336,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildSearchHistory() {
-    if (_searchHistory.isEmpty) {
+    if (_playedSongsHistory.isEmpty) {
       return _buildEmptyHistory();
     }
 
@@ -358,10 +369,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _searchHistory.length,
+            itemCount: _playedSongsHistory.length,
             itemBuilder: (context, index) {
-              final query = _searchHistory[index];
-              return _buildHistoryItem(query);
+              final song = _playedSongsHistory[index];
+              return _buildHistoryItem(song);
             },
           ),
         ),
@@ -405,22 +416,64 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildHistoryItem(String query) {
+  Widget _buildHistoryItem(Song song) {
+    final playerState = ref.watch(playerControllerProvider);
+    final isCurrentSong = playerState.currentSong?.id == song.id;
+    final isPlaying = isCurrentSong && playerState.isPlaying;
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      leading: const Icon(Icons.history, color: Colors.grey),
-      title: Text(
-        query,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          width: 48,
+          height: 48,
+          color: Colors.grey[800],
+          child: song.albumArtUrl.isNotEmpty
+              ? Image.network(
+                  song.albumArtUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.music_note, color: Colors.white);
+                  },
+                )
+              : const Icon(Icons.music_note, color: Colors.white),
         ),
       ),
-      trailing: IconButton(
-        icon: const Icon(Icons.close, color: Colors.grey),
-        onPressed: () => _removeFromHistory(query),
+      title: Text(
+        song.title,
+        style: TextStyle(
+          color: isCurrentSong ? Colors.red : Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      onTap: () => _onHistoryTap(query),
+      subtitle: Text(
+        song.artist,
+        style: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 14,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isPlaying)
+            const AnimatedSoundBars(
+              color: Colors.red,
+              size: 20.0,
+              isAnimating: true,
+            )
+          else
+            const SizedBox(width: 20),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey),
+            onPressed: () => _removeFromHistory(song),
+          ),
+        ],
+      ),
+      onTap: () => _onHistoryTap(song),
     );
   }
 
@@ -469,12 +522,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               size: 20.0,
               isAnimating: true,
             )
-          : IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.grey),
-              onPressed: () {
-                // TODO: Show song options
-              },
-            ),
+          : null,
       onTap: () => _playSong(song, index),
     );
   }

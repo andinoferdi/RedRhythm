@@ -74,8 +74,10 @@ class ExploreScreen extends ConsumerWidget {
                   child: const Text(
                     'Search',
                     style: TextStyle(
-                      fontSize: 25, // Match size with Library screen
+                      color: Colors.white,
+                      fontSize: 25, // Match size with other screens
                       fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

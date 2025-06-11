@@ -3,7 +3,6 @@ import 'package:pocketbase/pocketbase.dart';
 import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
-import 'playlist_creation_flow.dart';
 import '../playlist/playlist_detail_screen.dart';
 
 class PlaylistTab extends StatefulWidget {
@@ -47,17 +46,6 @@ class _PlaylistTabState extends State<PlaylistTab> {
         _isLoading = false;
       });
     }
-  }
-
-  void _showCreatePlaylistFlow() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PlaylistCreationFlow(
-          onSuccess: _fetchPlaylists,
-        ),
-      ),
-    );
   }
 
   void _navigateToPlaylistDetail(RecordModel playlist) {
@@ -262,20 +250,14 @@ class _PlaylistTabState extends State<PlaylistTab> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
+        
+        _fetchPlaylists(); // Refresh the list
       }
-      
-      _fetchPlaylists();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(child: Text('Gagal menghapus playlist: ${e.toString()}')),
-              ],
-            ),
+            content: Text('Gagal menghapus playlist: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -318,78 +300,45 @@ class _PlaylistTabState extends State<PlaylistTab> {
       );
     }
 
-    return Column(
-      children: [
-        // Add playlist button at top
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _showCreatePlaylistFlow,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text(
-                'Tambah Playlist',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+    return _playlists.isEmpty
+        ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.queue_music,
+                  size: 80,
+                  color: Colors.grey[600],
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-        ),
-        
-        // Playlists list
-        Expanded(
-          child: _playlists.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.queue_music,
-                        size: 64,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Belum ada playlist',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Buat playlist pertamamu sekarang',
-                        style: TextStyle(
-                          color: Colors.grey[500],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 24),
+                Text(
+                  'Belum ada playlist',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: _playlists.length,
-                  itemBuilder: (context, index) {
-                    final playlist = _playlists[index];
-                    return _buildPlaylistItem(playlist);
-                  },
                 ),
-        ),
-      ],
-    );
+                const SizedBox(height: 8),
+                Text(
+                  'Buat playlist pertamamu dengan menekan\ntombol "Tambahkan playlist" di atas',
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: _playlists.length,
+            itemBuilder: (context, index) {
+              final playlist = _playlists[index];
+              return _buildPlaylistItem(playlist);
+            },
+          );
   }
 
   Widget _buildPlaylistItem(RecordModel playlist) {

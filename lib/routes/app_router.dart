@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:pocketbase/pocketbase.dart';
 import '../models/song.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/onboarding/onboarding_screen.dart';
@@ -13,7 +14,7 @@ import '../screens/search/search_screen.dart';
 import '../screens/library/library_screen.dart';
 import '../screens/stats/stats_screen.dart';
 import '../screens/music_player/music_player_screen.dart';
-import '../screens/playlist/playlist_screen.dart';
+import '../screens/playlist/playlist_detail_screen.dart';
 import '../widgets/auth_wrapper.dart';
 
 part 'app_router.gr.dart';
@@ -60,7 +61,7 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: LibraryRoute.page),
     AutoRoute(page: StatsRoute.page),
     AutoRoute(page: MusicPlayerRoute.page, fullscreenDialog: true),
-    AutoRoute(page: PlaylistRoute.page),
+    AutoRoute(page: PlaylistDetailRoute.page),
     AutoRoute(page: AuthWrapperRoute.page),
   ];
 }

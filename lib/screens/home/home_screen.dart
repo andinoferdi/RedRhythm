@@ -6,7 +6,6 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:http/http.dart' as http;
 import 'package:auto_route/auto_route.dart';
 import '../../routes/app_router.dart';
-import '../playlist/playlist_screen.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/play_history_controller.dart';
@@ -194,9 +193,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Container(
-        height: 58, // Increased to safely accommodate the content
-        padding: const EdgeInsets.only(bottom: 2), // Add bottom padding for extra safety
+      child: SizedBox(
+        height: 50, // Match exact height with explore and library screens
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -208,11 +206,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(width: 12),
                 SizedBox(
-                  width: 140, // Slightly reduced to prevent potential overflow
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min, // Keep this to prevent overflow
-                    mainAxisAlignment: MainAxisAlignment.center, // Center text vertically
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  width: 145, // Match width constraint with other screens
+                  child: const Text(
+                    'Home',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 25, // Match size with other screens
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -224,13 +228,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     context.router.push(const StatsRoute());
                   },
                   child: const Icon(Icons.stacked_line_chart,
-                      color: Colors.white, size: 24),
+                      color: Colors.white, size: 28), // Match icon size
                 ),
                 const SizedBox(width: 16),
                 Stack(
                   children: [
                     const Icon(Icons.notifications_outlined,
-                        color: Colors.white, size: 24),
+                        color: Colors.white, size: 28), // Match icon size
                     Positioned(
                       right: 0,
                       top: 0,
@@ -251,7 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _showProfileMenu(context);
                   },
                   child: const Icon(Icons.settings_outlined,
-                      color: Colors.white, size: 24),
+                      color: Colors.white, size: 28), // Match icon size
                 ),
               ],
             ),
@@ -561,11 +565,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const SizedBox(width: 16),
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const PlaylistScreen()),
-                  );
+                  context.router.push(const LibraryRoute());
                 },
                 child: _buildMixCard(
                   'Lofi Mix',

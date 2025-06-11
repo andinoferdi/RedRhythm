@@ -74,10 +74,15 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const OnboardingScreen(),
       );
     },
-    PlaylistRoute.name: (routeData) {
+    PlaylistDetailRoute.name: (routeData) {
+      final args = routeData.argsAs<PlaylistDetailRouteArgs>();
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: const PlaylistScreen(),
+        child: PlaylistDetailScreen(
+          key: args.key,
+          playlist: args.playlist,
+          onPlaylistUpdated: args.onPlaylistUpdated,
+        ),
       );
     },
     RegisterRoute.name: (routeData) {
@@ -258,17 +263,46 @@ class OnboardingRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [PlaylistScreen]
-class PlaylistRoute extends PageRouteInfo<void> {
-  const PlaylistRoute({List<PageRouteInfo>? children})
-      : super(
-          PlaylistRoute.name,
+/// [PlaylistDetailScreen]
+class PlaylistDetailRoute extends PageRouteInfo<PlaylistDetailRouteArgs> {
+  PlaylistDetailRoute({
+    Key? key,
+    required RecordModel playlist,
+    void Function()? onPlaylistUpdated,
+    List<PageRouteInfo>? children,
+  }) : super(
+          PlaylistDetailRoute.name,
+          args: PlaylistDetailRouteArgs(
+            key: key,
+            playlist: playlist,
+            onPlaylistUpdated: onPlaylistUpdated,
+          ),
           initialChildren: children,
         );
 
-  static const String name = 'PlaylistRoute';
+  static const String name = 'PlaylistDetailRoute';
 
-  static const PageInfo<void> page = PageInfo<void>(name);
+  static const PageInfo<PlaylistDetailRouteArgs> page =
+      PageInfo<PlaylistDetailRouteArgs>(name);
+}
+
+class PlaylistDetailRouteArgs {
+  const PlaylistDetailRouteArgs({
+    this.key,
+    required this.playlist,
+    this.onPlaylistUpdated,
+  });
+
+  final Key? key;
+
+  final RecordModel playlist;
+
+  final void Function()? onPlaylistUpdated;
+
+  @override
+  String toString() {
+    return 'PlaylistDetailRouteArgs{key: $key, playlist: $playlist, onPlaylistUpdated: $onPlaylistUpdated}';
+  }
 }
 
 /// generated route for

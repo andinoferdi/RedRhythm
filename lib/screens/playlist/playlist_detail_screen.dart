@@ -10,11 +10,11 @@ import '../../models/song.dart';
 import '../library/playlist_form_dialog.dart';
 import 'add_songs_screen.dart';
 import '../../controllers/player_controller.dart';
-import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/animated_sound_bars.dart';
 import '../../widgets/custom_bottom_nav.dart';
 
+@RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   final RecordModel playlist;
   final VoidCallback? onPlaylistUpdated;
@@ -612,18 +612,13 @@ void _playAllSongs() {
           fontSize: 14,
         ),
       ),
-      trailing: isPlaying
-          ? const AnimatedSoundBars(
-              color: Colors.red,
-              size: 20.0,
-              isAnimating: true,
-            )
-          : IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.grey),
-              onPressed: () {
-                // TODO: Show song options
-              },
-            ),
+              trailing: isPlaying
+            ? const AnimatedSoundBars(
+                color: Colors.red,
+                size: 20.0,
+                isAnimating: true,
+              )
+            : null,
       onTap: () {
         _playSong(song, index);
       },
