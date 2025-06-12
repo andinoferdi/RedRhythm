@@ -19,18 +19,30 @@ class SongPlaylistRepository {
       final songPlaylistResult = await _pb.collection('song_playlists').getList(
         filter: 'playlist_id = "$playlistId"',
         expand: 'song_id,song_id.artist_id,song_id.album_id',
-        sort: 'created',
+        sort: 'created', // Get all records first
+        perPage: 500, // Make sure we get all songs
       );
       
-      final List<Song> songs = [];
+      final List<MapEntry<Song, int>> songsWithOrder = [];
       
       for (final record in songPlaylistResult.items) {
         final songData = record.expand['song_id'];
         if (songData != null && songData.isNotEmpty) {
           final songRecord = songData.first;
-          songs.add(Song.fromRecord(songRecord));
+          final song = Song.fromRecord(songRecord);
+          final order = record.data['order'] as int?;
+          
+          // Use order if available, otherwise use a high number + index to maintain original order
+          final finalOrder = order ?? (1000 + songsWithOrder.length);
+          songsWithOrder.add(MapEntry(song, finalOrder));
         }
       }
+      
+      // Sort by order (ascending)
+      songsWithOrder.sort((a, b) => a.value.compareTo(b.value));
+      
+      // Extract songs from sorted list
+      final List<Song> songs = songsWithOrder.map((entry) => entry.key).toList();
       
       return songs;
     } catch (e) {
@@ -65,10 +77,7 @@ class SongPlaylistRepository {
   }
   
   /// Remove song from playlist
-  Future<void> removeSongFromPlaylist({
-    required String playlistId,
-    required String songId,
-  }) async {
+  Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
       final result = await _pb.collection('song_playlists').getList(
         filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
@@ -80,6 +89,24 @@ class SongPlaylistRepository {
     } catch (e) {
       debugPrint('Remove song from playlist error: $e');
       throw Exception('Failed to remove song from playlist: $e');
+    }
+  }
+
+  /// Update song order in playlist
+  Future<void> updateSongOrder(String playlistId, String songId, int order) async {
+    try {
+      final result = await _pb.collection('song_playlists').getList(
+        filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
+      );
+      
+      if (result.items.isNotEmpty) {
+        await _pb.collection('song_playlists').update(result.items.first.id, body: {
+          'order': order,
+        });
+      }
+    } catch (e) {
+      debugPrint('Update song order error: $e');
+      throw Exception('Failed to update song order: $e');
     }
   }
   

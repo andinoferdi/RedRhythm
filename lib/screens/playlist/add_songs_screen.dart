@@ -20,7 +20,9 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Song> _allSongs = [];
   List<Song> _filteredSongs = [];
+
   final Set<String> _selectedSongIds = {};
+  final Set<String> _existingSongIds = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -46,14 +48,21 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       final pbService = PocketBaseService();
       await pbService.initialize();
       
+      // Load all songs
       final songRepository = SongRepository(pbService);
       final songs = await songRepository.getAllSongs();
       
-      setState(() {
-        _allSongs = songs;
-        _filteredSongs = songs;
-        _isLoading = false;
-      });
+      // Load existing playlist songs
+      final songPlaylistRepository = SongPlaylistRepository(pbService);
+      final playlistSongs = await songPlaylistRepository.getPlaylistSongs(widget.playlist.id);
+      
+              setState(() {
+          _allSongs = songs;
+          _filteredSongs = songs;
+          _existingSongIds.clear();
+          _existingSongIds.addAll(playlistSongs.map((song) => song.id));
+          _isLoading = false;
+        });
     } catch (e) {
       setState(() {
         _errorMessage = 'Gagal memuat lagu: $e';
@@ -272,50 +281,61 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       itemBuilder: (context, index) {
         final song = _filteredSongs[index];
         final isSelected = _selectedSongIds.contains(song.id);
+        final isInPlaylist = _existingSongIds.contains(song.id);
         
-        return _buildSongItem(song, isSelected);
+        return _buildSongItem(song, isSelected, isInPlaylist);
       },
     );
   }
 
-  Widget _buildSongItem(Song song, bool isSelected) {
+  Widget _buildSongItem(Song song, bool isSelected, bool isInPlaylist) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.red.withValues(alpha: 0.1) : Colors.transparent,
+        color: isInPlaylist 
+            ? Colors.green.withValues(alpha: 0.1)
+            : isSelected 
+                ? Colors.red.withValues(alpha: 0.1) 
+                : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: isSelected 
-            ? Border.all(color: Colors.red.withValues(alpha: 0.3))
-            : null,
+        border: isInPlaylist
+            ? Border.all(color: Colors.green.withValues(alpha: 0.3))
+            : isSelected 
+                ? Border.all(color: Colors.red.withValues(alpha: 0.3))
+                : null,
       ),
-      child: SongItemWidget(
-        song: song,
-        subtitle: song.artist,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
-        trailing: Checkbox(
-          value: isSelected,
-          onChanged: (bool? value) {
+      child: Opacity(
+        opacity: isInPlaylist ? 0.6 : 1.0,
+        child: SongItemWidget(
+          song: song,
+          subtitle: isInPlaylist 
+              ? '${song.artist} • Sudah ditambahkan'
+              : song.artist,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          trailing: Checkbox(
+            value: isInPlaylist ? true : isSelected,
+            onChanged: isInPlaylist ? null : (bool? value) {
+              setState(() {
+                if (value == true) {
+                  _selectedSongIds.add(song.id);
+                } else {
+                  _selectedSongIds.remove(song.id);
+                }
+              });
+            },
+            activeColor: isInPlaylist ? Colors.green : Colors.red,
+            checkColor: Colors.white,
+          ),
+          onTap: isInPlaylist ? null : () {
             setState(() {
-              if (value == true) {
-                _selectedSongIds.add(song.id);
-              } else {
+              if (isSelected) {
                 _selectedSongIds.remove(song.id);
+              } else {
+                _selectedSongIds.add(song.id);
               }
             });
           },
-          activeColor: Colors.red,
-          checkColor: Colors.white,
         ),
-        onTap: () {
-          setState(() {
-            if (isSelected) {
-              _selectedSongIds.remove(song.id);
-            } else {
-              _selectedSongIds.add(song.id);
-            }
-          });
-        },
       ),
     );
   }

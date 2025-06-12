@@ -7,8 +7,9 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../models/song.dart';
-import '../../widgets/playlist_form_dialog.dart';
+
 import 'add_songs_screen.dart';
+import 'edit_playlist_screen.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
 
@@ -152,17 +153,19 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     }
   }
 
-  void _showEditPlaylistDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => PlaylistFormDialog(
-        playlist: _currentPlaylist,
-        onSuccess: () {
-          _refreshPlaylist();
-          widget.onPlaylistUpdated?.call();
-        },
+  void _showEditPlaylistDialog() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPlaylistScreen(playlist: _currentPlaylist),
       ),
     );
+    
+    // If changes were made, refresh the playlist
+    if (result == true) {
+      _refreshPlaylist();
+      widget.onPlaylistUpdated?.call();
+    }
   }
 
   Future<void> _refreshPlaylist() async {
@@ -177,6 +180,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       setState(() {
         _currentPlaylist = updatedPlaylist;
       });
+      
+      // Also refresh the songs list to reflect any changes
+      await _fetchPlaylistSongs();
     } catch (e) {
       // Handle error silently or show a message
     }

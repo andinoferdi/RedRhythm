@@ -27,6 +27,16 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthWrapper(),
       );
     },
+    EditPlaylistRoute.name: (routeData) {
+      final args = routeData.argsAs<EditPlaylistRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: EditPlaylistScreen(
+          key: args.key,
+          playlist: args.playlist,
+        ),
+      );
+    },
     ExploreRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -138,6 +148,44 @@ class AuthWrapperRoute extends PageRouteInfo<void> {
   static const String name = 'AuthWrapperRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [EditPlaylistScreen]
+class EditPlaylistRoute extends PageRouteInfo<EditPlaylistRouteArgs> {
+  EditPlaylistRoute({
+    Key? key,
+    required RecordModel playlist,
+    List<PageRouteInfo>? children,
+  }) : super(
+          EditPlaylistRoute.name,
+          args: EditPlaylistRouteArgs(
+            key: key,
+            playlist: playlist,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'EditPlaylistRoute';
+
+  static const PageInfo<EditPlaylistRouteArgs> page =
+      PageInfo<EditPlaylistRouteArgs>(name);
+}
+
+class EditPlaylistRouteArgs {
+  const EditPlaylistRouteArgs({
+    this.key,
+    required this.playlist,
+  });
+
+  final Key? key;
+
+  final RecordModel playlist;
+
+  @override
+  String toString() {
+    return 'EditPlaylistRouteArgs{key: $key, playlist: $playlist}';
+  }
 }
 
 /// generated route for
