@@ -1,0 +1,2 @@
+C:/Users/Ferdi/Downloads/RedRhythm/android/app/.cxx/RelWithDebInfo/1n453o60/x86/CMakeFiles/edit_cache.dir
+C:/Users/Ferdi/Downloads/RedRhythm/android/app/.cxx/RelWithDebInfo/1n453o60/x86/CMakeFiles/rebuild_cache.dir
