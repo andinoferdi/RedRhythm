@@ -2,15 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pocketbase_service.dart';
 import '../models/song.dart';
+import '../models/playlist.dart';
 
 /// Repository for handling song-playlist relationships
 class SongPlaylistRepository {
-  final PocketBaseService _pocketBaseService;
+  final PocketBaseService _pbService;
   
-  SongPlaylistRepository(this._pocketBaseService);
+  SongPlaylistRepository(this._pbService);
   
   /// Get PocketBase instance
-  PocketBase get _pb => _pocketBaseService.pb;
+  PocketBase get _pb => _pbService.pb;
   
   /// Get songs in a playlist
   Future<List<Song>> getPlaylistSongs(String playlistId) async {
@@ -51,27 +52,42 @@ class SongPlaylistRepository {
     }
   }
   
-  /// Add song to playlist
-  Future<RecordModel> addSongToPlaylist({
-    required String playlistId,
-    required String songId,
-  }) async {
+  /// Get playlists containing a specific song
+  Future<List<Playlist>> getPlaylistsContainingSong(String songId) async {
     try {
-      // Check if song is already in playlist
-      final existing = await _pb.collection('song_playlists').getList(
-        filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
+      final records = await _pb.collection('playlists').getList(
+        filter: 'songs ~ "$songId"',
       );
-      
-      if (existing.items.isNotEmpty) {
-        throw Exception('Song is already in playlist');
-      }
-      
-      return await _pb.collection('song_playlists').create(body: {
-        'playlist_id': playlistId,
-        'song_id': songId,
-      });
+
+      return records.items.map((record) => Playlist.fromRecord(record)).toList();
     } catch (e) {
-      debugPrint('Add song to playlist error: $e');
+      throw Exception('Failed to get playlists containing song: $e');
+    }
+  }
+
+  Future<List<Playlist>> getAllPlaylists() async {
+    try {
+      final records = await _pb.collection('playlists').getList();
+      return records.items.map((record) => Playlist.fromRecord(record)).toList();
+    } catch (e) {
+      throw Exception('Failed to get all playlists: $e');
+    }
+  }
+
+  /// Add song to playlist
+  Future<void> addSongToPlaylist(String playlistId, String songId) async {
+    try {
+      final playlist = await _pb.collection('playlists').getOne(playlistId);
+      final songs = List<String>.from(playlist.data['songs'] ?? []);
+      
+      if (!songs.contains(songId)) {
+        songs.add(songId);
+        await _pb.collection('playlists').update(
+          playlistId,
+          body: {'songs': songs},
+        );
+      }
+    } catch (e) {
       throw Exception('Failed to add song to playlist: $e');
     }
   }
@@ -79,15 +95,15 @@ class SongPlaylistRepository {
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
-      final result = await _pb.collection('song_playlists').getList(
-        filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
-      );
+      final playlist = await _pb.collection('playlists').getOne(playlistId);
+      final songs = List<String>.from(playlist.data['songs'] ?? []);
       
-      if (result.items.isNotEmpty) {
-        await _pb.collection('song_playlists').delete(result.items.first.id);
-      }
+      songs.remove(songId);
+      await _pb.collection('playlists').update(
+        playlistId,
+        body: {'songs': songs},
+      );
     } catch (e) {
-      debugPrint('Remove song from playlist error: $e');
       throw Exception('Failed to remove song from playlist: $e');
     }
   }
@@ -110,27 +126,18 @@ class SongPlaylistRepository {
     }
   }
   
-  /// Get playlists containing a specific song
-  Future<List<RecordModel>> getPlaylistsContainingSong(String songId) async {
+  Future<Playlist> createPlaylist(String name, String userId) async {
     try {
-      final result = await _pb.collection('song_playlists').getList(
-        filter: 'song_id = "$songId"',
-        expand: 'playlist_id',
+      final record = await _pb.collection('playlists').create(
+        body: {
+          'name': name,
+          'user': userId,
+          'songs': [],
+        },
       );
-      
-      final List<RecordModel> playlists = [];
-      
-      for (final record in result.items) {
-        final playlistData = record.expand['playlist_id'];
-        if (playlistData != null && playlistData.isNotEmpty) {
-          playlists.add(playlistData.first);
-        }
-      }
-      
-      return playlists;
+      return Playlist.fromRecord(record);
     } catch (e) {
-      debugPrint('Get playlists containing song error: $e');
-      throw Exception('Failed to fetch playlists containing song: $e');
+      throw Exception('Failed to create playlist: $e');
     }
   }
 }

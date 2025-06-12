@@ -437,12 +437,12 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           children: [
             // Background gradient
             Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF2A2A2A),
+                    Colors.grey[900]!,
                     AppColors.background,
                   ],
                 ),
@@ -463,18 +463,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                           width: 200,
                           height: 200,
                           decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            color: Colors.grey[800],
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(4),
                             child: _buildPlaylistImage(),
                           ),
                         ),
@@ -540,11 +533,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
 
   Widget _buildPlaceholderImage() {
     return Container(
-      color: AppColors.surface,
+      color: Colors.grey[800],
       child: const Icon(
-        Icons.music_note,
-        color: Colors.white54,
-        size: 80,
+        Icons.queue_music,
+        color: Colors.white,
+        size: 48,
       ),
     );
   }

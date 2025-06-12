@@ -25,6 +25,7 @@ _$PlayerStateImpl _$$PlayerStateImplFromJson(Map<String, dynamic> json) =>
       repeatMode:
           $enumDecodeNullable(_$RepeatModeEnumMap, json['repeatMode']) ??
               RepeatMode.off,
+      currentPlaylistId: json['currentPlaylistId'] as String?,
     );
 
 Map<String, dynamic> _$$PlayerStateImplToJson(_$PlayerStateImpl instance) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _$$PlayerStateImplToJson(_$PlayerStateImpl instance) =>
       'isBuffering': instance.isBuffering,
       'shuffleMode': instance.shuffleMode,
       'repeatMode': _$RepeatModeEnumMap[instance.repeatMode]!,
+      'currentPlaylistId': instance.currentPlaylistId,
     };
 
 const _$RepeatModeEnumMap = {

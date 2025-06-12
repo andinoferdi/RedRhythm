@@ -390,19 +390,31 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
   
-  /// Set queue and play
-  Future<void> playQueue(List<Song> songs, int startIndex) async {
+  /// Set queue and play, with playlist context
+  Future<void> playQueueFromPlaylist(List<Song> songs, int startIndex, String playlistId) async {
     if (_isDisposed) return;
-    
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
-    
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
+      currentPlaylistId: playlistId,
     );
-    
+    await playSong(songs[startIndex]);
+  }
+
+  /// Set queue and play (no playlist context)
+  Future<void> playQueue(List<Song> songs, int startIndex) async {
+    if (_isDisposed) return;
+    if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
+      return;
+    }
+    state = state.copyWith(
+      queue: songs,
+      currentIndex: startIndex,
+      currentPlaylistId: null,
+    );
     await playSong(songs[startIndex]);
   }
   

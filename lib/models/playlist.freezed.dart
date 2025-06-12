@@ -22,10 +22,11 @@ Playlist _$PlaylistFromJson(Map<String, dynamic> json) {
 mixin _$Playlist {
   String get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
-  String get coverImageUrl => throw _privateConstructorUsedError;
-  List<Song> get songs => throw _privateConstructorUsedError;
-  String? get description => throw _privateConstructorUsedError;
-  bool get isPublic => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  List<String> get songs => throw _privateConstructorUsedError;
+  String? get imageUrl => throw _privateConstructorUsedError;
+  DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt => throw _privateConstructorUsedError;
 
   /// Serializes this Playlist to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -45,10 +46,11 @@ abstract class $PlaylistCopyWith<$Res> {
   $Res call(
       {String id,
       String name,
-      String coverImageUrl,
-      List<Song> songs,
-      String? description,
-      bool isPublic});
+      String userId,
+      List<String> songs,
+      String? imageUrl,
+      DateTime createdAt,
+      DateTime updatedAt});
 }
 
 /// @nodoc
@@ -68,10 +70,11 @@ class _$PlaylistCopyWithImpl<$Res, $Val extends Playlist>
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? coverImageUrl = null,
+    Object? userId = null,
     Object? songs = null,
-    Object? description = freezed,
-    Object? isPublic = null,
+    Object? imageUrl = freezed,
+    Object? createdAt = null,
+    Object? updatedAt = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -82,22 +85,26 @@ class _$PlaylistCopyWithImpl<$Res, $Val extends Playlist>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      coverImageUrl: null == coverImageUrl
-          ? _value.coverImageUrl
-          : coverImageUrl // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
               as String,
       songs: null == songs
           ? _value.songs
           : songs // ignore: cast_nullable_to_non_nullable
-              as List<Song>,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
-      isPublic: null == isPublic
-          ? _value.isPublic
-          : isPublic // ignore: cast_nullable_to_non_nullable
-              as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
     ) as $Val);
   }
 }
@@ -113,10 +120,11 @@ abstract class _$$PlaylistImplCopyWith<$Res>
   $Res call(
       {String id,
       String name,
-      String coverImageUrl,
-      List<Song> songs,
-      String? description,
-      bool isPublic});
+      String userId,
+      List<String> songs,
+      String? imageUrl,
+      DateTime createdAt,
+      DateTime updatedAt});
 }
 
 /// @nodoc
@@ -134,10 +142,11 @@ class __$$PlaylistImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? name = null,
-    Object? coverImageUrl = null,
+    Object? userId = null,
     Object? songs = null,
-    Object? description = freezed,
-    Object? isPublic = null,
+    Object? imageUrl = freezed,
+    Object? createdAt = null,
+    Object? updatedAt = null,
   }) {
     return _then(_$PlaylistImpl(
       id: null == id
@@ -148,22 +157,26 @@ class __$$PlaylistImplCopyWithImpl<$Res>
           ? _value.name
           : name // ignore: cast_nullable_to_non_nullable
               as String,
-      coverImageUrl: null == coverImageUrl
-          ? _value.coverImageUrl
-          : coverImageUrl // ignore: cast_nullable_to_non_nullable
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
               as String,
       songs: null == songs
           ? _value._songs
           : songs // ignore: cast_nullable_to_non_nullable
-              as List<Song>,
-      description: freezed == description
-          ? _value.description
-          : description // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      imageUrl: freezed == imageUrl
+          ? _value.imageUrl
+          : imageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
-      isPublic: null == isPublic
-          ? _value.isPublic
-          : isPublic // ignore: cast_nullable_to_non_nullable
-              as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
     ));
   }
 }
@@ -174,10 +187,11 @@ class _$PlaylistImpl implements _Playlist {
   const _$PlaylistImpl(
       {required this.id,
       required this.name,
-      required this.coverImageUrl,
-      required final List<Song> songs,
-      this.description,
-      this.isPublic = false})
+      required this.userId,
+      required final List<String> songs,
+      this.imageUrl,
+      required this.createdAt,
+      required this.updatedAt})
       : _songs = songs;
 
   factory _$PlaylistImpl.fromJson(Map<String, dynamic> json) =>
@@ -188,24 +202,25 @@ class _$PlaylistImpl implements _Playlist {
   @override
   final String name;
   @override
-  final String coverImageUrl;
-  final List<Song> _songs;
+  final String userId;
+  final List<String> _songs;
   @override
-  List<Song> get songs {
+  List<String> get songs {
     if (_songs is EqualUnmodifiableListView) return _songs;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_songs);
   }
 
   @override
-  final String? description;
+  final String? imageUrl;
   @override
-  @JsonKey()
-  final bool isPublic;
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'Playlist(id: $id, name: $name, coverImageUrl: $coverImageUrl, songs: $songs, description: $description, isPublic: $isPublic)';
+    return 'Playlist(id: $id, name: $name, userId: $userId, songs: $songs, imageUrl: $imageUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -215,19 +230,27 @@ class _$PlaylistImpl implements _Playlist {
             other is _$PlaylistImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            (identical(other.coverImageUrl, coverImageUrl) ||
-                other.coverImageUrl == coverImageUrl) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
             const DeepCollectionEquality().equals(other._songs, _songs) &&
-            (identical(other.description, description) ||
-                other.description == description) &&
-            (identical(other.isPublic, isPublic) ||
-                other.isPublic == isPublic));
+            (identical(other.imageUrl, imageUrl) ||
+                other.imageUrl == imageUrl) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, coverImageUrl,
-      const DeepCollectionEquality().hash(_songs), description, isPublic);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      userId,
+      const DeepCollectionEquality().hash(_songs),
+      imageUrl,
+      createdAt,
+      updatedAt);
 
   /// Create a copy of Playlist
   /// with the given fields replaced by the non-null parameter values.
@@ -249,10 +272,11 @@ abstract class _Playlist implements Playlist {
   const factory _Playlist(
       {required final String id,
       required final String name,
-      required final String coverImageUrl,
-      required final List<Song> songs,
-      final String? description,
-      final bool isPublic}) = _$PlaylistImpl;
+      required final String userId,
+      required final List<String> songs,
+      final String? imageUrl,
+      required final DateTime createdAt,
+      required final DateTime updatedAt}) = _$PlaylistImpl;
 
   factory _Playlist.fromJson(Map<String, dynamic> json) =
       _$PlaylistImpl.fromJson;
@@ -262,13 +286,15 @@ abstract class _Playlist implements Playlist {
   @override
   String get name;
   @override
-  String get coverImageUrl;
+  String get userId;
   @override
-  List<Song> get songs;
+  List<String> get songs;
   @override
-  String? get description;
+  String? get imageUrl;
   @override
-  bool get isPublic;
+  DateTime get createdAt;
+  @override
+  DateTime get updatedAt;
 
   /// Create a copy of Playlist
   /// with the given fields replaced by the non-null parameter values.

@@ -214,8 +214,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       
       final repository = SongPlaylistRepository(pbService);
       await repository.addSongToPlaylist(
-        playlistId: _currentPlaylist.id,
-        songId: song.id,
+        widget.playlist.id,
+        song.id,
       );
 
       // Refresh playlist songs and recommendations
@@ -263,29 +263,44 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   /// Play song (show in mini player, don't navigate)
-void _playSong(Song song, int index) {
-  // Set up queue with all playlist songs
-  ref.read(playerControllerProvider.notifier).playQueue(_songs, index);
-}
+  void _playSong(Song song, int index) {
+    final playerState = ref.read(playerControllerProvider);
+    
+    // Get the current playlist ID from the player state
+    final currentPlaylistId = playerState.currentPlaylistId;
+    
+    // Only allow playing if:
+    // 1. No playlist is currently active (currentPlaylistId is null), or
+    // 2. The active playlist is this playlist
+    if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
+      // Set current playlist ID when starting playback
+      ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, index, _currentPlaylist.id);
+    }
+  }
 
   /// Play all songs in playlist starting from first
-void _playAllSongs() {
-  if (_songs.isEmpty) return;
-  
-  final playerState = ref.read(playerControllerProvider);
-  final isPlaylistPlaying = _songs.any((song) => song.id == playerState.currentSong?.id);
-  
-  if (isPlaylistPlaying && playerState.isPlaying) {
-    // Pause current playback
-    ref.read(playerControllerProvider.notifier).pause();
-  } else if (isPlaylistPlaying && !playerState.isPlaying) {
-    // Resume current playback
-    ref.read(playerControllerProvider.notifier).resume();
-  } else {
-    // Start playing from first song
-    ref.read(playerControllerProvider.notifier).playQueue(_songs, 0);
+  void _playAllSongs() {
+    if (_songs.isEmpty) return;
+    
+    final playerState = ref.read(playerControllerProvider);
+    final currentPlaylistId = playerState.currentPlaylistId;
+    
+    // Only allow play/pause if:
+    // 1. No playlist is currently active, or
+    // 2. The active playlist is this playlist
+    if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
+      if (currentPlaylistId == _currentPlaylist.id && playerState.isPlaying) {
+        // Pause current playback
+        ref.read(playerControllerProvider.notifier).pause();
+      } else if (currentPlaylistId == _currentPlaylist.id && !playerState.isPlaying) {
+        // Resume current playback
+        ref.read(playerControllerProvider.notifier).resume();
+      } else {
+        // Start playing from first song
+        ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, 0, _currentPlaylist.id);
+      }
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -363,17 +378,11 @@ void _playAllSongs() {
               height: 200,
               margin: const EdgeInsets.only(top: 60),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(4),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(4),
                 child: imageUrl.isNotEmpty
                     ? Image.network(
                         imageUrl,
@@ -393,14 +402,11 @@ void _playAllSongs() {
 
   Widget _buildPlaceholderImage() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(12),
-      ),
+      color: Colors.grey[800],
       child: const Icon(
         Icons.queue_music,
         color: Colors.white,
-        size: 80,
+        size: 48,
       ),
     );
   }
@@ -695,12 +701,18 @@ void _playAllSongs() {
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           final song = _songs[index];
+          final playerState = ref.watch(playerControllerProvider);
+          final currentPlaylistId = playerState.currentPlaylistId;
+          
           return SongItemWidget(
             song: song,
             subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
             onTap: () {
-              _playSong(song, index);
+              // Only allow playing if no playlist is active or this is the active playlist
+              if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
+                _playSong(song, index);
+              }
             },
           );
         },
@@ -814,6 +826,8 @@ void _playAllSongs() {
 
   Widget _buildRecommendedSongItem(Song song) {
     final isAdding = _addingSongIds.contains(song.id);
+    final playerState = ref.watch(playerControllerProvider);
+    final currentPlaylistId = playerState.currentPlaylistId;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
@@ -821,7 +835,6 @@ void _playAllSongs() {
         song: song,
         subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
         contentPadding: const EdgeInsets.symmetric(vertical: 4),
-
         trailing: isAdding
             ? const SizedBox(
                 width: 20,
@@ -844,8 +857,11 @@ void _playAllSongs() {
                 ),
               ),
         onTap: () {
-          // Play the recommended song
-          ref.read(playerControllerProvider.notifier).playSong(song);
+          // Only allow playing if no playlist is active or this is the active playlist
+          if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
+            // For recommended songs, we play them individually without a playlist context
+            ref.read(playerControllerProvider.notifier).playSong(song);
+          }
         },
       ),
     );

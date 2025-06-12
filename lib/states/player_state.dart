@@ -23,6 +23,7 @@ class PlayerState with _$PlayerState {
     @Default(false) bool isBuffering,
     @Default(false) bool shuffleMode,
     @Default(RepeatMode.off) RepeatMode repeatMode,
+    String? currentPlaylistId,
   }) = _PlayerState;
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => _$PlayerStateFromJson(json);

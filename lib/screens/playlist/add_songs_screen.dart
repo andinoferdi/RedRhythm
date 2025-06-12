@@ -104,8 +104,8 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       for (final songId in _selectedSongIds) {
         try {
           await songPlaylistRepository.addSongToPlaylist(
-            playlistId: widget.playlist.id,
-            songId: songId,
+            widget.playlist.id,
+            songId,
           );
           successCount++;
         } catch (e) {
