@@ -6,7 +6,8 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/user_avatar.dart';
 import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
-import 'playlist_tab.dart';
+import '../../widgets/playlist_tab.dart';
+import '../../widgets/spotify_style_button.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../widgets/mini_player.dart';
@@ -127,7 +128,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       child: Column(
         children: [
           // Tambah Artist Button - Spotify Style
-          _buildSpotifyStyleButton(
+          SpotifyStyleButton(
             title: 'Tambahkan artis',
             onTap: () {
               // TODO: Implement add artist functionality
@@ -141,7 +142,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
           const SizedBox(height: 4), // Spacing yang ketat seperti sebelumnya
           // Tambah Playlist Button - Spotify Style
-          _buildSpotifyStyleButton(
+          SpotifyStyleButton(
             title: 'Tambahkan playlist',
             onTap: () {
               _showCreatePlaylistFlow();
@@ -152,51 +153,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  Widget _buildSpotifyStyleButton({
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16), // Slightly larger radius
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-            horizontal: 20, vertical: 8), // Compact padding seperti sebelumnya
-        child: Row(
-          children: [
-            // Plus icon in circle - Spotify style (bigger)
-            Container(
-              width: 52, // Slightly smaller for Spotify-like compact look
-              height: 52, // Slightly smaller for Spotify-like compact look
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28, // Increased from 24
-              ),
-            ),
-            const SizedBox(width: 16), // Compact spacing like Spotify
-            // Text
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18, // Increased from 16
-                  fontWeight: FontWeight.w600, // Increased from w500
-                  fontFamily: 'Poppins',
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   void _showCreatePlaylistFlow() {
     _showCreatePlaylistDialog();

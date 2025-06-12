@@ -9,6 +9,7 @@ import '../../utils/app_colors.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
+import '../../widgets/genre_card.dart';
 
 @RoutePage()
 class ExploreScreen extends ConsumerWidget {
@@ -176,12 +177,26 @@ class ExploreScreen extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildGenreCard(
-                  'Kpop', AppColors.genreKpop, Icons.music_note),
-              _buildGenreCard(
-                  'Indie', AppColors.genreIndie, Icons.music_video),
-              _buildGenreCard('R&B', AppColors.genreRnB, Icons.piano),
-              _buildGenreCard('Pop', AppColors.genrePop, Icons.mic),
+              GenreCard(
+                title: 'Kpop',
+                color: AppColors.genreKpop,
+                icon: Icons.music_note,
+              ),
+              GenreCard(
+                title: 'Indie',
+                color: AppColors.genreIndie,
+                icon: Icons.music_video,
+              ),
+              GenreCard(
+                title: 'R&B',
+                color: AppColors.genreRnB,
+                icon: Icons.piano,
+              ),
+              GenreCard(
+                title: 'Pop',
+                color: AppColors.genrePop,
+                icon: Icons.mic,
+              ),
             ],
           ),
         ),
@@ -215,19 +230,37 @@ class ExploreScreen extends ConsumerWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             children: [
-              _buildGenreCard(
-                  'Made\nfor You', AppColors.info, Icons.person),
-              _buildGenreCard(
-                  'RELEASED', AppColors.genreReleased, Icons.new_releases,
-                  isGradient: true),
-              _buildGenreCard(
-                  'Music\nCharts', AppColors.genreCharts, Icons.equalizer),
-              _buildGenreCard(
-                  'Podcasts', AppColors.genrePodcasts, Icons.podcasts),
-              _buildGenreCard(
-                  'Bollywood', AppColors.genreBollywood, Icons.movie),
-              _buildGenreCard(
-                  'Pop\nFusion', AppColors.genrePopFusion, Icons.queue_music),
+              GenreCard(
+                title: 'Made\nfor You',
+                color: AppColors.info,
+                icon: Icons.person,
+              ),
+              GenreCard(
+                title: 'RELEASED',
+                color: AppColors.genreReleased,
+                icon: Icons.new_releases,
+                isGradient: true,
+              ),
+              GenreCard(
+                title: 'Music\nCharts',
+                color: AppColors.genreCharts,
+                icon: Icons.equalizer,
+              ),
+              GenreCard(
+                title: 'Podcasts',
+                color: AppColors.genrePodcasts,
+                icon: Icons.podcasts,
+              ),
+              GenreCard(
+                title: 'Bollywood',
+                color: AppColors.genreBollywood,
+                icon: Icons.movie,
+              ),
+              GenreCard(
+                title: 'Pop\nFusion',
+                color: AppColors.genrePopFusion,
+                icon: Icons.queue_music,
+              ),
             ],
           ),
         ),
@@ -235,61 +268,5 @@ class ExploreScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGenreCard(String title, Color color, IconData icon,
-      {bool isGradient = false}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: Stack(
-        children: [
-          if (isGradient)
-            Positioned(
-              right: -20,
-              top: -20,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.green.shade300,
-                      Colors.green.shade500,
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                    radius: 0.8,
-                  ),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textOnPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Icon(
-                  icon,
-                  color: AppColors.textOnPrimary,
-                  size: 32,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 }

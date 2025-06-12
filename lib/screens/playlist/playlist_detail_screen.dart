@@ -7,7 +7,7 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../models/song.dart';
-import '../library/playlist_form_dialog.dart';
+import '../../widgets/playlist_form_dialog.dart';
 import 'add_songs_screen.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
