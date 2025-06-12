@@ -51,7 +51,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       onRefreshCallback: (callback) => _refreshPlaylists = callback,
                     ),
                   ),
-                  SizedBox(height: 20 + bottomPadding + (playerState.currentSong != null ? 64 : 0)),
+                  // Minimal spacing only
+                  SizedBox(height: 8),
                 ],
               ),
             ),
@@ -171,12 +172,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            // Check if mini player is active
+            final playerState = ref.read(playerControllerProvider);
+            final miniPlayerHeight = playerState.currentSong != null ? 64.0 : 0.0;
+            
             return Dialog(
               backgroundColor: Colors.transparent,
               elevation: 0,
               insetPadding: EdgeInsets.symmetric(
                 horizontal: 20,
-                vertical: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40,
+                vertical: (MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40) + miniPlayerHeight,
               ),
               child: TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 250),
@@ -191,7 +196,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.9,
-                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                    maxHeight: MediaQuery.of(context).size.height * 0.7, // Reduced height to accommodate mini player
                   ),
                   child: Container(
                     decoration: BoxDecoration(
