@@ -92,6 +92,23 @@ class PlayHistoryRepository {
     bool completed = false,
   }) async {
     try {
+      // First, delete any existing history for this song to avoid duplicates
+      final existingHistory = await pb.collection('user_history').getList(
+        page: 1,
+        perPage: 50, // Get more records to ensure we find all duplicates
+        filter: 'user_id = "$userId" && song_id = "$songId"',
+      );
+      
+      // Delete all existing records for this song
+      for (final record in existingHistory.items) {
+        try {
+          await pb.collection('user_history').delete(record.id);
+        } catch (e) {
+          // Continue if delete fails
+        }
+      }
+      
+      // Now create a new record
       await pb.collection('user_history').create(body: {
         'user_id': userId,
         'song_id': songId,

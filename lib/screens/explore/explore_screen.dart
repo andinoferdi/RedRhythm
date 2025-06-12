@@ -7,6 +7,8 @@ import '../home/home_screen.dart';
 import '../../widgets/user_avatar.dart';
 import '../../utils/app_colors.dart';
 import '../../routes/app_router.dart';
+import '../../widgets/mini_player.dart';
+import '../../controllers/player_controller.dart';
 
 @RoutePage()
 class ExploreScreen extends ConsumerWidget {
@@ -14,31 +16,41 @@ class ExploreScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final playerState = ref.watch(playerControllerProvider);
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(
       backgroundColor: AppColors.surfaceDark,
-      body: SafeArea(
-        bottom: false, // Don't apply bottom safe area to avoid double padding
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16), // Consistent top spacing
-              _buildSearchHeader(context, ref),
-              const SizedBox(height: 16), // Consistent spacing
-              _buildSearchBar(context),
-              const SizedBox(height: 24), // Adjusted spacing
-              _buildYourTopGenres(),
-              const SizedBox(height: 30),
-              _buildBrowseAll(),
-              // Add a bottom spacing to account for the navigation bar
-              SizedBox(height: 70 + bottomPadding), // Consistent with home screen
-            ],
+      body: Column(
+        children: [
+          Expanded(
+            child: SafeArea(
+              bottom: false, // Don't apply bottom safe area to avoid double padding
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 16), // Consistent top spacing
+                    _buildSearchHeader(context, ref),
+                    const SizedBox(height: 16), // Consistent spacing
+                    _buildSearchBar(context),
+                    const SizedBox(height: 24), // Adjusted spacing
+                    _buildYourTopGenres(),
+                    const SizedBox(height: 30),
+                    _buildBrowseAll(),
+                    // Add a bottom spacing to account for the navigation bar and mini player
+                    SizedBox(height: 70 + bottomPadding + (playerState.currentSong != null ? 64 : 0)),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // Show mini player if there's a current song
+          if (playerState.currentSong != null)
+            const MiniPlayer(),
+        ],
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 1,

@@ -95,11 +95,28 @@ class PlaylistRepository {
     }
   }
   
-  /// Delete a playlist
+  /// Delete a playlist and all its song relationships
   Future<void> deletePlaylist(String playlistId) async {
     try {
+      // First, delete all song_playlist relationships for this playlist
+      final songPlaylistRecords = await _pb.collection('song_playlists').getList(
+        filter: 'playlist_id = "$playlistId"',
+        perPage: 500, // Get all records
+      );
+      
+      // Delete each song_playlist record
+      for (final record in songPlaylistRecords.items) {
+        await _pb.collection('song_playlists').delete(record.id);
+      }
+      
+      debugPrint('Deleted ${songPlaylistRecords.items.length} song_playlist records for playlist $playlistId');
+      
+      // Then delete the playlist itself
       await _pb.collection('playlists').delete(playlistId);
+      
+      debugPrint('Successfully deleted playlist $playlistId');
     } catch (e) {
+      debugPrint('Delete playlist error: $e');
       throw Exception('Failed to delete playlist: $e');
     }
   }

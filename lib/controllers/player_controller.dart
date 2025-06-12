@@ -5,20 +5,22 @@ import 'package:just_audio/just_audio.dart' hide PlayerState;
 import '../../models/song.dart';
 import '../../services/pocketbase_service.dart';
 import '../states/player_state.dart';
+import 'play_history_controller.dart';
 
 /// Provider for player controller
 final playerControllerProvider = StateNotifierProvider<PlayerController, PlayerState>(
-  (ref) => PlayerController(),
+  (ref) => PlayerController(ref),
 );
 
 /// Controller for handling music playback
 class PlayerController extends StateNotifier<PlayerState> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final Ref ref;
   Timer? _positionTimer;
   String? _currentAudioUrl;
   bool _isDisposed = false;
   
-  PlayerController() : super(PlayerState.initial()) {
+  PlayerController(this.ref) : super(PlayerState.initial()) {
     _initAudioPlayer();
   }
   
@@ -228,6 +230,9 @@ class PlayerController extends StateNotifier<PlayerState> {
           isBuffering: false,
         );
         debugPrint('Successfully started playing: ${song.title}');
+        
+        // Add to play history when song starts playing
+        _addToPlayHistory(song.id);
       }
     } catch (e) {
       // Handle errors
@@ -521,5 +526,16 @@ class PlayerController extends StateNotifier<PlayerState> {
     // Implement next song logic here
     // For now, just pause the current song
     pauseSong();
+  }
+  
+  /// Add song to play history
+  void _addToPlayHistory(String songId) {
+    try {
+      // Add to play history without waiting for completion
+      ref.read(playHistoryControllerProvider.notifier).addPlayHistory(songId);
+    } catch (e) {
+      debugPrint('Error adding to play history: $e');
+      // Don't throw error, just log it
+    }
   }
 }

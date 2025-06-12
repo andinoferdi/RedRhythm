@@ -10,10 +10,14 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../controllers/auth_controller.dart';
 import '../../controllers/play_history_controller.dart';
 import '../../controllers/genre_controller.dart';
+import '../../controllers/player_controller.dart';
+import '../../states/player_state.dart';
 import '../../utils/image_helpers.dart';
 import '../../widgets/user_avatar.dart';
-import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
+import '../../widgets/song_item_widget.dart';
+
+import '../../models/song.dart';
 import '../../utils/app_colors.dart';
 
 // Helper function to check if host is reachable
@@ -140,6 +144,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to player state changes to refresh recently played
+    ref.listen<PlayerState>(playerControllerProvider, (previous, current) {
+      // If a new song started playing, refresh recently played
+      if (previous?.currentSong?.id != current.currentSong?.id && 
+          current.currentSong != null && 
+          current.isPlaying) {
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) {
+            ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
+          }
+        });
+      }
+    });
+    
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
@@ -650,18 +668,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemBuilder: (context, index) {
                 final history = playHistoryState.recentlyPlayed[index];
                 
+                // Convert PlayHistory to Song for the widget
+                final song = Song(
+                  id: history.songId,
+                  title: history.songTitle ?? 'Unknown Song',
+                  artist: history.artistName ?? 'Unknown Artist',
+                  albumArtUrl: history.albumCoverUrl ?? '',
+                  durationInSeconds: 0, // Duration not needed for display
+                  albumName: 'Unknown Album',
+                );
+                
                 return Column(
                   children: [
-                    _buildRecentCard(
-                      context,
-                      ref,
-                      history.songTitle ?? 'Unknown Song', 
-                      'Song • ${history.artistName ?? 'Unknown Artist'}',
-                      history.albumCoverUrl ?? 'https://via.placeholder.com/300/5D4037/FFFFFF?text=No+Cover',
-                      songId: history.songId,
+                    SongItemWidget(
+                      song: song,
+                      subtitle: 'Song • ${history.artistName ?? 'Unknown Artist'}',
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                      onTap: () {
+                        // Use playSongById to load complete song data
+                        ref.read(playerControllerProvider.notifier).playSongById(history.songId);
+                      },
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                   ],
                 );
               },
@@ -670,103 +699,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildRecentCard(
-    BuildContext context,
-    WidgetRef ref,
-    String title,
-    String subtitle,
-    String imageUrl, {
-    required String songId,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        _playSongAndNavigate(context, ref, songId, title, subtitle, imageUrl);
-      },
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade800,
-              image: imageUrl.startsWith('http')
-                  ? DecorationImage(
-                      image: NetworkImage(imageUrl),
-                      fit: BoxFit.cover,
-                    )
-                  : DecorationImage(
-                      image: AssetImage(imageUrl),
-                      fit: BoxFit.cover,
-                    ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.play_arrow,
-              color: Colors.white,
-            ),
-            onPressed: () {
-              _playSongOnly(ref, songId, title, subtitle, imageUrl);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-  
-  // Method to only play a song without navigation
-  void _playSongOnly(
-    WidgetRef ref,
-    String songId,
-    String title,
-    String subtitle,
-    String albumArtUrl,
-  ) {
-    // Use playSongById to load full song data from PocketBase including lyrics
-    ref.read(playerControllerProvider.notifier).playSongById(songId);
-  }
-
-  // Method to play song and navigate to player screen
-  void _playSongAndNavigate(
-    BuildContext context,
-    WidgetRef ref,
-    String songId,
-    String title,
-    String subtitle,
-    String albumArtUrl,
-  ) {
-    // Use playSongById to load full song data from PocketBase including lyrics
-    ref.read(playerControllerProvider.notifier).playSongById(songId);
-    
-    // Navigate to music player (song will be available in playerState)
-    context.router.push(MusicPlayerRoute(song: null));
   }
 
   Widget _buildMixCard(

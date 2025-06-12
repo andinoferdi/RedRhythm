@@ -5,6 +5,7 @@ import '../../repositories/song_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/song_item_widget.dart';
 
 class AddSongsScreen extends StatefulWidget {
   final RecordModel playlist;
@@ -19,8 +20,8 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Song> _allSongs = [];
   List<Song> _filteredSongs = [];
-  Set<String> _selectedSongIds = {};
-  bool _isLoading = false;
+  final Set<String> _selectedSongIds = {};
+  bool _isLoading = true;
   String? _errorMessage;
 
   @override
@@ -114,8 +115,14 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
-            backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
+            content: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.white,
           ),
         );
 
@@ -275,46 +282,17 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: isSelected ? Colors.red.withOpacity(0.1) : Colors.transparent,
+        color: isSelected ? Colors.red.withValues(alpha: 0.1) : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: isSelected 
-            ? Border.all(color: Colors.red.withOpacity(0.3))
+            ? Border.all(color: Colors.red.withValues(alpha: 0.3))
             : null,
       ),
-      child: ListTile(
+      child: SongItemWidget(
+        song: song,
+        subtitle: song.artist,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            width: 48,
-            height: 48,
-            color: Colors.grey[800],
-            child: song.albumArtUrl.isNotEmpty
-                ? Image.network(
-                    song.albumArtUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.music_note, color: Colors.white);
-                    },
-                  )
-                : const Icon(Icons.music_note, color: Colors.white),
-          ),
-        ),
-        title: Text(
-          song.title,
-          style: TextStyle(
-            color: isSelected ? Colors.red : Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          song.artist,
-          style: TextStyle(
-            color: Colors.grey[400],
-            fontSize: 14,
-          ),
-        ),
+
         trailing: Checkbox(
           value: isSelected,
           onChanged: (bool? value) {

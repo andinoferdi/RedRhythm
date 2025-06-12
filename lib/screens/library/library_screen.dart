@@ -7,7 +7,10 @@ import '../../widgets/user_avatar.dart';
 import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
 import 'playlist_tab.dart';
-import 'playlist_creation_flow.dart';
+import '../../services/pocketbase_service.dart';
+import '../../repositories/playlist_repository.dart';
+import '../../widgets/mini_player.dart';
+import '../../controllers/player_controller.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -18,31 +21,44 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+  VoidCallback? _refreshPlaylists;
   @override
   Widget build(BuildContext context) {
+    final playerState = ref.watch(playerControllerProvider);
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       backgroundColor: AppColors.surfaceDark,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            _buildHeader(),
-            const SizedBox(height: 16),
-            // Pindahkan tombol ke atas, setelah header
-            _buildActionButtons(),
-            const SizedBox(
-                height:
-                    16), // Spacing yang lebih kecil antara tombol dan content
-            const Expanded(
-              child: PlaylistTab(),
+      body: Column(
+        children: [
+          Expanded(
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  _buildHeader(),
+                  const SizedBox(height: 16),
+                  // Pindahkan tombol ke atas, setelah header
+                  _buildActionButtons(),
+                  const SizedBox(
+                      height:
+                          16), // Spacing yang lebih kecil antara tombol dan content
+                  Expanded(
+                    child: PlaylistTab(
+                      onRefreshCallback: (callback) => _refreshPlaylists = callback,
+                    ),
+                  ),
+                  SizedBox(height: 20 + bottomPadding + (playerState.currentSong != null ? 64 : 0)),
+                ],
+              ),
             ),
-            SizedBox(height: 20 + bottomPadding),
-          ],
-        ),
+          ),
+          // Show mini player if there's a current song
+          if (playerState.currentSong != null)
+            const MiniPlayer(),
+        ],
       ),
       bottomNavigationBar: CustomBottomNav(
         currentIndex: 2,
@@ -118,7 +134,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Fitur Tambah Artist akan segera hadir!'),
-                  backgroundColor: Colors.green,
+                  backgroundColor: Colors.red,
                 ),
               );
             },
@@ -183,15 +199,303 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   void _showCreatePlaylistFlow() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PlaylistCreationFlow(
-          onSuccess: () {
-            // Refresh playlists if needed
+    _showCreatePlaylistDialog();
+  }
+
+  void _showCreatePlaylistDialog() {
+    final TextEditingController nameController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor:
+          Colors.black.withValues(alpha: 0.85), // Fixed deprecated withOpacity
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40,
+              ),
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                tween: Tween(begin: 0.9, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: child,
+                  );
+                },
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.8,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF212121),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4), // Fixed deprecated withOpacity
+                          blurRadius: 15,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: SingleChildScrollView(
+                      child: IntrinsicHeight(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                          // Header with title
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                            child: Text(
+                              'Beri nama playlist-mu',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Poppins',
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+
+                          // Text Input with Spotify styling
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                    0xFF333333), // Slightly lighter than background
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: Colors.grey[800]!,
+                                  width: 1,
+                                ),
+                              ),
+                              child: TextField(
+                                controller: nameController,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                cursorColor:
+                                    Colors.red, // Spotify green
+                                decoration: InputDecoration(
+                                  hintText: 'Playlist-ku',
+                                  hintStyle: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 16,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  border: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 16,
+                                  ),
+                                ),
+                                autofocus: true,
+                              ),
+                            ),
+                          ),
+
+                          // Buttons section - FIXED LAYOUT
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Cancel Button - Spotify style
+                                TextButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () {
+                                          Navigator.of(context).pop();
+                                        },
+                                  style: TextButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    minimumSize: const Size(100, 40),
+                                  ),
+                                  child: Text(
+                                    'BATAL',
+                                    style: TextStyle(
+                                      color: isLoading
+                                          ? Colors.grey[600]
+                                          : Colors.grey[300],
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: 'Poppins',
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ),
+
+                                // Create Button - Spotify green style
+                                ElevatedButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () async {
+                                          final name = nameController.text.trim();
+                                          final currentContext = context; // Store context before async
+                                          
+                                          if (name.isEmpty) {
+                                            ScaffoldMessenger.of(currentContext)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                    'Nama playlist tidak boleh kosong'),
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          setState(() {
+                                            isLoading = true;
+                                          });
+
+                                          try {
+                                            final pbService = PocketBaseService();
+                                            final repository =
+                                                PlaylistRepository(pbService);
+                                            await repository.createPlaylist(
+                                              name: name,
+                                              description: '',
+                                              isPublic: false,
+                                              coverImageFile: null,
+                                            );
+
+                                            if (currentContext.mounted) {
+                                              Navigator.of(currentContext).pop();
+                                              
+                                              // Refresh playlist setelah berhasil dibuat
+                                              _refreshPlaylists?.call();
+                                              
+                                              ScaffoldMessenger.of(currentContext)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Row(
+                                                    children: [
+                                                      const Icon(Icons.check_circle,
+                                                          color: Colors.green),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        'Playlist "$name" berhasil dibuat!',
+                                                        style: const TextStyle(
+                                                          color: Colors.black,
+                                                          fontWeight: FontWeight.w500,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  backgroundColor: Colors.white,
+                                                  behavior: SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            setState(() {
+                                              isLoading = false;
+                                            });
+                                            if (currentContext.mounted) {
+                                              ScaffoldMessenger.of(currentContext)
+                                                  .showSnackBar(
+                                                SnackBar(
+                                                  content: Row(
+                                                    children: [
+                                                      const Icon(Icons.error_outline,
+                                                          color: Colors.white),
+                                                      const SizedBox(width: 8),
+                                                      Expanded(
+                                                          child: Text(
+                                                              'Gagal membuat playlist: ${e.toString()}')),
+                                                    ],
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                  behavior: SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        Colors.red, // Spotify green
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 32,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    elevation: 0,
+                                    minimumSize: const Size(100, 40),
+                                  ),
+                                  child: isLoading
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'BUAT',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Poppins',
+                                            letterSpacing: 1.2,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ));
           },
-        ),
-      ),
+        );
+      },
     );
   }
 }

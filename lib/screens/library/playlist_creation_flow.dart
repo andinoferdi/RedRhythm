@@ -122,12 +122,20 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.white),
+            const Icon(Icons.check_circle, color: Colors.green),
             const SizedBox(width: 8),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.white,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),

@@ -6,7 +6,12 @@ import '../../repositories/playlist_repository.dart';
 import '../playlist/playlist_detail_screen.dart';
 
 class PlaylistTab extends StatefulWidget {
-  const PlaylistTab({super.key});
+  final Function(VoidCallback)? onRefreshCallback;
+  
+  const PlaylistTab({
+    super.key,
+    this.onRefreshCallback,
+  });
 
   @override
   State<PlaylistTab> createState() => _PlaylistTabState();
@@ -21,6 +26,8 @@ class _PlaylistTabState extends State<PlaylistTab> {
   void initState() {
     super.initState();
     _fetchPlaylists();
+    // Provide refresh callback to parent
+    widget.onRefreshCallback?.call(_fetchPlaylists);
   }
 
   Future<void> _fetchPlaylists() async {
@@ -191,38 +198,112 @@ class _PlaylistTabState extends State<PlaylistTab> {
   void _showDeleteConfirmDialog(RecordModel playlist) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Hapus playlist?',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+      barrierColor: Colors.black.withValues(alpha: 0.8),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF282828), // Spotify dark gray
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Title
+              const Text(
+                'Hapus playlist',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              
+              // Subtitle/Question
+              Text(
+                'Yakin ingin menghapus ${playlist.data['name']}?',
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 16,
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Cancel Button - Green like Spotify
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      minimumSize: const Size(100, 40),
+                    ),
+                    child: const Text(
+                      'BATALKAN',
+                      style: TextStyle(
+                        color: Colors.white, // Spotify green
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  
+                  // Delete Button - White/Gray
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _deletePlaylist(playlist);
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      minimumSize: const Size(100, 40),
+                    ),
+                    child: Text(
+                      'HAPUS',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-        content: Text(
-          'Playlist "${playlist.data['name']}" akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.',
-          style: TextStyle(color: Colors.grey[300]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _deletePlaylist(playlist);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
   }
@@ -240,12 +321,20 @@ class _PlaylistTabState extends State<PlaylistTab> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                const Icon(Icons.check_circle, color: Colors.green),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Playlist "${playlist.data['name']}" berhasil dihapus')),
+                Expanded(
+                  child: Text(
+                    'Playlist "${playlist.data['name']}" berhasil dihapus',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ],
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.white,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
@@ -302,33 +391,39 @@ class _PlaylistTabState extends State<PlaylistTab> {
 
     return _playlists.isEmpty
         ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.queue_music,
-                  size: 80,
-                  color: Colors.grey[600],
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.queue_music,
+                      size: 64,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Belum ada playlist',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Buat playlist pertamamu dengan menekan\ntombol "Tambahkan playlist" di atas',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Belum ada playlist',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Buat playlist pertamamu dengan menekan\ntombol "Tambahkan playlist" di atas',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
           )
         : ListView.builder(

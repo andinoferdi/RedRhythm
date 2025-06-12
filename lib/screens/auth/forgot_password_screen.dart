@@ -131,7 +131,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           children: [
             const Icon(
               Icons.check_circle,
-              color: Colors.white,
+              color: Colors.green,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -140,12 +140,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 14,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
         ),
-        backgroundColor: Colors.green.shade700,
+        backgroundColor: Colors.white,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
@@ -154,7 +156,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         duration: const Duration(seconds: 6),
         action: SnackBarAction(
           label: 'OK',
-          textColor: Colors.white,
+          textColor: Colors.black,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
           },

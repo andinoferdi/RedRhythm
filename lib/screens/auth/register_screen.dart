@@ -143,8 +143,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (state.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(state.successMessage!),
-            backgroundColor: Colors.green,
+            content: Text(
+              state.successMessage!,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.white,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),

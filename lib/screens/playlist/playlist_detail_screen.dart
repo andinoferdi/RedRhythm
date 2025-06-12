@@ -11,8 +11,9 @@ import '../library/playlist_form_dialog.dart';
 import 'add_songs_screen.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
-import '../../widgets/animated_sound_bars.dart';
+
 import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/song_item_widget.dart';
 
 @RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -36,6 +37,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   late RecordModel _currentPlaylist;
   RecordModel? _creatorUser;
   bool _isLoadingCreator = true;
+  
+  // Recommended songs
+  List<Song> _recommendedSongs = [];
+  bool _isLoadingRecommended = false;
+  final Set<String> _addingSongIds = {};
 
   @override
   void initState() {
@@ -43,6 +49,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     _currentPlaylist = widget.playlist;
     _fetchPlaylistSongs();
     _fetchCreatorInfo();
+    _fetchRecommendedSongs();
   }
 
   Future<void> _fetchPlaylistSongs() async {
@@ -58,11 +65,17 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       final repository = SongPlaylistRepository(pbService);
       final songs = await repository.getPlaylistSongs(_currentPlaylist.id);
 
+      debugPrint('Fetched ${songs.length} playlist songs');
+      for (final song in songs.take(3)) {
+        debugPrint('Playlist Song: ${song.title} by ${song.artist}, Album Art: ${song.albumArtUrl}');
+      }
+
       setState(() {
         _songs = songs;
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint('Error fetching playlist songs: $e');
       setState(() {
         _errorMessage = 'Failed to load songs: ${e.toString()}';
         _isLoading = false;
@@ -90,6 +103,51 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     } catch (e) {
       setState(() {
         _isLoadingCreator = false;
+      });
+    }
+  }
+
+  Future<void> _fetchRecommendedSongs() async {
+    setState(() {
+      _isLoadingRecommended = true;
+    });
+
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      // Get all songs from database with expanded artist and album data
+      final allSongsResult = await pbService.pb.collection('songs').getList(
+        page: 1,
+        perPage: 100,
+        sort: '@random', // Random sort for variety
+        expand: 'artist_id,album_id', // Expand artist and album relations
+      );
+      
+      // Convert to Song objects and filter out songs already in playlist
+      final currentSongIds = _songs.map((song) => song.id).toSet();
+      final allSongs = allSongsResult.items.map((record) => Song.fromRecord(record)).toList();
+      final filteredSongs = _songs.isEmpty 
+          ? allSongs // If playlist is empty, show all songs
+          : allSongs.where((song) => !currentSongIds.contains(song.id)).toList();
+      
+      // Take first 10 songs as recommendations
+      final recommended = filteredSongs.take(10).toList();
+
+      debugPrint('Fetched ${recommended.length} recommended songs');
+      for (final song in recommended.take(3)) {
+        debugPrint('Song: ${song.title} by ${song.artist}, Album Art: ${song.albumArtUrl}');
+      }
+
+      setState(() {
+        _recommendedSongs = recommended;
+        _isLoadingRecommended = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching recommended songs: $e');
+      setState(() {
+        _recommendedSongs = [];
+        _isLoadingRecommended = false;
       });
     }
   }
@@ -135,6 +193,66 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     // If songs were added successfully, refresh the playlist
     if (result == true) {
       _fetchPlaylistSongs();
+      _fetchRecommendedSongs(); // Refresh recommendations too
+    }
+  }
+
+  Future<void> _addSongToPlaylist(Song song) async {
+    setState(() {
+      _addingSongIds.add(song.id);
+    });
+
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      final repository = SongPlaylistRepository(pbService);
+      await repository.addSongToPlaylist(
+        playlistId: _currentPlaylist.id,
+        songId: song.id,
+      );
+
+      // Refresh playlist songs and recommendations
+      await _fetchPlaylistSongs();
+      await _fetchRecommendedSongs();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${song.title} berhasil ditambahkan',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menambahkan lagu: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _addingSongIds.remove(song.id);
+      });
     }
   }
 
@@ -183,6 +301,10 @@ void _playAllSongs() {
                   child: _buildPlayButton(),
                 ),
                 _buildSongsList(),
+                // Recommended songs section
+                SliverToBoxAdapter(
+                  child: _buildRecommendedSongsSection(),
+                ),
                 // Add bottom spacing for navigation bar and mini player
                 SliverToBoxAdapter(
                   child: SizedBox(
@@ -331,14 +453,14 @@ void _playAllSongs() {
       );
     }
 
+    // Get the creator's name from the user record
+    final name = _creatorUser?.data['name'] as String?;
     final username = _creatorUser?.data['username'] as String?;
-    final currentUserId = PocketBaseService().currentUser?.id;
-    final creatorId = _currentPlaylist.data['user_id'] as String?;
     
-    final isCurrentUser = currentUserId == creatorId;
-    final displayName = isCurrentUser 
-        ? 'kamu' 
-        : (username ?? 'Unknown User');
+    // Use 'name' field first, fallback to 'username', then 'Unknown User'
+    final displayName = name?.isNotEmpty == true 
+        ? name!
+        : (username?.isNotEmpty == true ? username! : 'Unknown User');
 
     return Text(
       'Dibuat oleh $displayName',
@@ -514,7 +636,7 @@ void _playAllSongs() {
       return SliverToBoxAdapter(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(40),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
             child: Column(
               children: [
                 Icon(
@@ -533,11 +655,12 @@ void _playAllSongs() {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tambahkan lagu untuk memulai',
+                  'Tambahkan lagu untuk memulai atau pilih dari rekomendasi di bawah',
                   style: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -566,62 +689,159 @@ void _playAllSongs() {
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           final song = _songs[index];
-          return _buildSongItem(song, index);
+          return SongItemWidget(
+            song: song,
+            subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            onTap: () {
+              _playSong(song, index);
+            },
+          );
         },
         childCount: _songs.length,
       ),
     );
   }
 
-  Widget _buildSongItem(Song song, int index) {
-    final playerState = ref.watch(playerControllerProvider);
-    final isCurrentSong = playerState.currentSong?.id == song.id;
-    final isPlaying = isCurrentSong && playerState.isPlaying;
+  Widget _buildRecommendedSongsSection() {
+    // Always show recommendations, especially when playlist is empty
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        // Header with title and reload button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Lagu yang Direkomendasikan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Reload button
+              ElevatedButton.icon(
+                onPressed: _isLoadingRecommended ? null : _fetchRecommendedSongs,
+                icon: _isLoadingRecommended
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                        ),
+                      )
+                    : const Icon(Icons.refresh, color: Colors.black, size: 18),
+                label: const Text(
+                  'Muat ulang',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  minimumSize: const Size(0, 36),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Recommended songs list
+        _buildRecommendedSongsList(),
+      ],
+    );
+  }
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 48,
-          height: 48,
-          color: Colors.grey[800],
-          child: song.albumArtUrl.isNotEmpty
-              ? Image.network(
-                  song.albumArtUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.music_note, color: Colors.white);
-                  },
-                )
-              : const Icon(Icons.music_note, color: Colors.white),
+  Widget _buildRecommendedSongsList() {
+    if (_isLoadingRecommended) {
+      return const Padding(
+        padding: EdgeInsets.all(40),
+        child: Center(
+          child: CircularProgressIndicator(color: Colors.red),
         ),
-      ),
-      title: Text(
-        song.title,
-        style: TextStyle(
-          color: isCurrentSong ? Colors.red : Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
+      );
+    }
+
+    if (_recommendedSongs.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(40),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.music_note,
+                size: 48,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tidak ada rekomendasi tersedia',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      subtitle: Text(
-        song.artist,
-        style: TextStyle(
-          color: Colors.grey[400],
-          fontSize: 14,
-        ),
-      ),
-              trailing: isPlaying
-            ? const AnimatedSoundBars(
-                color: Colors.red,
-                size: 20.0,
-                isAnimating: true,
+      );
+    }
+
+    return Column(
+      children: _recommendedSongs.map((song) => _buildRecommendedSongItem(song)).toList(),
+    );
+  }
+
+  Widget _buildRecommendedSongItem(Song song) {
+    final isAdding = _addingSongIds.contains(song.id);
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      child: SongItemWidget(
+        song: song,
+        subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
+        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+
+        trailing: isAdding
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               )
-            : null,
-      onTap: () {
-        _playSong(song, index);
-      },
+            : IconButton(
+                onPressed: () => _addSongToPlaylist(song),
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+        onTap: () {
+          // Play the recommended song
+          ref.read(playerControllerProvider.notifier).playSong(song);
+        },
+      ),
     );
   }
 }

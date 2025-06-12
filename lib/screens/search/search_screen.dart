@@ -8,8 +8,10 @@ import '../../models/song.dart';
 import '../../repositories/song_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../controllers/player_controller.dart';
+
 import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/song_item_widget.dart';
 import '../../widgets/animated_sound_bars.dart';
 
 @RoutePage()
@@ -25,7 +27,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   
   List<Song> _searchResults = [];
-  List<Song> _playedSongsHistory = [];
+  List<Song> _recentSearchedSongs = [];
   bool _isLoading = false;
   bool _hasSearched = false;
   String? _errorMessage;
@@ -33,7 +35,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSearchHistory();
+    _loadRecentSearchedSongs();
     _searchFocusNode.requestFocus();
   }
 
@@ -44,10 +46,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
-  Future<void> _loadSearchHistory() async {
+  Future<void> _loadRecentSearchedSongs() async {
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = prefs.getStringList('played_songs_history') ?? [];
-    final songs = historyJson.map((jsonStr) {
+    final songsJson = prefs.getStringList('recent_searched_songs') ?? [];
+    final songs = songsJson.map((jsonStr) {
       try {
         final Map<String, dynamic> songMap = Map<String, dynamic>.from(jsonDecode(jsonStr));
         return Song.fromJson(songMap);
@@ -57,39 +59,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }).where((song) => song != null).cast<Song>().toList();
     
     setState(() {
-      _playedSongsHistory = songs;
+      _recentSearchedSongs = songs;
     });
   }
 
-  Future<void> _saveSearchHistory() async {
+  Future<void> _saveRecentSearchedSongs() async {
     final prefs = await SharedPreferences.getInstance();
-    final historyJson = _playedSongsHistory.map((song) => jsonEncode(song.toJson())).toList();
-    await prefs.setStringList('played_songs_history', historyJson);
+    final songsJson = _recentSearchedSongs.map((song) => jsonEncode(song.toJson())).toList();
+    await prefs.setStringList('recent_searched_songs', songsJson);
   }
 
-  Future<void> _addSongToHistory(Song song) async {
-    // Remove if already exists
-    _playedSongsHistory.removeWhere((s) => s.id == song.id);
-    // Add to front
-    _playedSongsHistory.insert(0, song);
+  Future<void> _addToRecentSearchedSongs(Song song) async {
+    // Remove if already exists to avoid duplicates
+    _recentSearchedSongs.removeWhere((s) => s.id == song.id);
+    
+    // Add to beginning of list
+    _recentSearchedSongs.insert(0, song);
+    
     // Keep only last 20 songs
-    if (_playedSongsHistory.length > 20) {
-      _playedSongsHistory = _playedSongsHistory.take(20).toList();
+    if (_recentSearchedSongs.length > 20) {
+      _recentSearchedSongs = _recentSearchedSongs.take(20).toList();
     }
     
-    await _saveSearchHistory();
+    await _saveRecentSearchedSongs();
     setState(() {});
   }
 
-  Future<void> _removeFromHistory(Song song) async {
-    _playedSongsHistory.removeWhere((s) => s.id == song.id);
-    await _saveSearchHistory();
+  Future<void> _removeFromRecentSearchedSongs(Song song) async {
+    _recentSearchedSongs.removeWhere((s) => s.id == song.id);
+    await _saveRecentSearchedSongs();
     setState(() {});
   }
 
-  Future<void> _clearAllHistory() async {
-    _playedSongsHistory.clear();
-    await _saveSearchHistory();
+  Future<void> _clearAllRecentSearchedSongs() async {
+    _recentSearchedSongs.clear();
+    await _saveRecentSearchedSongs();
     setState(() {});
   }
 
@@ -121,19 +125,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _onHistoryTap(Song song) {
-    // Play the song from history
-    _playSongFromHistory(song);
-  }
-
   void _playSong(Song song, int index) {
+    // Add song to recent searched songs when played from search results
+    _addToRecentSearchedSongs(song);
     ref.read(playerControllerProvider.notifier).playQueue(_searchResults, index);
-    // Add to history when played from search results
-    _addSongToHistory(song);
   }
 
-  void _playSongFromHistory(Song song) {
-    ref.read(playerControllerProvider.notifier).playQueue([song], 0);
+  void _playSongFromRecent(Song song) {
+    // Just play the song without moving it to top of recent list
+    ref.read(playerControllerProvider.notifier).playSongById(song.id);
   }
 
   @override
@@ -235,7 +235,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return _buildSearchResults();
     }
 
-    return _buildSearchHistory();
+    return _buildRecentSearchedSongs();
   }
 
   Widget _buildErrorState() {
@@ -335,8 +335,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildSearchHistory() {
-    if (_playedSongsHistory.isEmpty) {
+  Widget _buildRecentSearchedSongs() {
+    if (_recentSearchedSongs.isEmpty) {
       return _buildEmptyHistory();
     }
 
@@ -357,7 +357,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
               TextButton(
-                onPressed: _clearAllHistory,
+                onPressed: _clearAllRecentSearchedSongs,
                 child: const Text(
                   'Hapus semua',
                   style: TextStyle(color: Colors.grey),
@@ -369,10 +369,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _playedSongsHistory.length,
+            itemCount: _recentSearchedSongs.length,
             itemBuilder: (context, index) {
-              final song = _playedSongsHistory[index];
-              return _buildHistoryItem(song);
+              final song = _recentSearchedSongs[index];
+              return _buildRecentSongItem(song);
             },
           ),
         ),
@@ -416,113 +416,47 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildHistoryItem(Song song) {
-    final playerState = ref.watch(playerControllerProvider);
-    final isCurrentSong = playerState.currentSong?.id == song.id;
-    final isPlaying = isCurrentSong && playerState.isPlaying;
-
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 48,
-          height: 48,
-          color: Colors.grey[800],
-          child: song.albumArtUrl.isNotEmpty
-              ? Image.network(
-                  song.albumArtUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.music_note, color: Colors.white);
-                  },
+  Widget _buildRecentSongItem(Song song) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final playerState = ref.watch(playerControllerProvider);
+        final isCurrentSong = playerState.currentSong?.id == song.id;
+        final isPlaying = isCurrentSong && playerState.isPlaying;
+        
+        return SongItemWidget(
+          song: song,
+          subtitle: song.artist,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Show animated sound bars when playing (same as default SongItemWidget)
+              if (isPlaying)
+                const AnimatedSoundBars(
+                  color: Colors.red,
+                  size: 20.0,
+                  isAnimating: true,
                 )
-              : const Icon(Icons.music_note, color: Colors.white),
-        ),
-      ),
-      title: Text(
-        song.title,
-        style: TextStyle(
-          color: isCurrentSong ? Colors.red : Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        song.artist,
-        style: TextStyle(
-          color: Colors.grey[400],
-          fontSize: 14,
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (isPlaying)
-            const AnimatedSoundBars(
-              color: Colors.red,
-              size: 20.0,
-              isAnimating: true,
-            )
-          else
-            const SizedBox(width: 20),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.grey),
-            onPressed: () => _removeFromHistory(song),
+              else
+                const SizedBox(width: 20),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.grey),
+                onPressed: () => _removeFromRecentSearchedSongs(song),
+              ),
+            ],
           ),
-        ],
-      ),
-      onTap: () => _onHistoryTap(song),
+          onTap: () => _playSongFromRecent(song),
+        );
+      },
     );
   }
 
   Widget _buildSongItem(Song song, int index) {
-    final playerState = ref.watch(playerControllerProvider);
-    final isCurrentSong = playerState.currentSong?.id == song.id;
-    final isPlaying = isCurrentSong && playerState.isPlaying;
-
-    return ListTile(
+    return SongItemWidget(
+      song: song,
+      subtitle: song.artist,
       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          width: 48,
-          height: 48,
-          color: Colors.grey[800],
-          child: song.albumArtUrl.isNotEmpty
-              ? Image.network(
-                  song.albumArtUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.music_note, color: Colors.white);
-                  },
-                )
-              : const Icon(Icons.music_note, color: Colors.white),
-        ),
-      ),
-      title: Text(
-        song.title,
-        style: TextStyle(
-          color: isCurrentSong ? Colors.red : Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        song.artist,
-        style: TextStyle(
-          color: Colors.grey[400],
-          fontSize: 14,
-        ),
-      ),
-      trailing: isPlaying
-          ? const AnimatedSoundBars(
-              color: Colors.red,
-              size: 20.0,
-              isAnimating: true,
-            )
-          : null,
       onTap: () => _playSong(song, index),
     );
   }
