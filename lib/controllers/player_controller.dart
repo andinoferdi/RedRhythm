@@ -175,6 +175,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         currentSong: song,
         isPlaying: false,
         isBuffering: false,
+        currentPlaylistId: null, // Clear playlist context when playing individual song
       );
       return;
     }
@@ -203,6 +204,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         isBuffering: true,
         currentPosition: Duration.zero,
         isPlaying: false,
+        currentPlaylistId: null, // Clear playlist context when playing individual song
       );
       
       // Set the audio source with timeout
@@ -396,11 +398,15 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
+    debugPrint('🎵 PLAYLIST: Setting playlist context - playlistId: $playlistId');
+    final oldPlaylistId = state.currentPlaylistId;
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: playlistId,
     );
+    debugPrint('🎵 PLAYLIST: State updated - OLD: $oldPlaylistId -> NEW: ${state.currentPlaylistId}');
+    debugCurrentPlaylistId();
     await playSong(songs[startIndex]);
   }
 
@@ -410,11 +416,15 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
+    debugPrint('🎵 QUEUE: Playing queue WITHOUT playlist context');
+    final oldPlaylistId = state.currentPlaylistId;
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: null,
     );
+    debugPrint('🎵 QUEUE: State updated - OLD: $oldPlaylistId -> NEW: ${state.currentPlaylistId}');
+    debugCurrentPlaylistId();
     await playSong(songs[startIndex]);
   }
   
@@ -548,6 +558,58 @@ class PlayerController extends StateNotifier<PlayerState> {
     } catch (e) {
       debugPrint('Error adding to play history: $e');
       // Don't throw error, just log it
+    }
+  }
+
+  /// Debug helper to track currentPlaylistId state
+  void debugCurrentPlaylistId() {
+    debugPrint('🎵 DEBUG: Current playlist ID is: ${state.currentPlaylistId}');
+    debugPrint('🎵 DEBUG: Current song: ${state.currentSong?.title}');
+    debugPrint('🎵 DEBUG: Queue length: ${state.queue.length}');
+  }
+
+  /// Play a song without playlist context (for individual song playback)
+  Future<void> playSongWithoutPlaylist(Song song) async {
+    if (_isDisposed) return;
+    
+    debugPrint('🎵 Playing song WITHOUT playlist context: ${song.title}');
+    
+    // Clear any existing playlist context first
+    state = state.copyWith(
+      currentPlaylistId: null,
+      queue: [song], // Set queue to just this song
+      currentIndex: 0,
+    );
+    
+    debugPrint('🎵 Cleared playlist context - currentPlaylistId: ${state.currentPlaylistId}');
+    
+    // Then play the song
+    await playSong(song);
+  }
+
+  /// Play song by ID without playlist context (for individual song playback)
+  Future<void> playSongByIdWithoutPlaylist(String songId) async {
+    if (_isDisposed) return;
+    
+    try {
+      debugPrint('🎵 Loading song by ID WITHOUT playlist context: $songId');
+      
+      final pbService = PocketBaseService();
+      final record = await pbService.pb.collection('songs').getOne(
+        songId,
+        expand: 'artist_id,album_id',
+      );
+      
+      final song = Song.fromRecord(record);
+      debugPrint('🎵 Loaded song from PocketBase: ${song.title}');
+      
+      await playSongWithoutPlaylist(song);
+    } catch (e) {
+      debugPrint('Error loading song by ID: $e');
+      // Reset buffering state on error
+      if (!_isDisposed) {
+        state = state.copyWith(isBuffering: false);
+      }
     }
   }
 }

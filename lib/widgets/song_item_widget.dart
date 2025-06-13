@@ -10,6 +10,8 @@ class SongItemWidget extends ConsumerWidget {
   final VoidCallback? onTap;
   final Widget? trailing;
   final EdgeInsets? contentPadding;
+  final bool? isCurrentSong;
+  final bool? isPlaying;
 
   const SongItemWidget({
     super.key,
@@ -18,13 +20,16 @@ class SongItemWidget extends ConsumerWidget {
     this.onTap,
     this.trailing,
     this.contentPadding,
+    this.isCurrentSong,
+    this.isPlaying,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playerState = ref.watch(playerControllerProvider);
-    final isCurrentSong = playerState.currentSong?.id == song.id;
-    final isPlaying = isCurrentSong && playerState.isPlaying;
+    
+    final actualIsCurrentSong = isCurrentSong ?? (playerState.currentSong?.id == song.id);
+    final actualIsPlaying = isPlaying ?? (actualIsCurrentSong && playerState.isPlaying);
 
     return ListTile(
       contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -48,7 +53,7 @@ class SongItemWidget extends ConsumerWidget {
       title: Text(
         song.title,
         style: TextStyle(
-          color: isCurrentSong ? Colors.red : Colors.white,
+          color: actualIsCurrentSong ? Colors.red : Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.w500,
         ),
@@ -64,7 +69,7 @@ class SongItemWidget extends ConsumerWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: trailing ?? (isPlaying
+      trailing: trailing ?? (actualIsPlaying
           ? const AnimatedSoundBars(
               color: Colors.red,
               size: 20.0,
@@ -72,7 +77,8 @@ class SongItemWidget extends ConsumerWidget {
             )
           : null),
       onTap: onTap ?? () {
-        ref.read(playerControllerProvider.notifier).playSong(song);
+        debugPrint('🎤 SONG_ITEM: Playing song "${song.title}" using playSongWithoutPlaylist (default behavior)');
+        ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
       },
     );
   }

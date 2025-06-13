@@ -39,7 +39,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     if (widget.song != null && (playerState.currentSong == null || playerState.currentSong?.id != widget.song?.id)) {
       // Use a microtask to avoid state changes during build
       Future.microtask(() {
-        ref.read(playerControllerProvider.notifier).playSong(widget.song!);
+        ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(widget.song!);
       });
     }
 

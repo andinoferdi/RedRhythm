@@ -264,18 +264,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
   /// Play song (show in mini player, don't navigate)
   void _playSong(Song song, int index) {
-    final playerState = ref.read(playerControllerProvider);
-    
-    // Get the current playlist ID from the player state
-    final currentPlaylistId = playerState.currentPlaylistId;
-    
-    // Only allow playing if:
-    // 1. No playlist is currently active (currentPlaylistId is null), or
-    // 2. The active playlist is this playlist
-    if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
-      // Set current playlist ID when starting playback
-      ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, index, _currentPlaylist.id);
-    }
+    debugPrint('🎧 PLAYLIST_DETAIL: Playing song "${song.title}" from playlist "${_currentPlaylist.data['name']}" - using playQueueFromPlaylist');
+    ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, index, _currentPlaylist.id);
   }
 
   /// Play all songs in playlist starting from first
@@ -285,20 +275,18 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final playerState = ref.read(playerControllerProvider);
     final currentPlaylistId = playerState.currentPlaylistId;
     
-    // Only allow play/pause if:
-    // 1. No playlist is currently active, or
-    // 2. The active playlist is this playlist
-    if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
-      if (currentPlaylistId == _currentPlaylist.id && playerState.isPlaying) {
+    // If currently playing from this playlist, pause/resume
+    if (currentPlaylistId == _currentPlaylist.id) {
+      if (playerState.isPlaying) {
         // Pause current playback
         ref.read(playerControllerProvider.notifier).pause();
-      } else if (currentPlaylistId == _currentPlaylist.id && !playerState.isPlaying) {
+      } else {
         // Resume current playback
         ref.read(playerControllerProvider.notifier).resume();
-      } else {
-        // Start playing from first song
-        ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, 0, _currentPlaylist.id);
       }
+    } else {
+      // Start playing from first song with playlist context
+      ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, 0, _currentPlaylist.id);
     }
   }
 
@@ -549,7 +537,17 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
   Widget _buildPlayButton() {
     final playerState = ref.watch(playerControllerProvider);
-    final isPlaylistPlaying = _songs.any((song) => song.id == playerState.currentSong?.id);
+    final currentPlaylistId = playerState.currentPlaylistId;
+    
+    // Only consider as "playlist playing" if currently playing from THIS playlist
+    final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
+    final isPlaylistPlaying = isPlayingFromThisPlaylist && 
+                             _songs.any((song) => song.id == playerState.currentSong?.id);
+    
+    // Debug for tracking button state
+    if (playerState.currentSong != null) {
+      debugPrint('🎛️ PLAY_BUTTON: currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist, isPlaylistPlaying: $isPlaylistPlaying');
+    }
     
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -704,15 +702,26 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           final playerState = ref.watch(playerControllerProvider);
           final currentPlaylistId = playerState.currentPlaylistId;
           
+          // Only show as "playing" if song is current AND playing from this playlist
+          final isCurrentSong = playerState.currentSong?.id == song.id;
+          final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
+          final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying;
+          
+          // Debug for tracking
+          if (isCurrentSong) {
+            debugPrint('🎧 PLAYLIST_DETAIL: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist');
+          }
+          
           return SongItemWidget(
             song: song,
             subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            // Override the default playing state logic
+            isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
+            isPlaying: isPlaying,
             onTap: () {
-              // Only allow playing if no playlist is active or this is the active playlist
-              if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
-                _playSong(song, index);
-              }
+              // Always allow playing songs from playlist
+              _playSong(song, index);
             },
           );
         },
@@ -857,11 +866,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 ),
               ),
         onTap: () {
-          // Only allow playing if no playlist is active or this is the active playlist
-          if (currentPlaylistId == null || currentPlaylistId == _currentPlaylist.id) {
-            // For recommended songs, we play them individually without a playlist context
-            ref.read(playerControllerProvider.notifier).playSong(song);
-          }
+          // Always allow playing recommended songs without playlist context
+          ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
         },
       ),
     );

@@ -685,8 +685,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       subtitle: 'Song • ${history.artistName ?? 'Unknown Artist'}',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
                       onTap: () {
-                        // Use playSongById to load complete song data
-                        ref.read(playerControllerProvider.notifier).playSongById(history.songId);
+                        debugPrint('🏠 HOME: Playing song "${history.songTitle}" from recently played - using playSongByIdWithoutPlaylist');
+                        // Use playSongById to load complete song data without playlist context
+                        ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(history.songId);
                       },
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)
