@@ -368,83 +368,104 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     TextInputAction? textInputAction,
     void Function(String)? onFieldSubmitted,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-                                color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.transparent),
+    return TextFormField(
+      controller: controller,
+      style: const TextStyle(
+        color: Colors.white,
+        fontFamily: 'Poppins',
+        fontSize: 16,
       ),
-      child: TextFormField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        keyboardType: keyboardType,
-        obscureText: isPassword && obscureText,
-        validator: validator,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        enableInteractiveSelection: true,
-        enableSuggestions: !isPassword,
-        autocorrect: !isPassword,
-        textInputAction: textInputAction,
-        onFieldSubmitted: onFieldSubmitted,
-                                  cursorColor: AppColors.primary,
-        showCursor: true,
-        readOnly: false,
-        enableIMEPersonalizedLearning: true,
-        contextMenuBuilder: (context, editableTextState) {
-          return AdaptiveTextSelectionToolbar.editableText(
-            editableTextState: editableTextState,
-          );
-        },
-        onChanged: (value) {
-          controller.value = TextEditingValue(
-            text: value,
-            selection: controller.selection,
-          );
-        },
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: const TextStyle(
-            color: Color.fromRGBO(255, 255, 255, 0.6),
-            fontFamily: 'Poppins',
+      keyboardType: keyboardType,
+      obscureText: isPassword && obscureText,
+      validator: validator,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      enableInteractiveSelection: true,
+      enableSuggestions: !isPassword,
+      autocorrect: !isPassword,
+      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted,
+      cursorColor: AppColors.primary,
+      showCursor: true,
+      readOnly: false,
+      enableIMEPersonalizedLearning: true,
+      contextMenuBuilder: (context, editableTextState) {
+        return AdaptiveTextSelectionToolbar.editableText(
+          editableTextState: editableTextState,
+        );
+      },
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.6),
+          fontFamily: 'Poppins',
+          fontSize: 16,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: Colors.white.withValues(alpha: 0.7),
+          size: 20,
+        ),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.white.withValues(alpha: 0.7),
+                  size: 20,
+                ),
+                onPressed: onToggleVisibility,
+              )
+            : null,
+        // Default border (normal state)
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.2),
+            width: 1.5,
           ),
-          prefixIcon: Icon(
-            icon,
-            color: const Color.fromRGBO(255, 255, 255, 0.6),
+        ),
+        // Border when focused
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppColors.primary,
+            width: 2,
           ),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    obscureText ? Icons.visibility_off : Icons.visibility,
-                    color: const Color.fromRGBO(255, 255, 255, 0.6),
-                  ),
-                  onPressed: onToggleVisibility,
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 2),
-          ),
-          filled: true,
-                              fillColor: AppColors.surface,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          errorStyle: const TextStyle(
+        ),
+        // Border when there's an error
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
             color: Colors.red,
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+            width: 1.5,
           ),
+        ),
+        // Border when focused and there's an error
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: Colors.red,
+            width: 2,
+          ),
+        ),
+        // Border when disabled
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        filled: true,
+        fillColor: AppColors.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 18,
+          horizontal: 16,
+        ),
+        errorStyle: const TextStyle(
+          color: Colors.red,
+          fontFamily: 'Poppins',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
