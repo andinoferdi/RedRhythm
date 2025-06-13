@@ -105,93 +105,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
 
 
 
-  Future<void> _createNewPlaylist() async {
-    final TextEditingController nameController = TextEditingController();
-    
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(
-          'Create New Playlist',
-          style: TextStyle(color: AppColors.text),
-        ),
-        content: TextField(
-          controller: nameController,
-          style: TextStyle(color: AppColors.text),
-          decoration: InputDecoration(
-            hintText: 'Playlist name',
-            hintStyle: TextStyle(color: AppColors.textSecondary),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.textSecondary),
-            ),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: AppColors.primary),
-            ),
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                Navigator.pop(context, name);
-              }
-            },
-            child: Text(
-              'Create',
-              style: TextStyle(color: AppColors.primary),
-            ),
-          ),
-        ],
-      ),
-    );
 
-    if (result != null && result.isNotEmpty) {
-      try {
-        final pbService = PocketBaseService();
-        await pbService.initialize();
-        final repository = SongPlaylistRepository(pbService);
-        
-        // Create playlist with current user
-        final userId = pbService.currentUser?.id ?? '';
-        final newPlaylist = await repository.createPlaylist(result, userId);
-        
-        // Add song to the new playlist
-        await repository.addSongToPlaylist(newPlaylist.id, widget.song.id);
-        
-        // Reload playlists to show the new one
-        await _loadPlaylists();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Playlist "$result" created successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        debugPrint('🎵 PLAYLIST_MODAL: Error creating playlist: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create playlist'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
 
   Future<void> _applyChanges() async {
     if (_isApplyingChanges) return;
@@ -247,8 +161,11 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
         if (mounted && message.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(message),
-              backgroundColor: Colors.green,
+              content: Text(
+                message,
+                style: TextStyle(color: Colors.black),
+              ),
+              backgroundColor: Colors.white,
               duration: Duration(seconds: 2),
             ),
           );
@@ -367,55 +284,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             ),
           ),
           
-          // Create new playlist button
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _createNewPlaylist,
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: AppColors.textSecondary.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          Icons.add,
-                          color: AppColors.primary,
-                          size: 24,
-                        ),
-                      ),
-                      SizedBox(width: 16),
-                      Text(
-                        'Create playlist',
-                        style: TextStyle(
-                          color: AppColors.text,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          
-          // Divider
+          // Recently played section (if playlists exist)
           if (_playlists.isNotEmpty) ...[
             Container(
               margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -423,7 +292,6 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
               color: AppColors.textSecondary.withValues(alpha: 0.2),
             ),
             
-            // Recently played section
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(

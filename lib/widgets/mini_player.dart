@@ -349,7 +349,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                   : Icon(
                                       displayState ? Icons.check_circle : Icons.add_circle_outline,
                                       color: displayState 
-                                        ? Colors.green 
+                                        ? Colors.red 
                                         : Theme.of(context).iconTheme.color,
                                     ),
                                 tooltip: _isLoadingPlaylists 

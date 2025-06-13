@@ -296,7 +296,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle, color: Colors.green),
+            const Icon(Icons.check_circle, color: Colors.black),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

@@ -360,7 +360,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                                   content: Row(
                                                     children: [
                                                       const Icon(Icons.check_circle,
-                                                          color: Colors.green),
+                                                          color: Colors.black),
                                                       const SizedBox(width: 8),
                                                       Text(
                                                         'Playlist "$name" berhasil dibuat!',

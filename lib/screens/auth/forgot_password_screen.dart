@@ -131,7 +131,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           children: [
             const Icon(
               Icons.check_circle,
-              color: Colors.green,
+              color: Colors.black,
             ),
             const SizedBox(width: 10),
             Expanded(
