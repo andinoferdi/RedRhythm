@@ -39,6 +39,57 @@ class PlaylistImageWidget extends StatefulWidget {
 }
 
 class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
+  List<Song>? _songs;
+  bool _isLoading = false;
+  String? _currentPlaylistId;
+  
+  @override
+  void initState() {
+    super.initState();
+    _currentPlaylistId = widget.playlist.id;
+    _loadPlaylistSongs();
+  }
+
+  @override
+  void didUpdateWidget(PlaylistImageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only reload if playlist ID changed
+    if (oldWidget.playlist.id != widget.playlist.id) {
+      _currentPlaylistId = widget.playlist.id;
+      _loadPlaylistSongs();
+    }
+  }
+
+  void _loadPlaylistSongs() {
+    final playlistId = widget.playlist.id;
+    
+    // Check cache first
+    if (PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
+      final cachedSongs = PlaylistImageWidget._playlistSongsCache[playlistId]!;
+      debugPrint('🎵 PLAYLIST_IMAGE: Found ${cachedSongs.length} cached songs for playlist $playlistId');
+      setState(() {
+        _songs = cachedSongs;
+        _isLoading = false;
+      });
+      return;
+    }
+
+    // Only set loading if we don't have cached data
+    if (_songs == null) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    _getPlaylistSongs(playlistId).then((songs) {
+      if (mounted && _currentPlaylistId == playlistId) {
+        setState(() {
+          _songs = songs;
+          _isLoading = false;
+        });
+      }
+    });
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -89,52 +140,29 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
 
     // If no custom image and we should show mosaic, try to build mosaic from songs
     if (widget.showMosaicForEmptyPlaylists) {
-      return FutureBuilder<List<Song>>(
-        future: _getPlaylistSongs(widget.playlist.id),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // Show placeholder while loading
-            return _buildPlaceholderImage();
-          }
-          
-          if (snapshot.hasData && snapshot.data != null) {
-            final songs = snapshot.data!;
-            if (songs.isNotEmpty) {
-              return _buildMosaicArtwork(songs);
-            }
-          }
-          return _buildPlaceholderImage();
-        },
-      );
+      return _buildMosaicOrPlaceholder();
     }
 
     // Fallback to placeholder
     return _buildPlaceholderImage();
   }
 
+  Widget _buildMosaicOrPlaceholder() {
+    if (_isLoading && _songs == null) {
+      // Only show loading indicator if we don't have any data yet
+      return _buildPlaceholderImage();
+    }
+    
+    if (_songs != null && _songs!.isNotEmpty) {
+      return _buildMosaicArtwork(_songs!);
+    }
+    
+    return _buildPlaceholderImage();
+  }
+
   Widget _buildFallbackImage() {
     if (widget.showMosaicForEmptyPlaylists) {
-      try {
-        return FutureBuilder<List<Song>>(
-          future: _getPlaylistSongs(widget.playlist.id),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              // Show placeholder while loading
-              return _buildPlaceholderImage();
-            }
-            
-            if (snapshot.hasData && snapshot.data != null) {
-              final songs = snapshot.data!;
-              if (songs.isNotEmpty) {
-                return _buildMosaicArtwork(songs);
-              }
-            }
-            return _buildPlaceholderImage();
-          },
-        );
-      } catch (e) {
-        debugPrint('🎵 PLAYLIST_IMAGE: Error in fallback image: $e');
-      }
+      return _buildMosaicOrPlaceholder();
     }
     return _buildPlaceholderImage();
   }
