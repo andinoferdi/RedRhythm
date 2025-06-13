@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
-import '../../repositories/playlist_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../models/song.dart';
+import '../../widgets/playlist_image_widget.dart';
 
 import 'add_songs_screen.dart';
 import 'edit_playlist_screen.dart';
@@ -293,8 +293,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
-    final currentSong = playerState.currentSong;
-    final currentPlaylistId = playerState.currentPlaylistId;
     
     // Watch for playlist updates and refresh
     ref.listen(playlistUpdateNotifierProvider, (previous, next) {
@@ -346,10 +344,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   Widget _buildSliverAppBar() {
-    final pbService = PocketBaseService();
-    final repository = PlaylistRepository(pbService);
-    final String imageUrl = repository.getCoverImageUrl(_currentPlaylist);
-
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -375,21 +369,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               width: 200,
               height: 200,
               margin: const EdgeInsets.only(top: 60),
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: imageUrl.isNotEmpty
-                    ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage();
-                        },
-                      )
-                    : _buildPlaceholderImage(),
+              child: PlaylistImageWidget(
+                playlist: _currentPlaylist,
+                size: 200,
+                borderRadius: 4,
+                showMosaicForEmptyPlaylists: true,
               ),
             ),
           ),
@@ -398,16 +382,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-  Widget _buildPlaceholderImage() {
-    return Container(
-      color: Colors.grey[800],
-      child: const Icon(
-        Icons.queue_music,
-        color: Colors.white,
-        size: 48,
-      ),
-    );
-  }
+
 
   Widget _buildCreatorAvatar() {
     if (_isLoadingCreator) {
@@ -845,8 +820,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
   Widget _buildRecommendedSongItem(Song song) {
     final isAdding = _addingSongIds.contains(song.id);
-    final playerState = ref.watch(playerControllerProvider);
-    final currentPlaylistId = playerState.currentPlaylistId;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),

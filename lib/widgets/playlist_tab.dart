@@ -4,6 +4,7 @@ import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../screens/playlist/playlist_detail_screen.dart';
+import 'playlist_image_widget.dart';
 
 class PlaylistTab extends StatefulWidget {
   final Function(VoidCallback)? onRefreshCallback;
@@ -42,6 +43,9 @@ class _PlaylistTabState extends State<PlaylistTab> {
       
       final repository = PlaylistRepository(pbService);
       final playlists = await repository.getUserPlaylists();
+
+      // Clear image cache to ensure fresh playlist images
+      PlaylistImageWidget.clearAllCache();
 
       setState(() {
         _playlists = playlists;
@@ -90,9 +94,11 @@ class _PlaylistTabState extends State<PlaylistTab> {
             const SizedBox(height: 20),
             Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: _buildPlaylistImage(playlist, size: 60),
+                PlaylistImageWidget(
+                  playlist: playlist,
+                  size: 60,
+                  borderRadius: 8,
+                  showMosaicForEmptyPlaylists: true,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -449,9 +455,11 @@ class _PlaylistTabState extends State<PlaylistTab> {
         ),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: _buildPlaylistImage(playlist),
+            PlaylistImageWidget(
+              playlist: playlist,
+              size: 64,
+              borderRadius: 8,
+              showMosaicForEmptyPlaylists: true,
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -487,45 +495,5 @@ class _PlaylistTabState extends State<PlaylistTab> {
     );
   }
 
-  Widget _buildPlaylistImage(RecordModel playlist, {double size = 64}) {
-    final pbService = PocketBaseService();
-    final repository = PlaylistRepository(pbService);
-    final String imageUrl = repository.getCoverImageUrl(playlist);
 
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: imageUrl.isNotEmpty
-          ? Image.network(
-              imageUrl,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildPlaceholderImage(size);
-              },
-            )
-          : _buildPlaceholderImage(size),
-    );
-  }
-
-  Widget _buildPlaceholderImage(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(
-        Icons.queue_music,
-        color: Colors.grey[400],
-        size: size * 0.4,
-      ),
-    );
-  }
 }

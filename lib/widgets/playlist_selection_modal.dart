@@ -5,6 +5,7 @@ import '../models/playlist.dart';
 import '../services/pocketbase_service.dart';
 import '../repositories/song_playlist_repository.dart';
 import '../utils/app_colors.dart';
+import 'playlist_image_widget.dart';
 
 // Import the provider from mini_player
 import 'mini_player.dart' show playlistUpdateNotifierProvider;
@@ -14,10 +15,10 @@ class PlaylistSelectionModal extends ConsumerStatefulWidget {
   final VoidCallback? onPlaylistsChanged;
 
   const PlaylistSelectionModal({
-    Key? key,
+    super.key,
     required this.song,
     this.onPlaylistsChanged,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<PlaylistSelectionModal> createState() => _PlaylistSelectionModalState();
@@ -78,230 +79,31 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
 
   // Helper method to get playlist artwork
   Widget _buildPlaylistArtwork(Playlist playlist) {
-    // If playlist has custom image, use it
-    if (playlist.imageUrl != null && playlist.imageUrl!.isNotEmpty) {
-      return Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          image: DecorationImage(
-            image: NetworkImage(playlist.imageUrl!),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    }
+    // Convert Playlist to RecordModel-like structure for the unified widget
+    // This is a temporary approach until we unify the playlist data models
+    final fakeRecord = _createFakeRecordFromPlaylist(playlist);
     
-    // If playlist has songs, create a mosaic from album covers
-    if (playlist.songs.isNotEmpty) {
-      return FutureBuilder<List<Song>>(
-        future: _getPlaylistSongs(playlist.id),
-        builder: (context, snapshot) {
-          if (snapshot.hasData && snapshot.data != null) {
-            final songs = snapshot.data!;
-            return _buildMosaicArtwork(songs);
-          }
-          
-          // Loading state - show placeholder
-          return _buildPlaceholderArtwork();
-        },
-      );
-    }
-    
-    // Fallback to default playlist icon for empty playlists
-    return _buildPlaceholderArtwork();
+    return PlaylistImageWidget(
+      playlist: fakeRecord,
+      size: 48,
+      borderRadius: 4,
+      showMosaicForEmptyPlaylists: true,
+    );
   }
-
-  // Build mosaic artwork from multiple album covers
-  Widget _buildMosaicArtwork(List<Song> songs) {
-    if (songs.isEmpty) {
-      return _buildPlaceholderArtwork();
-    }
-
-    // Get unique album covers (max 4)
-    final Set<String> uniqueCovers = {};
-    final List<String> albumCovers = [];
-    
-    for (final song in songs) {
-      if (song.albumArtUrl.isNotEmpty && !uniqueCovers.contains(song.albumArtUrl)) {
-        uniqueCovers.add(song.albumArtUrl);
-        albumCovers.add(song.albumArtUrl);
-        if (albumCovers.length >= 4) break;
-      }
-    }
-
-    if (albumCovers.isEmpty) {
-      return _buildPlaceholderArtwork();
-    }
-
-    // Logic for displaying artwork:
-    // - If only 1 unique album OR playlist has 3 or fewer songs: show single cover
-    // - If 2-4 unique albums AND more than 3 songs: show grid
-    if (albumCovers.length == 1 || songs.length <= 3) {
-      return _buildSingleCover(albumCovers[0]);
-    }
-
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: _buildGridCover(albumCovers),
-      ),
+  
+  // Temporary helper to convert Playlist to RecordModel-like structure
+  dynamic _createFakeRecordFromPlaylist(Playlist playlist) {
+    return _FakeRecord(
+      id: playlist.id,
+      data: {
+        'name': playlist.name,
+        'cover_image': playlist.imageUrl ?? '',
+        'songs': playlist.songs,
+      },
     );
   }
 
-  // Single album cover
-  Widget _buildSingleCover(String imageUrl) {
-    return Image.network(
-      imageUrl,
-      width: 48,
-      height: 48,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildPlaceholderArtwork(),
-    );
-  }
 
-  // Grid of multiple album covers (2x2 or 1x2 depending on count)
-  Widget _buildGridCover(List<String> imageUrls) {
-    if (imageUrls.length == 2) {
-      // 1x2 grid
-      return Row(
-        children: [
-          Expanded(
-            child: Image.network(
-              imageUrls[0],
-              height: 48,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.textSecondary.withOpacity(0.2),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Image.network(
-              imageUrls[1],
-              height: 48,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.textSecondary.withOpacity(0.2),
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      // 2x2 grid for 3 or 4 images
-      return Column(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Image.network(
-                    imageUrls[0],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.textSecondary.withOpacity(0.2),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Image.network(
-                    imageUrls[1],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.textSecondary.withOpacity(0.2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: imageUrls.length > 2
-                      ? Image.network(
-                          imageUrls[2],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.textSecondary.withOpacity(0.2),
-                          ),
-                        )
-                      : Container(
-                          color: AppColors.textSecondary.withOpacity(0.2),
-                        ),
-                ),
-                Expanded(
-                  child: imageUrls.length > 3
-                      ? Image.network(
-                          imageUrls[3],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.textSecondary.withOpacity(0.2),
-                          ),
-                        )
-                      : Container(
-                          color: AppColors.textSecondary.withOpacity(0.2),
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-  }
-
-  // Placeholder artwork
-  Widget _buildPlaceholderArtwork() {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: AppColors.textSecondary.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Icon(
-        Icons.queue_music,
-        color: AppColors.textSecondary,
-        size: 24,
-      ),
-    );
-  }
-
-  // Cache for playlist songs to avoid repeated API calls
-  final Map<String, List<Song>> _playlistSongsCache = {};
-
-  Future<List<Song>> _getPlaylistSongs(String playlistId) async {
-    // Check cache first
-    if (_playlistSongsCache.containsKey(playlistId)) {
-      return _playlistSongsCache[playlistId]!;
-    }
-
-    try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      final repository = SongPlaylistRepository(pbService);
-      
-      final songs = await repository.getPlaylistSongs(playlistId);
-      
-      // Cache the result
-      _playlistSongsCache[playlistId] = songs;
-      
-      return songs;
-    } catch (e) {
-      debugPrint('🎵 PLAYLIST_MODAL: Error getting songs for playlist $playlistId: $e');
-      _playlistSongsCache[playlistId] = [];
-      return [];
-    }
-  }
 
   Future<void> _createNewPlaylist() async {
     final TextEditingController nameController = TextEditingController();
@@ -453,7 +255,9 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
         }
       }
 
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
       debugPrint('🎵 PLAYLIST_MODAL: Error applying changes: $e');
       if (mounted) {
@@ -489,7 +293,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             height: 4,
             margin: EdgeInsets.only(top: 12, bottom: 8),
             decoration: BoxDecoration(
-              color: AppColors.textSecondary.withOpacity(0.3),
+              color: AppColors.textSecondary.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -575,7 +379,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                   padding: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.3),
+                      color: AppColors.textSecondary.withValues(alpha: 0.3),
                       width: 1,
                     ),
                     borderRadius: BorderRadius.circular(8),
@@ -586,7 +390,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: AppColors.primary.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Icon(
@@ -616,7 +420,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             Container(
               margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
               height: 1,
-              color: AppColors.textSecondary.withOpacity(0.2),
+              color: AppColors.textSecondary.withValues(alpha: 0.2),
             ),
             
             // Recently played section
@@ -666,7 +470,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                         Icon(
                           Icons.queue_music,
                           size: 64,
-                          color: AppColors.textSecondary.withOpacity(0.5),
+                          color: AppColors.textSecondary.withValues(alpha: 0.5),
                         ),
                         SizedBox(height: 16),
                         Text(
@@ -681,7 +485,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                         Text(
                           'Create your first playlist to save songs',
                           style: TextStyle(
-                            color: AppColors.textSecondary.withOpacity(0.7),
+                            color: AppColors.textSecondary.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                           textAlign: TextAlign.center,
@@ -749,7 +553,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                                     border: Border.all(
                                       color: isSelected 
                                         ? AppColors.primary 
-                                        : AppColors.textSecondary.withOpacity(0.5),
+                                        : AppColors.textSecondary.withValues(alpha: 0.5),
                                       width: 2,
                                     ),
                                     color: isSelected ? AppColors.primary : Colors.transparent,
@@ -774,6 +578,14 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
       ),
     );
   }
+}
+
+// Temporary fake record class to bridge the gap between Playlist and RecordModel
+class _FakeRecord {
+  final String id;
+  final Map<String, dynamic> data;
+  
+  _FakeRecord({required this.id, required this.data});
 }
 
 // Helper function to show the modal

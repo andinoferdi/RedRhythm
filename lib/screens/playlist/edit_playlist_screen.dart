@@ -12,6 +12,7 @@ import '../../repositories/song_playlist_repository.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/mini_player.dart';
+import '../../widgets/playlist_image_widget.dart';
 import 'add_songs_screen.dart';
 
 @RoutePage()
@@ -190,6 +191,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         isPublic: _isPublic,
         coverImageFile: _selectedImage,
       );
+      
+      // Clear playlist image cache for this specific playlist
+      PlaylistImageWidget.clearCache(widget.playlist.id);
       
       _showSuccessMessage('Playlist berhasil diperbarui!');
       if (mounted) {
@@ -457,20 +461,19 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 children: [
                   GestureDetector(
                     onTap: _pickImage,
-                    child: Stack(
-                      children: [
-                        Container(
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: _buildPlaylistImage(),
-                          ),
+                                      child: Stack(
+                    children: [
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
                         ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: _buildEditablePlaylistImage(),
+                        ),
+                      ),
                         Positioned(
                           bottom: 8,
                           right: 8,
@@ -510,7 +513,10 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
   }
 
-  Widget _buildPlaylistImage() {
+
+
+  Widget _buildEditablePlaylistImage() {
+    // If user has selected a new image, show it
     if (_selectedImage != null) {
       return Image.file(
         _selectedImage!,
@@ -518,27 +524,14 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         width: double.infinity,
         height: double.infinity,
       );
-    } else if (_currentImageUrl != null) {
-      return Image.network(
-        _currentImageUrl!,
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
-      );
-    } else {
-      return _buildPlaceholderImage();
     }
-  }
-
-  Widget _buildPlaceholderImage() {
-    return Container(
-      color: Colors.grey[800],
-      child: const Icon(
-        Icons.queue_music,
-        color: Colors.white,
-        size: 48,
-      ),
+    
+    // Otherwise, use the unified playlist image widget
+    return PlaylistImageWidget(
+      playlist: widget.playlist,
+      size: 200,
+      borderRadius: 4,
+      showMosaicForEmptyPlaylists: true,
     );
   }
 

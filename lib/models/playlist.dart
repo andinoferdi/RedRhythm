@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pocketbase/pocketbase.dart';
-import 'song.dart';
 import 'package:flutter/foundation.dart';
 
 part 'playlist.freezed.dart';
