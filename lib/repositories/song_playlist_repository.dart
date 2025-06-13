@@ -55,21 +55,107 @@ class SongPlaylistRepository {
   /// Get playlists containing a specific song
   Future<List<Playlist>> getPlaylistsContainingSong(String songId) async {
     try {
-      final records = await _pb.collection('playlists').getList(
-        filter: 'songs ~ "$songId"',
+      debugPrint('🎵 REPOSITORY: Searching playlists containing song ID: $songId');
+      
+      // Use song_playlists collection to find playlists containing the song
+      final songPlaylistRecords = await _pb.collection('song_playlists').getList(
+        filter: 'song_id = "$songId"',
+        expand: 'playlist_id',
       );
-
-      return records.items.map((record) => Playlist.fromRecord(record)).toList();
+      
+      debugPrint('🎵 REPOSITORY: Found ${songPlaylistRecords.items.length} song_playlist records');
+      
+      final List<Playlist> playlists = [];
+      final Set<String> playlistIds = {};
+      
+      for (final record in songPlaylistRecords.items) {
+        final playlistId = record.data['playlist_id'] as String?;
+        if (playlistId != null && !playlistIds.contains(playlistId)) {
+          playlistIds.add(playlistId);
+          
+          try {
+            // Get the full playlist record
+            final playlistRecord = await _pb.collection('playlists').getOne(playlistId);
+            final playlist = Playlist.fromRecord(playlistRecord);
+            
+            // Get all songs for this playlist using song_playlists
+            final playlistSongs = await getPlaylistSongs(playlistId);
+            final songIds = playlistSongs.map((song) => song.id).toList();
+            
+            // Create playlist with correct songs list
+            final playlistWithSongs = Playlist(
+              id: playlist.id,
+              name: playlist.name,
+              userId: playlist.userId,
+              songs: songIds,
+              imageUrl: playlist.imageUrl,
+              createdAt: playlist.createdAt,
+              updatedAt: playlist.updatedAt,
+            );
+            
+            playlists.add(playlistWithSongs);
+            debugPrint('🎵 REPOSITORY: Playlist "${playlist.name}" contains song (via song_playlists)');
+            debugPrint('🎵 REPOSITORY: Playlist songs: $songIds');
+          } catch (e) {
+            debugPrint('🎵 REPOSITORY: Error getting playlist $playlistId: $e');
+            continue;
+          }
+        }
+      }
+      
+      debugPrint('🎵 REPOSITORY: Successfully found ${playlists.length} playlists containing song');
+      
+      return playlists;
     } catch (e) {
+      debugPrint('🎵 REPOSITORY: Error getting playlists containing song: $e');
       throw Exception('Failed to get playlists containing song: $e');
     }
   }
 
   Future<List<Playlist>> getAllPlaylists() async {
     try {
+      debugPrint('🎵 REPOSITORY: Fetching all playlists...');
+      
       final records = await _pb.collection('playlists').getList();
-      return records.items.map((record) => Playlist.fromRecord(record)).toList();
+      
+      debugPrint('🎵 REPOSITORY: Found ${records.items.length} total playlists');
+      
+      final List<Playlist> playlists = [];
+      
+      for (final record in records.items) {
+        try {
+          debugPrint('🎵 REPOSITORY: Processing playlist ${record.id}');
+          
+          final playlist = Playlist.fromRecord(record);
+          
+          // Get songs for this playlist using song_playlists collection
+          final playlistSongs = await getPlaylistSongs(playlist.id);
+          final songIds = playlistSongs.map((song) => song.id).toList();
+          
+          // Create playlist with correct songs list
+          final playlistWithSongs = Playlist(
+            id: playlist.id,
+            name: playlist.name,
+            userId: playlist.userId,
+            songs: songIds,
+            imageUrl: playlist.imageUrl,
+            createdAt: playlist.createdAt,
+            updatedAt: playlist.updatedAt,
+          );
+          
+          playlists.add(playlistWithSongs);
+          debugPrint('🎵 REPOSITORY: Successfully parsed playlist: "${playlist.name}" with ${songIds.length} songs');
+        } catch (e) {
+          debugPrint('🎵 REPOSITORY: Error parsing playlist record ${record.id}: $e');
+          continue;
+        }
+      }
+      
+      debugPrint('🎵 REPOSITORY: Successfully parsed ${playlists.length} playlists');
+      
+      return playlists;
     } catch (e) {
+      debugPrint('🎵 REPOSITORY: Error getting all playlists: $e');
       throw Exception('Failed to get all playlists: $e');
     }
   }
@@ -77,17 +163,26 @@ class SongPlaylistRepository {
   /// Add song to playlist
   Future<void> addSongToPlaylist(String playlistId, String songId) async {
     try {
-      final playlist = await _pb.collection('playlists').getOne(playlistId);
-      final songs = List<String>.from(playlist.data['songs'] ?? []);
+      debugPrint('🎵 REPOSITORY: Adding song $songId to playlist $playlistId');
       
-      if (!songs.contains(songId)) {
-        songs.add(songId);
-        await _pb.collection('playlists').update(
-          playlistId,
-          body: {'songs': songs},
-        );
+      // Check if relationship already exists
+      final existingRecords = await _pb.collection('song_playlists').getList(
+        filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
+      );
+      
+      if (existingRecords.items.isEmpty) {
+        // Create new song_playlist relationship
+        await _pb.collection('song_playlists').create(body: {
+          'playlist_id': playlistId,
+          'song_id': songId,
+          'order': DateTime.now().millisecondsSinceEpoch, // Use timestamp as order
+        });
+        debugPrint('🎵 REPOSITORY: Successfully added song to playlist via song_playlists');
+      } else {
+        debugPrint('🎵 REPOSITORY: Song already exists in playlist');
       }
     } catch (e) {
+      debugPrint('🎵 REPOSITORY: Error adding song to playlist: $e');
       throw Exception('Failed to add song to playlist: $e');
     }
   }
@@ -95,15 +190,21 @@ class SongPlaylistRepository {
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
-      final playlist = await _pb.collection('playlists').getOne(playlistId);
-      final songs = List<String>.from(playlist.data['songs'] ?? []);
+      debugPrint('🎵 REPOSITORY: Removing song $songId from playlist $playlistId');
       
-      songs.remove(songId);
-      await _pb.collection('playlists').update(
-        playlistId,
-        body: {'songs': songs},
+      // Find and delete the song_playlist relationship
+      final records = await _pb.collection('song_playlists').getList(
+        filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
       );
+      
+      for (final record in records.items) {
+        await _pb.collection('song_playlists').delete(record.id);
+        debugPrint('🎵 REPOSITORY: Deleted song_playlist relationship ${record.id}');
+      }
+      
+      debugPrint('🎵 REPOSITORY: Successfully removed song from playlist');
     } catch (e) {
+      debugPrint('🎵 REPOSITORY: Error removing song from playlist: $e');
       throw Exception('Failed to remove song from playlist: $e');
     }
   }

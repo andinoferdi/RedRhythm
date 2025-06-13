@@ -293,6 +293,16 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    final currentSong = playerState.currentSong;
+    final currentPlaylistId = playerState.currentPlaylistId;
+    
+    // Watch for playlist updates and refresh
+    ref.listen(playlistUpdateNotifierProvider, (previous, next) {
+      debugPrint('Playlist updated, refreshing playlist detail screen');
+      _fetchPlaylistSongs();
+      _fetchRecommendedSongs();
+    });
+
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
     return Scaffold(

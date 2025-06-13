@@ -7,8 +7,23 @@ import '../routes/app_router.dart';
 import '../utils/app_colors.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
+import '../models/playlist.dart';
 import '../repositories/song_playlist_repository.dart';
 import '../services/pocketbase_service.dart';
+import 'playlist_selection_modal.dart';
+
+// Provider for playlist update notifications
+final playlistUpdateNotifierProvider = StateNotifierProvider<PlaylistUpdateNotifier, int>((ref) {
+  return PlaylistUpdateNotifier();
+});
+
+class PlaylistUpdateNotifier extends StateNotifier<int> {
+  PlaylistUpdateNotifier() : super(0);
+
+  void notifyPlaylistUpdated() {
+    state++;
+  }
+}
 
 class MiniPlayer extends ConsumerStatefulWidget {
   const MiniPlayer({super.key});
@@ -20,189 +35,173 @@ class MiniPlayer extends ConsumerStatefulWidget {
 class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   bool _isLoadingPlaylists = false;
   bool _isInPlaylist = false;
+  String? _lastCheckedSongId; // Cache to avoid unnecessary checks
+
+  // Add cache for playlist data to reduce database calls
+  static List<Playlist>? _cachedPlaylists;
+  static DateTime? _cacheTimestamp;
+  static const Duration _cacheValidDuration = Duration(seconds: 30);
+
+  // Add optimistic state for immediate UI feedback
+  bool _optimisticState = false;
+  bool _hasOptimisticState = false;
 
   @override
   void initState() {
     super.initState();
-    _checkIfSongInPlaylist();
+    // Check playlist status after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfSongInPlaylist();
+    });
   }
 
   @override
   void didUpdateWidget(MiniPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _checkIfSongInPlaylist();
+    // Only check if song actually changed
+    final currentSong = ref.read(playerControllerProvider).currentSong;
+    if (currentSong?.id != _lastCheckedSongId) {
+      // Immediately update to loading state for better UX
+      setState(() {
+        _isLoadingPlaylists = true;
+      });
+      _checkIfSongInPlaylist();
+    }
   }
 
   Future<void> _checkIfSongInPlaylist() async {
     final currentSong = ref.read(playerControllerProvider).currentSong;
-    if (currentSong == null) return;
+    if (currentSong == null) {
+      debugPrint('🎵 MINI_PLAYER: No current song, skipping playlist check');
+      if (mounted) {
+        setState(() {
+          _isInPlaylist = false;
+          _lastCheckedSongId = null;
+        });
+      }
+      return;
+    }
+
+    // Skip if we already checked this song recently
+    if (_lastCheckedSongId == currentSong.id && !_isLoadingPlaylists) {
+      debugPrint('🎵 MINI_PLAYER: Song ${currentSong.title} already checked, skipping');
+      return;
+    }
 
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      final repository = SongPlaylistRepository(pbService);
+      debugPrint('🎵 MINI_PLAYER: Checking if song "${currentSong.title}" (ID: ${currentSong.id}) is in any playlist');
       
-      // Get all playlists that contain this song
-      final playlists = await repository.getPlaylistsContainingSong(currentSong.id);
+      // Set loading state immediately for better UX
+      if (mounted) {
+        setState(() {
+          _isLoadingPlaylists = true;
+        });
+      }
+      
+      List<Playlist> allPlaylists;
+      
+      // Use cache if available and valid
+      final now = DateTime.now();
+      if (_cachedPlaylists != null && 
+          _cacheTimestamp != null && 
+          now.difference(_cacheTimestamp!).compareTo(_cacheValidDuration) < 0) {
+        debugPrint('🎵 MINI_PLAYER: Using cached playlist data');
+        allPlaylists = _cachedPlaylists!;
+      } else {
+        debugPrint('🎵 MINI_PLAYER: Fetching fresh playlist data');
+        final pbService = PocketBaseService();
+        await pbService.initialize();
+        final repository = SongPlaylistRepository(pbService);
+        allPlaylists = await repository.getAllPlaylists();
+        
+        // Update cache
+        _cachedPlaylists = allPlaylists;
+        _cacheTimestamp = now;
+      }
+      
+      debugPrint('🎵 MINI_PLAYER: Total playlists available: ${allPlaylists.length}');
+      
+      bool foundInAnyPlaylist = false;
+      
+      for (final playlist in allPlaylists) {
+        final containsSong = playlist.songs.contains(currentSong.id);
+        if (containsSong) {
+          foundInAnyPlaylist = true;
+          debugPrint('🎵 MINI_PLAYER: ✅ Song found in playlist "${playlist.name}"');
+          break; // Early exit for better performance
+        }
+      }
+      
+      debugPrint('🎵 MINI_PLAYER: Final result - song found in any playlist: $foundInAnyPlaylist');
       
       if (mounted) {
         setState(() {
-          _isInPlaylist = playlists.isNotEmpty;
+          _isInPlaylist = foundInAnyPlaylist;
+          _lastCheckedSongId = currentSong.id;
+          _isLoadingPlaylists = false;
         });
+        debugPrint('🎵 MINI_PLAYER: Updated button state - isInPlaylist: $_isInPlaylist');
+        
+        // Clear optimistic state now that we have real state
+        _clearOptimisticState();
       }
     } catch (e) {
-      debugPrint('Error checking playlists: $e');
+      debugPrint('🎵 MINI_PLAYER: Error checking playlists: $e');
+      debugPrint('🎵 MINI_PLAYER: Error type: ${e.runtimeType}');
+      // Don't show error to user for this background check
+      if (mounted) {
+        setState(() {
+          _isInPlaylist = false; // Default to false on error
+          _lastCheckedSongId = currentSong.id;
+          _isLoadingPlaylists = false;
+        });
+        
+        // Clear optimistic state on error too
+        _clearOptimisticState();
+      }
     }
   }
 
-  void _showAddToPlaylistModal(BuildContext context, Song song) async {
+  // Clear cache when playlists are modified
+  static void _clearPlaylistCache() {
+    _cachedPlaylists = null;
+    _cacheTimestamp = null;
+    debugPrint('🎵 MINI_PLAYER: Playlist cache cleared');
+  }
+
+  Future<void> _showPlaylistModal(BuildContext context, Song song) async {
+    debugPrint('🎵 MINI_PLAYER: Opening playlist modal for song: ${song.title}');
+    
+    await showPlaylistSelectionModal(
+      context,
+      song,
+      onPlaylistsChanged: () {
+        // Clear cache to force refresh
+        _clearPlaylistCache();
+        
+        // Force immediate refresh of button state
+        _lastCheckedSongId = null; // Reset cache
+        _checkIfSongInPlaylist();
+      },
+    );
+  }
+
+  // Method to set optimistic state immediately after user action
+  void _setOptimisticState(bool state) {
     setState(() {
-      _isLoadingPlaylists = true;
+      _optimisticState = state;
+      _hasOptimisticState = true;
     });
+    debugPrint('🎵 MINI_PLAYER: Set optimistic state to $state');
+  }
 
-    try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      final repository = SongPlaylistRepository(pbService);
-      final playlists = await repository.getAllPlaylists();
-
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        builder: (context) => Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF282828),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Tambahkan ke playlist',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Container(
-                height: 1,
-                color: Colors.white.withOpacity(0.1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: TextButton.icon(
-                  onPressed: () {
-                    // TODO: Implement create new playlist
-                    Navigator.pop(context);
-                  },
-                  icon: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Icon(Icons.add, color: Colors.black),
-                  ),
-                  label: Text(
-                    'Playlist baru',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    alignment: Alignment.centerLeft,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: playlists.length,
-                  itemBuilder: (context, index) {
-                    final playlist = playlists[index];
-                    final bool isInPlaylist = playlist.songs.contains(song.id);
-
-                    return ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(4),
-                          image: playlist.imageUrl != null
-                              ? DecorationImage(
-                                  image: NetworkImage(playlist.imageUrl!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: playlist.imageUrl == null
-                            ? Icon(Icons.queue_music, color: Colors.white)
-                            : null,
-                      ),
-                      title: Text(
-                        playlist.name,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                      trailing: isInPlaylist
-                          ? Icon(Icons.check, color: Colors.green)
-                          : null,
-                      onTap: () async {
-                        try {
-                          if (isInPlaylist) {
-                            await repository.removeSongFromPlaylist(
-                              playlist.id,
-                              song.id,
-                            );
-                          } else {
-                            await repository.addSongToPlaylist(
-                              playlist.id,
-                              song.id,
-                            );
-                          }
-                          Navigator.pop(context);
-                          _checkIfSongInPlaylist();
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Gagal ${isInPlaylist ? 'menghapus dari' : 'menambahkan ke'} playlist',
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat playlist')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingPlaylists = false;
-        });
-      }
+  // Clear optimistic state when real state is confirmed
+  void _clearOptimisticState() {
+    if (_hasOptimisticState) {
+      setState(() {
+        _hasOptimisticState = false;
+      });
+      debugPrint('🎵 MINI_PLAYER: Cleared optimistic state');
     }
   }
 
@@ -210,6 +209,19 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     final currentSong = playerState.currentSong;
+    
+    // Watch for playlist updates to refresh button state
+    ref.listen(playlistUpdateNotifierProvider, (previous, next) {
+      _checkIfSongInPlaylist();
+    });
+    
+    // Watch for song changes to refresh button state
+    ref.listen(playerControllerProvider.select((state) => state.currentSong), (previous, next) {
+      if (next != null && (previous?.id != next.id)) {
+        debugPrint('🎵 MINI_PLAYER: Song changed from ${previous?.title} to ${next.title}, checking playlist status');
+        _checkIfSongInPlaylist();
+      }
+    });
     
     // Don't show mini player if no song is playing
     if (currentSong == null) {
@@ -297,21 +309,54 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                       Row(
                         children: [
                           // Add to Playlist Button
-                          IconButton(
-                            icon: _isLoadingPlaylists
-                                ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          Consumer(
+                            builder: (context, ref, child) {
+                              // Use optimistic state if available, otherwise use real state
+                              final displayState = _hasOptimisticState ? _optimisticState : _isInPlaylist;
+                              
+                              return IconButton(
+                                onPressed: _isLoadingPlaylists ? null : () async {
+                                  final currentSong = ref.read(playerControllerProvider).currentSong;
+                                  if (currentSong != null) {
+                                    debugPrint('🎵 MINI_PLAYER: Opening playlist modal for song: ${currentSong.title}');
+                                    
+                                    // Set optimistic state based on current state
+                                    // If currently in playlist, optimistically show it will be removed
+                                    // If not in playlist, optimistically show it will be added
+                                    final hasPlaylists = _cachedPlaylists?.isNotEmpty ?? true;
+                                    if (hasPlaylists) {
+                                      _setOptimisticState(!displayState);
+                                    }
+                                    
+                                    await _showPlaylistModal(context, currentSong);
+                                    
+                                    // Clear optimistic state and refresh real state
+                                    _clearOptimisticState();
+                                    await _checkIfSongInPlaylist();
+                                  }
+                                },
+                                icon: _isLoadingPlaylists 
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          Theme.of(context).iconTheme.color ?? Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      displayState ? Icons.check_circle : Icons.add_circle_outline,
+                                      color: displayState 
+                                        ? Colors.green 
+                                        : Theme.of(context).iconTheme.color,
                                     ),
-                                  )
-                                : Icon(
-                                    _isInPlaylist ? Icons.check : Icons.add,
-                                    color: AppColors.text,
-                                  ),
-                            onPressed: () => _showAddToPlaylistModal(context, currentSong),
+                                tooltip: _isLoadingPlaylists 
+                                  ? 'Checking playlists...'
+                                  : (displayState ? 'In playlist' : 'Add to playlist'),
+                              );
+                            },
                           ),
                           // Play/Pause Button
                           IconButton(
