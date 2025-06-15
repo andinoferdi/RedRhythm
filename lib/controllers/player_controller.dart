@@ -225,6 +225,10 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
+      // GLOBAL FORCE RESTART: Always restart if same song is clicked again
+      final isCurrentSong = state.currentSong?.id == song.id;
+      final shouldForceRestart = forceRestart || isCurrentSong;
+      
       // Set buffering state immediately for better UX
       state = state.copyWith(
         isBuffering: true,
@@ -240,7 +244,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       }
       
       // Check if this URL is already playing (unless forced restart)
-      if (!forceRestart && _currentAudioUrl == audioUrl && _audioPlayer.playing) {
+      if (!shouldForceRestart && _currentAudioUrl == audioUrl && _audioPlayer.playing) {
         return;
       }
       
@@ -729,9 +733,10 @@ class PlayerController extends StateNotifier<PlayerState> {
     final isCurrentSong = state.currentSong?.id == song.id;
     final isDifferentContext = state.currentPlaylistId != null;
     
-    // Force restart if same song but different context (e.g., from playlist to search)
-    // OR if explicitly requested (e.g., from recommended songs)
-    final shouldForceRestart = forceRestart || (isCurrentSong && isDifferentContext);
+    // GLOBAL FORCE RESTART: Always restart if same song is clicked again
+    // Also force restart if different context (e.g., from playlist to search)
+    // OR if explicitly requested
+    final shouldForceRestart = forceRestart || isCurrentSong || (isCurrentSong && isDifferentContext);
     
     // Only reset shuffle mode if not in general shuffle mode
     // General shuffle should persist when playing individual songs
