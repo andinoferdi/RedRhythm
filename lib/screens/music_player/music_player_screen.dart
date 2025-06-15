@@ -6,6 +6,7 @@ import '../../states/player_state.dart';
 import '../../models/song.dart';
 import '../../models/artist.dart';
 import '../../repositories/artist_repository.dart';
+import '../../repositories/song_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/image_helpers.dart';
@@ -24,12 +25,44 @@ class MusicPlayerScreen extends ConsumerStatefulWidget {
 class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
   Artist? _currentArtist;
   bool _isLoadingArtist = false;
+  List<Song> _artistSongs = [];
+  bool _isLoadingArtistSongs = false;
   late ArtistRepository _artistRepository;
+  late SongRepository _songRepository;
+  
+  // Store the original song to keep Jelajahi Artist consistent
+  Song? _originalSong;
+  String? _originalArtistName;
 
   @override
   void initState() {
     super.initState();
     _artistRepository = ArtistRepository(PocketBaseService());
+    _songRepository = SongRepository(PocketBaseService());
+  }
+
+  @override
+  void didUpdateWidget(MusicPlayerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // If widget.song changes (user navigated to music player with different song)
+    // reset the original song reference
+    if (widget.song != null && 
+        oldWidget.song?.id != widget.song?.id && 
+        _originalSong?.id != widget.song?.id) {
+      
+      debugPrint('🎵 Widget song changed from ${oldWidget.song?.title} to ${widget.song?.title}');
+      debugPrint('🎵 Resetting original song reference');
+      
+      _originalSong = widget.song;
+      _originalArtistName = widget.song?.artist;
+      
+      // Reload artist info and songs for new original song
+      if (_originalArtistName != null) {
+        _loadArtistInfo(_originalArtistName!);
+        _loadArtistSongs(_originalArtistName!, _originalSong!.id);
+      }
+    }
   }
 
   Future<void> _loadArtistInfo(String artistName) async {
@@ -57,6 +90,37 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     }
   }
 
+  Future<void> _loadArtistSongs(String artistName, String currentSongId) async {
+    if (_isLoadingArtistSongs) return;
+    
+    setState(() {
+      _isLoadingArtistSongs = true;
+      _artistSongs = []; // Clear previous songs
+    });
+
+    try {
+      debugPrint('🎵 Loading songs for artist: "$artistName"');
+      final songs = await _songRepository.getSongsByArtistName(
+        artistName, 
+        excludeSongId: currentSongId,
+      );
+      if (mounted) {
+        setState(() {
+          _artistSongs = songs;
+          _isLoadingArtistSongs = false;
+        });
+        debugPrint('✅ Successfully loaded ${songs.length} songs for "$artistName"');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingArtistSongs = false;
+        });
+      }
+      debugPrint('❌ Error loading artist songs: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
@@ -75,11 +139,28 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     }
 
     // Note: Removed automatic playback initiation to prevent interference with existing playback
-    // The music player screen should only display current state, not start new playback
+    // The music player screen should only display current state, not start new playbook
 
-    // Load artist info when song changes
-    if (_currentArtist?.name != currentSong.artist) {
+    // Initialize original song on first load
+    if (_originalSong == null) {
+      // Prioritize widget.song if available, otherwise use currentSong
+      _originalSong = widget.song ?? currentSong;
+      _originalArtistName = _originalSong?.artist;
+      
+      debugPrint('🎵 Setting original song: ${_originalSong?.title} by ${_originalArtistName}');
+      
+      // Load artist info and songs based on original song
+      if (_originalArtistName != null) {
+        _loadArtistInfo(_originalArtistName!);
+        _loadArtistSongs(_originalArtistName!, _originalSong!.id);
+      }
+    }
+    // Update artist info for "Tentang artis" section based on current song
+    // but keep Jelajahi Artist section based on original song
+    else if (_currentArtist?.name != currentSong.artist) {
+      debugPrint('🎵 Updating artist info for current song: ${currentSong.title} by ${currentSong.artist}');
       _loadArtistInfo(currentSong.artist);
+      // Don't reload artist songs - keep them based on original song
     }
 
     return Scaffold(
@@ -322,6 +403,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               
               // Lyrics Preview Section (Spotify-style)
               _buildLyricsPreviewSection(currentSong),
+              
+              // Jelajahi Artist Section (Spotify Shorts-style) - based on original song
+              if (_originalSong != null && _originalArtistName != null)
+                _buildJelajahiArtistSection(_originalSong!),
             ],
           ),
         ),
@@ -936,6 +1021,336 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           ),
         ),
       ],
+    );
+  }
+  
+  Widget _buildJelajahiArtistSection(Song currentSong) {
+    // Use original artist name for consistent Jelajahi Artist section
+    final displayArtistName = _originalArtistName ?? currentSong.artist;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              const Text(
+                'Jelajahi ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+              Text(
+                displayArtistName,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Horizontal scrollable song list
+        SizedBox(
+          height: 200, // Fixed height for horizontal scroll
+          child: _isLoadingArtistSongs
+              ? _buildLoadingArtistSongs()
+              : _artistSongs.isEmpty
+                  ? _buildEmptyArtistSongs(displayArtistName)
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      itemCount: _artistSongs.length,
+                      itemBuilder: (context, index) {
+                        final song = _artistSongs[index];
+                        return _buildArtistSongCard(song, index == 0, index == _artistSongs.length - 1);
+                      },
+                    ),
+        ),
+        
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+  
+  Widget _buildLoadingArtistSongs() {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      itemCount: 5, // Show 5 loading placeholders
+      itemBuilder: (context, index) {
+        return Container(
+          width: 140,
+          margin: EdgeInsets.only(
+            left: index == 0 ? 0 : 8,
+            right: index == 4 ? 0 : 8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Album art placeholder
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  color: AppColors.greyDark,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Title placeholder
+              Container(
+                height: 16,
+                width: 100,
+                decoration: BoxDecoration(
+                  color: AppColors.greyDark,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+              
+              const SizedBox(height: 4),
+              
+              // Artist placeholder
+              Container(
+                height: 14,
+                width: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.greyDark.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+  
+  Widget _buildEmptyArtistSongs(String artistName) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.greyDark.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Icon(
+                Icons.music_note_outlined,
+                size: 32,
+                color: AppColors.greyLight,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ada lagu lain dari',
+              style: const TextStyle(
+                color: AppColors.greyLight,
+                fontSize: 14,
+                fontFamily: 'Poppins',
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              artistName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Coba lagi nanti untuk melihat lebih banyak lagu',
+              style: TextStyle(
+                color: AppColors.greyLight,
+                fontSize: 12,
+                fontFamily: 'Poppins',
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildArtistSongCard(Song song, bool isFirst, bool isLast) {
+    final playerState = ref.watch(playerControllerProvider);
+    final isCurrentSong = playerState.currentSong?.id == song.id;
+    
+    return GestureDetector(
+      onTap: () {
+        if (isCurrentSong) {
+          // If this is the current song, toggle play/pause
+          if (playerState.isPlaying) {
+            ref.read(playerControllerProvider.notifier).pause();
+          } else {
+            ref.read(playerControllerProvider.notifier).resume();
+          }
+        } else {
+          // Play the selected song but don't update the original song reference
+          // This keeps the Jelajahi Artist section consistent
+          ref.read(playerControllerProvider.notifier).playSong(song);
+        }
+      },
+      child: Container(
+        width: 140,
+        margin: EdgeInsets.only(
+          left: isFirst ? 0 : 8,
+          right: isLast ? 0 : 8,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Album art with play indicator
+            Stack(
+              children: [
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.greyDark,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: ImageHelpers.buildSafeNetworkImage(
+                      imageUrl: song.albumArtUrl,
+                      width: 140,
+                      height: 140,
+                      fit: BoxFit.cover,
+                      showLoadingIndicator: true,
+                      fallbackWidget: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.3),
+                              AppColors.greyDark,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.music_note,
+                            size: 40,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Play button overlay
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isCurrentSong && playerState.isPlaying 
+                              ? AppColors.primary.withValues(alpha: 0.9)
+                              : Colors.white.withValues(alpha: 0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isCurrentSong && playerState.isPlaying 
+                              ? Icons.pause 
+                              : Icons.play_arrow,
+                          color: isCurrentSong && playerState.isPlaying 
+                              ? Colors.white 
+                              : Colors.black,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Current song indicator
+                if (isCurrentSong)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.volume_up,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Song title
+            Text(
+              song.title,
+              style: TextStyle(
+                color: isCurrentSong ? AppColors.primary : Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            
+            const SizedBox(height: 2),
+            
+            // Duration
+            Text(
+              _formatDuration(song.duration),
+              style: const TextStyle(
+                color: AppColors.greyLight,
+                fontSize: 12,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
   

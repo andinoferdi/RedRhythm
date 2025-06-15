@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pocketbase_service.dart';
 import '../models/song.dart';
@@ -93,6 +94,39 @@ class SongRepository {
       return response.items.map((record) => Song.fromRecord(record)).toList();
     } catch (e) {
       throw Exception('Failed to fetch songs by artist: $e');
+    }
+  }
+
+  /// Fetch songs by artist name (for Jelajahi Artist feature)
+  Future<List<Song>> getSongsByArtistName(String artistName, {String? excludeSongId}) async {
+    try {
+      debugPrint('🔍 Searching for songs by artist: "$artistName"');
+      
+      // Get all songs and filter in memory (more reliable for complex queries)
+      final allSongs = await getAllSongs();
+      
+      // Filter songs by artist name (case-insensitive)
+      List<Song> artistSongs = allSongs.where((song) {
+        return song.artist.toLowerCase() == artistName.toLowerCase();
+      }).toList();
+      
+      debugPrint('🎵 Found ${artistSongs.length} songs by "$artistName"');
+      
+      // Exclude current playing song if provided
+      if (excludeSongId != null) {
+        artistSongs = artistSongs.where((song) => song.id != excludeSongId).toList();
+        debugPrint('🎵 After excluding current song: ${artistSongs.length} songs');
+      }
+      
+      // Limit to 20 songs for horizontal scroll
+      if (artistSongs.length > 20) {
+        artistSongs = artistSongs.take(20).toList();
+      }
+      
+      return artistSongs;
+    } catch (e) {
+      debugPrint('❌ Error fetching songs by artist name: $e');
+      throw Exception('Failed to fetch songs by artist name: $e');
     }
   }
   
