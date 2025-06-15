@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../utils/app_colors.dart';
 import '../../models/song.dart';
-import '../../repositories/song_repository.dart';
-import '../../services/pocketbase_service.dart';
+
 import '../../controllers/player_controller.dart';
+import '../../providers/song_provider.dart';
 
 import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
@@ -37,6 +37,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.initState();
     _loadRecentSearchedSongs();
     _searchFocusNode.requestFocus();
+    
+    // Load songs using new provider
+    Future.microtask(() {
+      ref.read(songProvider.notifier).loadSongs();
+    });
   }
 
   @override
@@ -107,11 +112,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
 
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      
-      final repository = SongRepository(pbService);
-      final searchResults = await repository.searchSongs(query);
+      // Use new song provider for local search (much faster)
+      final songController = ref.read(songProvider.notifier);
+      final searchResults = songController.searchSongs(query);
 
       setState(() {
         _searchResults = searchResults;

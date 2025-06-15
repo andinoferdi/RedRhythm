@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../../models/song.dart';
-import '../../repositories/song_repository.dart';
+
 import '../../repositories/song_playlist_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/song_item_widget.dart';
+import '../../providers/song_provider.dart';
 
-class AddSongsScreen extends StatefulWidget {
+class AddSongsScreen extends ConsumerStatefulWidget {
   final RecordModel playlist;
 
   const AddSongsScreen({super.key, required this.playlist});
 
   @override
-  State<AddSongsScreen> createState() => _AddSongsScreenState();
+  ConsumerState<AddSongsScreen> createState() => _AddSongsScreenState();
 }
 
-class _AddSongsScreenState extends State<AddSongsScreen> {
+class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Song> _allSongs = [];
   List<Song> _filteredSongs = [];
@@ -30,6 +32,11 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
   void initState() {
     super.initState();
     _loadSongs();
+    
+    // Load songs using new provider
+    Future.microtask(() {
+      ref.read(songProvider.notifier).loadSongs();
+    });
   }
 
   @override
@@ -45,24 +52,32 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
     });
 
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
+      // Use new song provider for songs
+      final songState = ref.read(songProvider);
+      List<Song> songs;
       
-      // Load all songs
-      final songRepository = SongRepository(pbService);
-      final songs = await songRepository.getAllSongs();
+      if (songState.songs.isNotEmpty) {
+        // Use cached songs from provider
+        songs = songState.songs;
+      } else {
+        // Load songs if not available
+        await ref.read(songProvider.notifier).loadSongs();
+        songs = ref.read(songProvider).songs;
+      }
       
       // Load existing playlist songs
+      final pbService = PocketBaseService();
+      await pbService.initialize();
       final songPlaylistRepository = SongPlaylistRepository(pbService);
       final playlistSongs = await songPlaylistRepository.getPlaylistSongs(widget.playlist.id);
       
-              setState(() {
-          _allSongs = songs;
-          _filteredSongs = songs;
-          _existingSongIds.clear();
-          _existingSongIds.addAll(playlistSongs.map((song) => song.id));
-          _isLoading = false;
-        });
+      setState(() {
+        _allSongs = songs;
+        _filteredSongs = songs;
+        _existingSongIds.clear();
+        _existingSongIds.addAll(playlistSongs.map((song) => song.id));
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = 'Gagal memuat lagu: $e';
@@ -79,11 +94,12 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       return;
     }
 
+    // Use song provider's search functionality for consistency
+    final songController = ref.read(songProvider.notifier);
+    final searchResults = songController.searchSongs(query);
+    
     setState(() {
-      _filteredSongs = _allSongs.where((song) {
-        return song.title.toLowerCase().contains(query.toLowerCase()) ||
-               song.artist.toLowerCase().contains(query.toLowerCase());
-      }).toList();
+      _filteredSongs = searchResults;
     });
   }
 

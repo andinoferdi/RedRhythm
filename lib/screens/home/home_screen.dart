@@ -8,15 +8,15 @@ import 'package:auto_route/auto_route.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../controllers/auth_controller.dart';
-import '../../controllers/play_history_controller.dart';
-import '../../controllers/genre_controller.dart';
 import '../../controllers/player_controller.dart';
 import '../../utils/image_helpers.dart';
+import '../../providers/play_history_provider.dart';
+import '../../providers/genre_provider.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
 
-import '../../models/song.dart';
+
 import '../../utils/app_colors.dart';
 import '../../utils/app_config.dart';
 import '../debug/album_sync_debug_screen.dart';
@@ -140,11 +140,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
-    // Load data on init rather than during build to avoid blinking
+    // Load data on init using new providers
     Future.microtask(() {
-      ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
-      ref.read(genreControllerProvider.notifier).loadGenres();
-      _hasLoadedInitialData = true;
+      if (!_hasLoadedInitialData) {
+        ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
+        ref.read(genreProvider.notifier).loadGenres();
+        _hasLoadedInitialData = true;
+      }
     });
   }
   
@@ -161,16 +163,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     // Refresh data when app comes back to foreground (user returns from other apps)
     if (state == AppLifecycleState.resumed && _hasLoadedInitialData && mounted) {
       Future.microtask(() {
-        ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
+        ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
       });
     }
   }
   
   Future<void> _refreshData() async {
-    // Manual refresh via pull-to-refresh
+    // Manual refresh via pull-to-refresh using new providers
     await Future.wait([
-      ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed(),
-      ref.read(genreControllerProvider.notifier).loadGenres(),
+      ref.read(playHistoryProvider.notifier).loadRecentlyPlayed(),
+      ref.read(genreProvider.notifier).loadGenres(),
     ]);
   }
 
@@ -332,8 +334,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
         const SizedBox(height: 16),
         Consumer(
           builder: (context, ref, child) {
-            // Get the current state without triggering loads during build
-            final genreState = ref.watch(genreControllerProvider);
+            // Watch new genre provider
+            final genreState = ref.watch(genreProvider);
             
             // Show loading state
             if (genreState.isLoading) {
@@ -386,18 +388,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 children: genreState.genres.take(6).map((genre) {
                   // Map genre icon names to Material icons
                   IconData icon = Icons.music_note;
+                  final genreName = genre.name.toLowerCase();
                   
-                  if (genre.name.toLowerCase().contains('jazz')) {
+                  if (genreName.contains('jazz')) {
                     icon = Icons.coffee;
-                  } else if (genre.name.toLowerCase().contains('release')) {
+                  } else if (genreName.contains('release')) {
                     icon = Icons.new_releases;
-                  } else if (genre.name.toLowerCase().contains('anything')) {
+                  } else if (genreName.contains('anything')) {
                     icon = Icons.all_inclusive;
-                  } else if (genre.name.toLowerCase().contains('anime')) {
+                  } else if (genreName.contains('anime')) {
                     icon = Icons.music_note;
-                  } else if (genre.name.toLowerCase().contains('house')) {
+                  } else if (genreName.contains('house')) {
                     icon = Icons.house;
-                  } else if (genre.name.toLowerCase().contains('lo-fi')) {
+                  } else if (genreName.contains('lo-fi')) {
                     icon = Icons.headphones;
                   }
                   
@@ -662,8 +665,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
         const SizedBox(height: 16),
         Consumer(
           builder: (context, ref, child) {
-            // Watch play history state instead of direct provider
-            final playHistoryState = ref.watch(playHistoryControllerProvider);
+            // Watch new play history provider
+            final playHistoryState = ref.watch(playHistoryProvider);
             
             // Show loading indicator
             if (playHistoryState.isLoading) {
@@ -708,27 +711,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               physics: const NeverScrollableScrollPhysics(),
               itemCount: playHistoryState.recentlyPlayed.length,
               itemBuilder: (context, index) {
-                final history = playHistoryState.recentlyPlayed[index];
-                
-                // Convert PlayHistory to Song for the widget
-                final song = Song(
-                  id: history.songId,
-                  title: history.songTitle ?? 'Unknown Song',
-                  artist: history.artistName ?? 'Unknown Artist',
-                  albumArtUrl: history.albumCoverUrl ?? '',
-                  durationInSeconds: 0, // Duration not needed for display
-                  albumName: 'Unknown Album',
-                );
+                final song = playHistoryState.recentlyPlayed[index];
                 
                 return Column(
                   children: [
                     SongItemWidget(
                       song: song,
-                      subtitle: 'Song • ${history.artistName ?? 'Unknown Artist'}',
+                      subtitle: 'Song • ${song.artist}',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
                       onTap: () {
                         // Use playSongById to load complete song data without playlist context
-                        ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(history.songId);
+                        ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
                       },
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)
