@@ -68,24 +68,19 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         // App kembali aktif dari background
-        debugPrint('App resumed - checking auth state');
         _checkAuthOnResume();
         break;
       case AppLifecycleState.paused:
         // App masuk ke background
-        debugPrint('App paused');
         break;
       case AppLifecycleState.inactive:
         // App inactive (misalnya ada notifikasi masuk)
-        debugPrint('App inactive');
         break;
       case AppLifecycleState.detached:
         // App akan ditutup
-        debugPrint('App detached');
         break;
       case AppLifecycleState.hidden:
         // App tersembunyi
-        debugPrint('App hidden');
         break;
     }
   }

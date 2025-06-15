@@ -27,15 +27,12 @@ class PocketBaseService {
   /// Initialize authentication from secure storage
   Future<void> _initAuth() async {
     try {
-      debugPrint('PocketBase: Initializing auth from storage...');
       // Check if we should remember the user
       final rememberStr = await _storage.read(key: 'remember_me');
       _shouldRemember = rememberStr == 'true';
-      debugPrint('PocketBase: Remember me preference: $_shouldRemember');
       
       // If we shouldn't remember, don't load any auth data
       if (!_shouldRemember) {
-        debugPrint('PocketBase: Remember me disabled, clearing stored auth');
         await _storage.delete(key: 'pb_auth');
         await _storage.delete(key: 'pb_auth_token');
         await _storage.delete(key: 'pb_auth_model');
@@ -45,10 +42,8 @@ class PocketBaseService {
       // Try to load the auth store data from secure storage
       final authJson = await _storage.read(key: 'pb_auth');
       final authToken = await _storage.read(key: 'pb_auth_token');
-      debugPrint('PocketBase: Stored auth token found: ${authToken != null}');
       
       if (authJson != null && authToken != null) {
-        debugPrint('PocketBase: Restoring auth from storage...');
         // If we have stored auth data, restore it
         try {
           // Try to parse the stored model data
@@ -59,32 +54,23 @@ class PocketBaseService {
           }
           
           _pb.authStore.save(authToken, modelData);
-          debugPrint('PocketBase: Auth restored successfully - Token: ${authToken.substring(0, 10)}...');
           
           // Verify the token is still valid ONLY if base URL is properly set
           if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty && !_pb.baseUrl.contains('localhost')) {
-            debugPrint('PocketBase: Auth token appears valid, attempting refresh...');
             // Try to refresh the auth if possible
             try {
               await _pb.collection('users').authRefresh();
-              debugPrint('PocketBase: Auth token refreshed successfully');
             } catch (e) {
               debugPrint('PocketBase: Auth refresh failed: $e');
               // Don't clear auth on network errors, let controller handle it
               if (!e.toString().contains('Connection') && 
                   !e.toString().contains('SocketException') &&
                   !e.toString().contains('NetworkException')) {
-                debugPrint('PocketBase: Clearing auth due to non-network error');
                 _pb.authStore.clear();
                 await _clearStoredAuth();
-              } else {
-                debugPrint('PocketBase: Keeping auth for network retry');
               }
             }
-          } else if (!_pb.baseUrl.isNotEmpty || _pb.baseUrl.contains('localhost')) {
-            debugPrint('PocketBase: Base URL not ready, skipping auth refresh');
-          } else {
-            debugPrint('PocketBase: Auth token invalid, clearing stored auth');
+          } else if (!_pb.authStore.isValid) {
             // Clear the auth store if the token is invalid
             _pb.authStore.clear();
             await _clearStoredAuth();
@@ -95,8 +81,6 @@ class PocketBaseService {
           await _clearStoredAuth();
           return;
         }
-      } else {
-        debugPrint('PocketBase: No stored auth data found');
       }
     } catch (e) {
       debugPrint('PocketBase: Error initializing auth: $e');
@@ -112,11 +96,9 @@ class PocketBaseService {
     // Subscribe to auth changes to persist the state
     _pb.authStore.onChange.listen((e) async {
       if (_pb.authStore.isValid && _shouldRemember) {
-        debugPrint('PocketBase: Auth changed, saving to storage...');
         // Only save if remember me is enabled
         await _saveAuthToStorage();
       } else if (!_pb.authStore.isValid) {
-        debugPrint('PocketBase: Auth cleared, removing from storage...');
         // Always clear auth data when logging out
         await _clearStoredAuth();
       }
@@ -126,10 +108,7 @@ class PocketBaseService {
   /// Save auth data to secure storage
   Future<void> _saveAuthToStorage() async {
     try {
-      debugPrint('PocketBase: Saving auth data to secure storage...');
-      
       if (_pb.authStore.token.isEmpty) {
-        debugPrint('PocketBase: No token to save');
         return;
       }
       
@@ -153,14 +132,10 @@ class PocketBaseService {
             key: 'pb_auth_model',
             value: jsonEncode(recordModel.toJson()),
           );
-          debugPrint('PocketBase: Auth data saved successfully - Token: ${_pb.authStore.token.substring(0, 10)}...');
         } catch (e) {
           debugPrint('PocketBase: Error encoding auth model: $e');
           // Save without model if encoding fails
-          debugPrint('PocketBase: Auth token saved without model data');
         }
-      } else {
-        debugPrint('PocketBase: Auth token saved without model data');
       }
     } catch (e) {
       debugPrint('PocketBase: Error saving auth data: $e');
@@ -192,9 +167,7 @@ class PocketBaseService {
   Future<bool> retryAuthRefresh() async {
     try {
       if (_pb.authStore.isValid && _pb.baseUrl.isNotEmpty) {
-        debugPrint('PocketBase: Retrying auth refresh...');
         await _pb.collection('users').authRefresh();
-        debugPrint('PocketBase: Auth refresh retry successful');
         return true;
       }
     } catch (e) {
@@ -264,27 +237,21 @@ class PocketBaseService {
 
   Future<void> initialize() async {
     if (!_isInitialized) {
-      debugPrint('PocketBase: Starting initialization...');
-      
       // Use emulator URL directly
       final url = await determinePocketBaseUrl();
       
-      debugPrint('PocketBase: Setting base URL to: $url');
       // Set the base URL BEFORE any auth operations
       _pb.baseUrl = url;
       
       _isInitialized = true;
       
       // Now initialize auth with the correct URL
-      debugPrint('PocketBase: Initializing auth with correct URL...');
       await _initAuth();
     }
   }
 
   // Test and determine the best PocketBase URL
   Future<String> determinePocketBaseUrl() async {
-    debugPrint("PocketBase: Determining URL for emulator...");
-    
     // Get possible URLs from AppConfig (prioritizes emulator URLs)
     final List<String> possibleUrls = List.from(AppConfig.possibleUrls);
     
@@ -300,7 +267,6 @@ class PocketBaseService {
         );
         
         if (response.statusCode == 200) {
-          debugPrint("PocketBase: Connected to $url");
           return url;
         }
       } catch (e) {
@@ -309,7 +275,6 @@ class PocketBaseService {
     }
     
     // If all attempts fail, return default emulator URL
-    debugPrint("PocketBase: Using default emulator URL");
     return AppConfig.defaultUrl;
   }
 

@@ -38,14 +38,11 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
 
   Future<void> _loadPlaylists() async {
     try {
-      debugPrint('🎵 PLAYLIST_MODAL: Loading playlists for song: ${widget.song.title}');
-      
       final pbService = PocketBaseService();
       await pbService.initialize();
       final repository = SongPlaylistRepository(pbService);
       
       final playlists = await repository.getAllPlaylists();
-      debugPrint('🎵 PLAYLIST_MODAL: Loaded ${playlists.length} playlists');
       
       if (mounted) {
         setState(() {
@@ -55,7 +52,6 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
           // Initialize playlist states
           for (final playlist in playlists) {
             _playlistStates[playlist.id] = playlist.songs.contains(widget.song.id);
-            debugPrint('🎵 PLAYLIST_MODAL: Playlist "${playlist.name}" contains song: ${_playlistStates[playlist.id]}');
           }
           
           _isLoading = false;
@@ -131,12 +127,10 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
           hasChanges = true;
           if (currentState) {
             // Add song to playlist
-            debugPrint('🎵 PLAYLIST_MODAL: Adding song to playlist "${playlist.name}"');
             await repository.addSongToPlaylist(playlist.id, widget.song.id);
             addedCount++;
           } else {
             // Remove song from playlist
-            debugPrint('🎵 PLAYLIST_MODAL: Removing song from playlist "${playlist.name}"');
             await repository.removeSongFromPlaylist(playlist.id, widget.song.id);
             removedCount++;
           }

@@ -299,8 +299,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                 onPressed: _isLoadingPlaylists ? null : () async {
                                   final currentSong = ref.read(playerControllerProvider).currentSong;
                                   if (currentSong != null) {
-                                    debugPrint('🎵 MINI_PLAYER: Opening playlist modal for song: ${currentSong.title}');
-                                    
                                     // Set optimistic state based on current state
                                     // If currently in playlist, optimistically show it will be removed
                                     // If not in playlist, optimistically show it will be added

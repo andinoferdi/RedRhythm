@@ -19,8 +19,6 @@ class AudioDurationService {
   /// Get actual MP3 duration from audio file
   Future<Duration?> getAudioFileDuration(String audioUrl) async {
     try {
-      debugPrint('🎵 Getting duration for audio URL: $audioUrl');
-      
       // Create a separate audio player just for duration detection
       final durationPlayer = AudioPlayer();
       
@@ -40,7 +38,6 @@ class AudioDurationService {
         }
         
         if (duration != null) {
-          debugPrint('🎵 Duration detected: ${duration.inSeconds} seconds');
           return duration;
         } else {
           debugPrint('⚠️ Could not detect duration after $maxAttempts attempts');
@@ -59,13 +56,10 @@ class AudioDurationService {
   /// Update song duration in PocketBase database
   Future<bool> updateSongDurationInDatabase(String songId, int durationInSeconds) async {
     try {
-      debugPrint('📝 Updating song duration in database: $songId -> ${durationInSeconds}s');
-      
       await _pbService.pb.collection('songs').update(songId, body: {
         'duration': durationInSeconds,
       });
       
-      debugPrint('✅ Song duration updated successfully in database');
       return true;
     } catch (e) {
       debugPrint('❌ Error updating song duration in database: $e');
@@ -81,14 +75,11 @@ class AudioDurationService {
       // Try to use audio file name from model if available
       if (song.audioFileName != null && song.audioFileName!.isNotEmpty) {
         url = '${_pbService.pb.baseUrl}/api/files/songs/${song.id}/${song.audioFileName}';
-        debugPrint('Using audio file from model: ${song.audioFileName}');
       } else {
         // Use default file name if not available in model
         url = '${_pbService.pb.baseUrl}/api/files/songs/${song.id}/dream_on_no3ma56xq7.mp3';
-        debugPrint('Using default audio file name');
       }
       
-      debugPrint('Final audio URL: $url');
       return url;
     } catch (e) {
       debugPrint('Error getting song audio URL: $e');
@@ -101,11 +92,8 @@ class AudioDurationService {
     try {
       // Skip if song already has duration
       if (song.durationInSeconds > 0) {
-        debugPrint('⏭️ Song ${song.title} already has duration: ${song.durationInSeconds}s');
         return true;
       }
-
-      debugPrint('🔍 Processing song: ${song.title}');
       
       // Get audio URL
       final audioUrl = _getSongAudioUrl(song);
@@ -123,9 +111,6 @@ class AudioDurationService {
 
       // Update database
       final success = await updateSongDurationInDatabase(song.id, duration.inSeconds);
-      if (success) {
-        debugPrint('✅ Successfully updated duration for: ${song.title} -> ${duration.inSeconds}s');
-      }
       
       return success;
     } catch (e) {
@@ -137,8 +122,6 @@ class AudioDurationService {
   /// Update all songs with missing duration (duration = 0)
   Future<void> updateAllSongsDuration() async {
     try {
-      debugPrint('🚀 Starting bulk song duration update...');
-      
       // Get all songs with duration = 0
       final response = await _pbService.pb.collection('songs').getList(
         page: 1,
@@ -151,10 +134,7 @@ class AudioDurationService {
           .map((record) => Song.fromRecord(record))
           .toList();
 
-      debugPrint('📊 Found ${songsToUpdate.length} songs with missing duration');
-
       if (songsToUpdate.isEmpty) {
-        debugPrint('✅ All songs already have duration set');
         return;
       }
 
@@ -164,7 +144,6 @@ class AudioDurationService {
       // Process each song
       for (int i = 0; i < songsToUpdate.length; i++) {
         final song = songsToUpdate[i];
-        debugPrint('📝 Processing ${i + 1}/${songsToUpdate.length}: ${song.title}');
         
         final success = await updateSongDuration(song);
         if (success) {
