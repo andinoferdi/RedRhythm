@@ -335,29 +335,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with Lyrics icon
-        Row(
-          children: [
-            const Icon(
-              Icons.lyrics_outlined,
-              color: AppColors.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Lyrics',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
         // Lyrics preview container (Spotify-style)
         GestureDetector(
           onTap: () {
@@ -390,7 +367,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -410,35 +386,19 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Preview text with smooth Spotify-style fade-out
-          ShaderMask(
-            shaderCallback: (Rect bounds) {
-              return LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: const [
-                  Colors.white,
-                  Colors.white,
-                  Colors.white,
-                  Color(0x88FFFFFF), // Semi-transparent
-                  Color(0x44FFFFFF), // More transparent
-                  Colors.transparent,
-                ],
-                stops: const [0.0, 0.4, 0.65, 0.8, 0.9, 1.0],
-              ).createShader(bounds);
-            },
-            blendMode: BlendMode.dstIn,
+          // "Lyrics" text overlay
+          const Positioned(
+            top: 16,
+            left: 20,
             child: Text(
-              previewText,
-              style: const TextStyle(
+              'Lyrics',
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
-                height: 1.6,
-                fontFamily: 'Poppins',
                 fontWeight: FontWeight.bold,
+                fontFamily: 'Poppins',
                 shadows: [
                   Shadow(
                     color: Colors.black26,
@@ -447,52 +407,98 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ],
               ),
-              maxLines: 3,
-              overflow: TextOverflow.clip,
             ),
           ),
           
-          const SizedBox(height: 16),
-          
-          // Show more button with white background
-          Row(
-            children: [
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+          // Content with padding
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20), // Top padding for "Lyrics" text
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Preview text with smooth Spotify-style fade-out
+                ShaderMask(
+                  shaderCallback: (Rect bounds) {
+                    return LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: const [
+                        Colors.white,
+                        Colors.white,
+                        Colors.white,
+                        Color(0x88FFFFFF), // Semi-transparent
+                        Color(0x44FFFFFF), // More transparent
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 0.65, 0.8, 0.9, 1.0],
+                    ).createShader(bounds);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: Text(
+                    previewText,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      height: 1.6,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black26,
+                          offset: Offset(1, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
                     ),
-                  ],
+                    maxLines: 3,
+                    overflow: TextOverflow.clip,
+                  ),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+                
+                const SizedBox(height: 16),
+                
+                // Show more button with white background
+                Row(
                   children: [
-                    Text(
-                      'Tampilkan Lirik',
-                      style: TextStyle(
-                        color: Color(0xFFE53E3E),
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Poppins',
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Tampilkan Lirik',
+                            style: TextStyle(
+                              color: Color(0xFFE53E3E),
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: Color(0xFFE53E3E),
+                            size: 14,
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(width: 6),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: Color(0xFFE53E3E),
-                      size: 14,
-                    ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -566,39 +572,18 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with artist icon
-        Row(
-          children: [
-            const Icon(
-              Icons.person_outline,
-              color: AppColors.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Tentang artis',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
         // Artist info container
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: const Color(0xFF2A2A2A), // Solid grey background
             borderRadius: BorderRadius.circular(16),
           ),
           child: _isLoadingArtist
-              ? _buildLoadingArtistState()
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildLoadingArtistState(),
+                )
               : _currentArtist != null
                   ? _buildArtistContent(_currentArtist!, currentSong)
                   : _buildFallbackArtistContent(currentSong),
@@ -635,132 +620,197 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Artist header with image and name
-        Row(
-          children: [
-            // Artist avatar (circular) - using real artist image
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.greyDark,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipOval(
+        // Full-width artist image with overlay text (Spotify-style)
+        Container(
+          width: double.infinity,
+          height: 160,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            color: AppColors.greyDark,
+          ),
+          child: Stack(
+            children: [
+              // Artist image filling entire container
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
                 child: ImageHelpers.buildSafeNetworkImage(
                   imageUrl: artist.imageUrl,
-                  width: 60,
-                  height: 60,
+                  width: double.infinity,
+                  height: 160,
                   fit: BoxFit.cover,
                   fallbackWidget: Container(
                     color: AppColors.greyDark,
-                    child: const Icon(
-                      Icons.person,
-                      color: AppColors.primary,
-                      size: 30,
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.person,
+                          color: AppColors.primary,
+                          size: 60,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'No Artist Image',
+                          style: TextStyle(
+                            color: AppColors.greyLight,
+                            fontSize: 14,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-            ),
-            
-            const SizedBox(width: 16),
-            
-            // Artist info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    artist.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+              
+              // Gradient overlay for text readability
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '9,3 jt pendengar bulanan', // Static for now
-                    style: const TextStyle(
-                      color: AppColors.greyLight,
-                      fontSize: 14,
-                      fontFamily: 'Poppins',
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.3),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.7),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // "Tentang artis" text overlay
+              const Positioned(
+                top: 16,
+                left: 16,
+                child: Text(
+                  'Tentang artis',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Artist info below image
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          artist.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '9,3 jt pendengar bulanan', // Static for now
+                          style: const TextStyle(
+                            color: AppColors.greyLight,
+                            fontSize: 14,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Follow button
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: AppColors.greyLight,
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Ikuti',
+                      style: TextStyle(
+                        color: AppColors.greyLight,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Poppins',
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            
-            // Follow button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(
+              
+              const SizedBox(height: 12),
+              
+              // Artist bio from PocketBase
+              Text(
+                artist.bio.isNotEmpty ? artist.bio : 'No biography available for this artist.',
+                style: const TextStyle(
                   color: AppColors.greyLight,
-                  width: 1,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Ikuti',
-                style: TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  height: 1.5,
                   fontFamily: 'Poppins',
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Artist bio from PocketBase
-        Text(
-          artist.bio.isNotEmpty ? artist.bio : 'No biography available for this artist.',
-          style: const TextStyle(
-            color: AppColors.greyLight,
-            fontSize: 14,
-            height: 1.5,
-            fontFamily: 'Poppins',
-          ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
-        ),
-        
-        const SizedBox(height: 4),
-        
-        // "lihat semua" text
-        GestureDetector(
-          onTap: () {
-            // TODO: Navigate to artist detail page
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Artist detail page coming soon!'),
-                backgroundColor: AppColors.primary,
+              
+              const SizedBox(height: 4),
+              
+              // "lihat semua" text
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to artist detail page
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Artist detail page coming soon!'),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                },
+                child: const Text(
+                  'lihat semua',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
               ),
-            );
-          },
-          child: const Text(
-            'lihat semua',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Poppins',
-            ),
+            ],
           ),
         ),
       ],
@@ -771,52 +821,31 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Artist header with fallback content
-        Row(
-          children: [
-            // Fallback artist avatar
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.greyDark,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.person,
-                color: AppColors.primary,
-                size: 30,
-              ),
+        // Full-width fallback image with overlay text
+        Container(
+          width: double.infinity,
+          height: 160,
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
             ),
-            
-            const SizedBox(width: 16),
-            
-            // Artist info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            color: AppColors.greyDark,
+          ),
+          child: Stack(
+            children: [
+              // Fallback content
+              const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    currentSong.artist,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Icon(
+                    Icons.person,
+                    color: AppColors.primary,
+                    size: 60,
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Artist information not available',
+                  SizedBox(height: 8),
+                  Text(
+                    'No Artist Image',
                     style: TextStyle(
                       color: AppColors.greyLight,
                       fontSize: 14,
@@ -825,23 +854,86 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ],
               ),
-            ),
-          ],
+              
+              // "Tentang artis" text overlay
+              const Positioned(
+                top: 16,
+                left: 16,
+                child: Text(
+                  'Tentang artis',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        offset: Offset(1, 1),
+                        blurRadius: 3,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         
-        const SizedBox(height: 16),
-        
-        // Fallback message
-        const Text(
-          'Artist information is not available in the database yet. Check back later for more details about this artist.',
-          style: TextStyle(
-            color: AppColors.greyLight,
-            fontSize: 14,
-            height: 1.5,
-            fontFamily: 'Poppins',
+        // Artist info below image
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentSong.artist,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Poppins',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Artist information not available',
+                          style: TextStyle(
+                            color: AppColors.greyLight,
+                            fontSize: 14,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Fallback message
+              const Text(
+                'Artist information is not available in the database yet. Check back later for more details about this artist.',
+                style: TextStyle(
+                  color: AppColors.greyLight,
+                  fontSize: 14,
+                  height: 1.5,
+                  fontFamily: 'Poppins',
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          maxLines: 3,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
