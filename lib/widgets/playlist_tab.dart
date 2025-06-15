@@ -1,63 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../screens/playlist/playlist_detail_screen.dart';
 import 'playlist_image_widget.dart';
+import '../providers/playlist_provider.dart';
 
-class PlaylistTab extends StatefulWidget {
-  final Function(VoidCallback)? onRefreshCallback;
-  
+class PlaylistTab extends ConsumerStatefulWidget {
   const PlaylistTab({
     super.key,
-    this.onRefreshCallback,
   });
 
   @override
-  State<PlaylistTab> createState() => _PlaylistTabState();
+  ConsumerState<PlaylistTab> createState() => _PlaylistTabState();
 }
 
-class _PlaylistTabState extends State<PlaylistTab> {
-  bool _isLoading = true;
-  List<RecordModel> _playlists = [];
-  String? _errorMessage;
+class _PlaylistTabState extends ConsumerState<PlaylistTab> {
 
   @override
   void initState() {
     super.initState();
-    _fetchPlaylists();
-    // Provide refresh callback to parent
-    widget.onRefreshCallback?.call(_fetchPlaylists);
-  }
-
-  Future<void> _fetchPlaylists() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
+    // Initialize global playlist state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).loadPlaylists();
     });
 
-    try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      
-      final repository = PlaylistRepository(pbService);
-      final playlists = await repository.getUserPlaylists();
-
-      // Clear image cache to ensure fresh playlist images
-      PlaylistImageWidget.clearAllCache();
-
-      setState(() {
-        _playlists = playlists;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load playlists: ${e.toString()}';
-        _isLoading = false;
-      });
-    }
   }
+
+
 
   void _navigateToPlaylistDetail(RecordModel playlist) {
     Navigator.push(
@@ -65,7 +37,6 @@ class _PlaylistTabState extends State<PlaylistTab> {
       MaterialPageRoute(
         builder: (context) => PlaylistDetailScreen(
           playlist: playlist,
-          onPlaylistUpdated: _fetchPlaylists,
         ),
       ),
     );
@@ -346,7 +317,8 @@ class _PlaylistTabState extends State<PlaylistTab> {
           ),
         );
         
-        _fetchPlaylists(); // Refresh the list
+        // Notify global playlist provider about deletion
+        ref.read(playlistProvider.notifier).notifyPlaylistUpdated();
       }
     } catch (e) {
       if (mounted) {
@@ -364,7 +336,15 @@ class _PlaylistTabState extends State<PlaylistTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    // Watch auto-refresh playlist provider for automatic updates
+    final playlistState = ref.watch(autoRefreshPlaylistProvider);
+    
+    // Use global state instead of local state
+    final isLoading = playlistState.isLoading;
+    final playlists = playlistState.playlists;
+    final errorMessage = playlistState.error;
+    
+    if (isLoading) {
       return const Center(
         child: CircularProgressIndicator(
           color: AppColors.primary,
@@ -372,19 +352,19 @@ class _PlaylistTabState extends State<PlaylistTab> {
       );
     }
 
-    if (_errorMessage != null) {
+    if (errorMessage != null) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _errorMessage!,
+              errorMessage,
               style: const TextStyle(color: Colors.white),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _fetchPlaylists,
+              onPressed: () => ref.read(playlistProvider.notifier).refreshPlaylists(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
               ),
@@ -395,7 +375,7 @@ class _PlaylistTabState extends State<PlaylistTab> {
       );
     }
 
-    return _playlists.isEmpty
+    return playlists.isEmpty
         ? Center(
             child: SingleChildScrollView(
               child: Padding(
@@ -434,9 +414,9 @@ class _PlaylistTabState extends State<PlaylistTab> {
           )
         : ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _playlists.length,
+            itemCount: playlists.length,
             itemBuilder: (context, index) {
-              final playlist = _playlists[index];
+              final playlist = playlists[index];
               return _buildPlaylistItem(playlist);
             },
           );

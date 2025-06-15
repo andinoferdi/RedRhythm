@@ -13,6 +13,7 @@ import '../../widgets/song_item_widget.dart';
 // Removed player controller and mini player imports for edit playlist screen
 import '../../widgets/playlist_image_widget.dart';
 import 'add_songs_screen.dart';
+import '../../providers/playlist_provider.dart';
 
 @RoutePage()
 class EditPlaylistScreen extends ConsumerStatefulWidget {
@@ -46,11 +47,20 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
   String _originalDescription = '';
   bool _originalIsPublic = false;
   String? _originalImageUrl;
+  
+  // Track removed songs (only remove from database when saving)
+  final Set<String> _removedSongIds = {};
+  final Map<String, int> _originalSongOrder = {};
 
   @override
   void initState() {
     super.initState();
     _initializeData();
+    
+    // Initialize global playlist state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).loadPlaylists();
+    });
   }
 
   @override
@@ -114,6 +124,12 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       setState(() {
         _songs = songs;
         _originalSongs = List.from(songs); // Keep original order
+        
+        // Store original song order for change detection
+        _originalSongOrder.clear();
+        for (int i = 0; i < songs.length; i++) {
+          _originalSongOrder[songs[i].id] = i;
+        }
       });
     } catch (e) {
       _showErrorMessage('Gagal memuat lagu playlist: ${e.toString()}');
@@ -142,6 +158,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     // Check if image changed
     if (_selectedImage != null) return true;
     if (_currentImageUrl != _originalImageUrl) return true;
+    
+    // Check if songs were removed
+    if (_removedSongIds.isNotEmpty) return true;
     
     // Check if songs order changed
     if (_songs.length != _originalSongs.length) return true;
@@ -198,7 +217,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       await pbService.initialize();
       
       final repository = PlaylistRepository(pbService);
+      final songPlaylistRepo = SongPlaylistRepository(pbService);
 
+      // 1. Update playlist basic info
       await repository.updatePlaylist(
         playlistId: widget.playlist.id,
         name: _nameController.text.trim(),
@@ -207,8 +228,24 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         coverImageFile: _selectedImage,
       );
       
+      // 2. Remove songs that were marked for removal
+      for (final songId in _removedSongIds) {
+        try {
+          await songPlaylistRepo.removeSongFromPlaylist(widget.playlist.id, songId);
+        } catch (e) {
+          debugPrint('Error removing song $songId: $e');
+          // Continue with other removals even if one fails
+        }
+      }
+      
+      // 3. Update song order if changed
+      await _saveFinalSongOrder();
+      
       // Clear playlist image cache for this specific playlist
       PlaylistImageWidget.clearCache(widget.playlist.id);
+      
+      // Notify global playlist provider about update
+      ref.read(playlistProvider.notifier).notifyPlaylistModified(widget.playlist.id);
       
       _showSuccessMessage('Playlist berhasil diperbarui!');
       if (mounted) {
@@ -234,7 +271,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Hapus "${song.title}" dari playlist ini?',
+          'Hapus "${song.title}" dari playlist ini?\n\nPerubahan akan disimpan saat menekan tombol Simpan.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
@@ -252,21 +289,13 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
 
     if (shouldRemove == true) {
-      try {
-        final pbService = PocketBaseService();
-        await pbService.initialize();
-        
-        final songPlaylistRepo = SongPlaylistRepository(pbService);
-        await songPlaylistRepo.removeSongFromPlaylist(widget.playlist.id, song.id);
-        
-        setState(() {
-          _songs.removeWhere((s) => s.id == song.id);
-        });
-        
-        _showSuccessMessage('Lagu berhasil dihapus dari playlist');
-      } catch (e) {
-        _showErrorMessage('Gagal menghapus lagu: ${e.toString()}');
-      }
+      // Only remove from UI and mark for removal - don't save to database yet
+      setState(() {
+        _songs.removeWhere((s) => s.id == song.id);
+        _removedSongIds.add(song.id); // Mark for removal when saving
+      });
+      
+      _showSuccessMessage('Lagu akan dihapus saat menyimpan playlist');
     }
   }
 
@@ -284,6 +313,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
   }
 
   Future<void> _saveNewOrder() async {
+    // Don't save immediately - just show message that changes will be saved
+    _showSuccessMessage('Urutan lagu akan disimpan saat menyimpan playlist');
+  }
+  
+  Future<void> _saveFinalSongOrder() async {
     try {
       final pbService = PocketBaseService();
       await pbService.initialize();
@@ -298,11 +332,10 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           i + 1
         );
       }
-      
-      _showSuccessMessage('Urutan lagu berhasil diperbarui');
-    } catch (e) {
-      _showErrorMessage('Gagal menyimpan urutan lagu: ${e.toString()}');
-    }
+          } catch (e) {
+        debugPrint('Error saving song order: $e');
+        rethrow; // Re-throw to be handled by _savePlaylist
+      }
   }
 
   void _showSuccessMessage(String message) {
@@ -349,8 +382,66 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
   }
 
+  void _onBackPressed() {
+    if (_hasChanges) {
+      _showUnsavedChangesDialog();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void _showUnsavedChangesDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text(
+          'Perubahan Belum Disimpan',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batalkan'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Close edit screen
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Keluar Tanpa Menyimpan'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              _savePlaylist(); // Save and exit
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.green),
+            child: const Text('Simpan & Keluar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Watch auto-refresh playlist provider for automatic updates
+    ref.watch(autoRefreshPlaylistProvider);
+    
+    // Auto-refresh when global playlist state changes
+    ref.listen(playlistProvider, (previous, next) {
+      if (previous?.lastUpdated != next.lastUpdated && !_isLoading) {
+        debugPrint('🔔 EDIT_PLAYLIST: Global playlist state changed, refreshing');
+        _loadPlaylistSongs();
+      }
+    });
+    
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -360,33 +451,41 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildPlaylistInfo(),
-                  // Move description section up too
-                  Transform.translate(
-                    offset: const Offset(0, -30),
-                    child: Column(
-                      children: [
-                        _buildDescriptionSection(),
-                      ],
+    return PopScope(
+      canPop: !_hasChanges,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _hasChanges) {
+          _showUnsavedChangesDialog();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: CustomScrollView(
+          slivers: [
+            _buildSliverAppBar(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    _buildPlaylistInfo(),
+                    // Move description section up too
+                    Transform.translate(
+                      offset: const Offset(0, -30),
+                      child: Column(
+                        children: [
+                          _buildDescriptionSection(),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildSongsSection(),
-                ],
+                    const SizedBox(height: 4),
+                    _buildSongsSection(),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -399,7 +498,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       expandedHeight: 300,
       leading: IconButton(
         icon: const Icon(Icons.close, color: Colors.white),
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: _onBackPressed,
       ),
       title: const Text(
         'Edit Playlist',
@@ -456,19 +555,19 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 children: [
                   GestureDetector(
                     onTap: _pickImage,
-                                      child: Stack(
-                    children: [
-                      Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: _buildEditablePlaylistImage(),
+                          ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: _buildEditablePlaylistImage(),
-                        ),
-                      ),
                         Positioned(
                           bottom: 8,
                           right: 8,
@@ -507,8 +606,6 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       ),
     );
   }
-
-
 
   Widget _buildEditablePlaylistImage() {
     // If user has selected a new image, show it
@@ -860,4 +957,4 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       ),
     );
   }
-} 
+}

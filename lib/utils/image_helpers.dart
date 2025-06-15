@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
+import '../widgets/shimmer_widget.dart';
 
 /// Utility functions for handling images
 class ImageHelpers {
@@ -113,24 +114,20 @@ class ImageHelpers {
         return fallback;
       },
       loadingBuilder: showLoadingIndicator ? (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return Container(
+        if (loadingProgress == null) {
+          // Add fade-in animation when image is loaded
+          return AnimatedOpacity(
+            opacity: 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: child,
+          );
+        }
+        
+        // Use shimmer effect for smooth loading
+        return ShimmerImagePlaceholder(
           width: width,
           height: height,
-          color: Colors.grey[800],
-          child: Center(
-            child: SizedBox(
-              width: width * 0.4,
-              height: width * 0.4,
-              child: CircularProgressIndicator(
-                value: loadingProgress.expectedTotalBytes != null
-                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                    : null,
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            ),
-          ),
+          borderRadius: borderRadius,
         );
       } : null,
     );

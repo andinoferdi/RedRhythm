@@ -13,6 +13,7 @@ import '../../repositories/playlist_repository.dart';
 import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
 import '../../routes/app_router.dart';
+import '../../providers/playlist_provider.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -23,7 +24,15 @@ class LibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
-  VoidCallback? _refreshPlaylists;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize playlist loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).loadPlaylists();
+    });
+  }
 
   void _showAdminOptions(BuildContext context) {
     showModalBottomSheet(
@@ -81,6 +90,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    // Watch auto-refresh playlist provider for automatic updates
+    ref.watch(autoRefreshPlaylistProvider);
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
@@ -102,9 +113,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       height:
                           16), // Spacing yang lebih kecil antara tombol dan content
                   Expanded(
-                    child: PlaylistTab(
-                      onRefreshCallback: (callback) => _refreshPlaylists = callback,
-                    ),
+                    child: PlaylistTab(),
                   ),
                   // Minimal spacing only
                   SizedBox(height: 8),
@@ -412,8 +421,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                             if (currentContext.mounted) {
                                               Navigator.of(currentContext).pop();
                                               
-                                              // Refresh playlist setelah berhasil dibuat
-                                              _refreshPlaylists?.call();
+                                              // Auto-refresh using global provider
+                                              ref.read(playlistProvider.notifier).notifyPlaylistUpdated();
                                               
                                               ScaffoldMessenger.of(currentContext)
                                                   .showSnackBar(

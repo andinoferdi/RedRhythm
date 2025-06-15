@@ -6,6 +6,7 @@ import '../repositories/playlist_repository.dart';
 import '../repositories/song_playlist_repository.dart';
 import '../utils/app_colors.dart';
 import '../utils/image_helpers.dart';
+import 'shimmer_widget.dart';
 
 /// A unified widget for displaying playlist images consistently across the app
 class PlaylistImageWidget extends StatefulWidget {
@@ -198,6 +199,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         height: widget.size,
         fit: BoxFit.cover,
         borderRadius: BorderRadius.circular(widget.borderRadius),
+        showLoadingIndicator: true,
         fallbackWidget: _buildFallbackImage(),
       );
     }
@@ -213,8 +215,8 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
 
   Widget _buildMosaicOrPlaceholder() {
     if (_isLoading && _songs == null) {
-      // Only show loading indicator if we don't have any data yet
-      return _buildPlaceholderImage();
+      // Show loading indicator while fetching songs
+      return _buildLoadingPlaceholder();
     }
     
     if (_songs != null && _songs!.isNotEmpty) {
@@ -363,6 +365,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       width: double.infinity,
       height: height ?? (widget.size / 2),
       fit: BoxFit.cover,
+      showLoadingIndicator: true,
       fallbackWidget: Container(
         color: AppColors.textSecondary.withValues(alpha: 0.2),
       ),
@@ -382,6 +385,14 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         color: AppColors.textSecondary,
         size: widget.size * 0.4,
       ),
+    );
+  }
+
+  Widget _buildLoadingPlaceholder() {
+    return ShimmerImagePlaceholder(
+      width: widget.size,
+      height: widget.size,
+      borderRadius: BorderRadius.circular(widget.borderRadius),
     );
   }
 

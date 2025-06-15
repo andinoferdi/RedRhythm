@@ -16,6 +16,7 @@ import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../utils/image_helpers.dart';
+import '../../providers/playlist_provider.dart';
 
 @RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -58,6 +59,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     super.initState();
     _currentPlaylist = widget.playlist;
     _initializeData();
+    
+    // Initialize global playlist state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playlistProvider.notifier).loadPlaylists();
+    });
   }
 
   Future<void> _initializeData() async {
@@ -128,19 +134,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     return await repository.getPlaylistSongs(_currentPlaylist.id);
   }
 
-  Future<void> _fetchCreatorInfo() async {
-    try {
-      final creator = await _getCreatorInfoData();
-      setState(() {
-        _creatorUser = creator;
-        _isLoadingCreator = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingCreator = false;
-      });
-    }
-  }
+
 
   Future<RecordModel?> _getCreatorInfoData() async {
     final pbService = PocketBaseService();
@@ -286,43 +280,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     }
   }
 
-  Future<void> _refreshPlaylist() async {
-    try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      
-      final updatedPlaylist = await pbService.pb
-          .collection('playlists')
-          .getOne(_currentPlaylist.id);
-      
-      setState(() {
-        _currentPlaylist = updatedPlaylist;
-      });
-      
-      // Fetch playlist songs first, then use for filtering recommendations
-      final playlistSongs = await _getPlaylistSongsData();
-      final results = await Future.wait([
-        Future.value(playlistSongs), // Already fetched
-        _getRecommendedSongsData(playlistSongs), // Pass songs for filtering
-        _getCreatorInfoData(),
-      ]);
-      
-      // Update state with fresh data
-      setState(() {
-        _songs = results[0] as List<Song>;
-        _recommendedSongs = results[1] as List<Song>;
-        _creatorUser = results[2] as RecordModel?;
-        _isLoading = false;
-        _isLoadingRecommended = false;
-        _isLoadingCreator = false;
-      });
-      
-      debugPrint('🔄 PLAYLIST_DETAIL: Complete playlist refresh completed');
-    } catch (e) {
-      debugPrint('❌ PLAYLIST_DETAIL: Error refreshing playlist: $e');
-      // Handle error silently or show a message
-    }
-  }
+
 
   Future<void> _navigateToAddSongs() async {
     final result = await Navigator.push<bool>(
@@ -368,12 +326,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _imageRebuildCounter++;
       });
       
-      // Notify other screens about playlist update
-      try {
-        ref.read(playlistUpdateNotifierProvider.notifier).notifyPlaylistUpdated();
-      } catch (e) {
-        debugPrint('Note: Playlist update notification failed: $e');
-      }
+      // Notify global playlist provider about update
+      ref.read(playlistProvider.notifier).notifyPlaylistSongsChanged(_currentPlaylist.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -527,16 +481,14 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     
-    // Watch for playlist updates and refresh comprehensively
-    ref.listen(playlistUpdateNotifierProvider, (previous, next) {
-      debugPrint('🔔 PLAYLIST_DETAIL: Playlist update notification received');
-      
-      // Only refresh if not already refreshing to prevent infinite loops
-      if (!_isRefreshing) {
-        // Use force complete refresh to ensure all components are updated
+    // Watch auto-refresh playlist provider for automatic updates
+    ref.watch(autoRefreshPlaylistProvider);
+    
+    // Auto-refresh when global playlist state changes
+    ref.listen(playlistProvider, (previous, next) {
+      if (previous?.lastUpdated != next.lastUpdated && !_isRefreshing) {
+        debugPrint('🔔 PLAYLIST_DETAIL: Global playlist state changed, refreshing');
         _forceCompleteRefresh();
-      } else {
-        debugPrint('🔔 PLAYLIST_DETAIL: Skipping refresh, already in progress');
       }
     });
 
@@ -654,6 +606,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             height: 24,
             fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(12),
+            showLoadingIndicator: true,
             fallbackWidget: const Icon(
               Icons.person,
               size: 16,
