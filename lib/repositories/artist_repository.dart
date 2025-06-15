@@ -25,7 +25,7 @@ class ArtistRepository {
       
       return null;
     } catch (e) {
-      debugPrint('Error fetching artist by name: $e');
+
       return null;
     }
   }
@@ -37,7 +37,7 @@ class ArtistRepository {
       final record = await pb.collection('artists').getOne(artistId);
       return Artist.fromRecord(record, pb);
     } catch (e) {
-      debugPrint('Error fetching artist by ID: $e');
+
       return null;
     }
   }
@@ -50,7 +50,7 @@ class ArtistRepository {
       
       return records.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-      debugPrint('Error fetching all artists: $e');
+
       return [];
     }
   }
@@ -68,7 +68,7 @@ class ArtistRepository {
       
       return records.items.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-      debugPrint('Error searching artists: $e');
+
       return [];
     }
   }

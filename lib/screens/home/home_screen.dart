@@ -41,11 +41,9 @@ Future<String> determinePocketBaseUrl() async {
   // Use the proper URL list from AppConfig (Android emulator prioritized)
   final List<String> possibleUrls = AppConfig.possibleUrls;
   
-  debugPrint('🔍 NETWORK: Testing PocketBase URLs: $possibleUrls');
   
   for (final url in possibleUrls) {
     try {
-      debugPrint('🔍 NETWORK: Testing $url...');
       final response = await http.get(
         Uri.parse('$url/api/health'),
         headers: AppConfig.getHeadersForUrl(url),
@@ -57,17 +55,14 @@ Future<String> determinePocketBaseUrl() async {
       );
       
       if (response.statusCode < 400) {
-        debugPrint('✅ NETWORK: Successfully connected to $url');
         return url;
       }
     } catch (e) {
-      debugPrint('❌ NETWORK: Failed to connect to $url: $e');
       // Continue to next URL
     }
   }
   
   // Use default URL from AppConfig if all fail
-  debugPrint('⚠️ NETWORK: All URLs failed, using default: ${AppConfig.defaultUrl}');
   return AppConfig.defaultUrl;
 }
 

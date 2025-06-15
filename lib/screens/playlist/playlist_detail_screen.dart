@@ -17,6 +17,7 @@ import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../utils/image_helpers.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/animated_sound_bars.dart';
 
 @RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   List<Song> _recommendedSongs = [];
   bool _isLoadingRecommended = false;
   final Set<String> _addingSongIds = {};
+  
+  // Track the last song played from recommended section
+  String? _lastRecommendedSongId;
   
   // Force rebuild counter for playlist image
   int _imageRebuildCounter = 0;
@@ -93,7 +97,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Error initializing data: $e');
+
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load data: ${e.toString()}';
@@ -118,7 +122,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error fetching playlist songs: $e');
+
       setState(() {
         _errorMessage = 'Failed to load songs: ${e.toString()}';
         _isLoading = false;
@@ -159,7 +163,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _isLoadingRecommended = false;
       });
     } catch (e) {
-      debugPrint('Error fetching recommended songs: $e');
+
       setState(() {
         _recommendedSongs = [];
         _isLoadingRecommended = false;
@@ -213,12 +217,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   Future<void> _forceCompleteRefresh() async {
     // Prevent infinite recursion
     if (_isRefreshing) {
-      debugPrint('🔄 PLAYLIST_DETAIL: Refresh already in progress, skipping');
+
       return;
     }
     
     _isRefreshing = true;
-    debugPrint('🔄 PLAYLIST_DETAIL: Starting force complete refresh');
+    
     
     try {
       // Clear all caches to force complete reload
@@ -231,7 +235,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         final miniPlayerCache = ref.read(playlistUpdateNotifierProvider.notifier);
         miniPlayerCache.notifyPlaylistUpdated();
       } catch (e) {
-        debugPrint('Note: Mini player cache clear failed: $e');
+
       }
 
       final pbService = PocketBaseService();
@@ -264,9 +268,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         });
       }
       
-      debugPrint('✅ PLAYLIST_DETAIL: Force complete refresh completed successfully');
-    } catch (e) {
-      debugPrint('❌ PLAYLIST_DETAIL: Error in force complete refresh: $e');
+      
+          } catch (e) {
       
       // Reset loading states even on error
       setState(() {
@@ -292,7 +295,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
     // If songs were added successfully, refresh all components
     if (result == true) {
-      debugPrint('🔄 PLAYLIST_DETAIL: Songs added, performing complete refresh');
+
       await _forceCompleteRefresh();
     }
   }
@@ -487,8 +490,25 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     // Auto-refresh when global playlist state changes
     ref.listen(playlistProvider, (previous, next) {
       if (previous?.lastUpdated != next.lastUpdated && !_isRefreshing) {
-        debugPrint('🔔 PLAYLIST_DETAIL: Global playlist state changed, refreshing');
+
         _forceCompleteRefresh();
+      }
+    });
+    
+    // Listen for player state changes to reset recommended tracking
+    ref.listen(playerControllerProvider, (previous, next) {
+      // Reset recommended tracking if song changes and it's not from recommended
+      if (previous?.currentSong?.id != next.currentSong?.id) {
+        // If new song is not the last recommended song, clear the tracking
+        if (_lastRecommendedSongId != null && _lastRecommendedSongId != next.currentSong?.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _lastRecommendedSongId = null;
+              });
+            }
+          });
+        }
       }
     });
 
@@ -596,7 +616,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     if (avatarUrl != null && avatarUrl.trim().isNotEmpty && _creatorUser != null) {
       try {
         final imageUrl = pbService.pb.files.getUrl(_creatorUser!, avatarUrl).toString();
-        debugPrint('🖼️ Generated user avatar URL: $imageUrl');
+
         return CircleAvatar(
           radius: 12,
           backgroundColor: Colors.grey[700],
@@ -615,7 +635,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           ),
         );
       } catch (e) {
-        debugPrint('⚠️ Error generating user avatar URL: $e');
         // Fall through to default avatar
       }
     }
@@ -906,22 +925,16 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               final isPlayingFromThisPlaylist = currentPlaylistId != null && 
                                                currentPlaylistId == _currentPlaylist.id;
               
-              // CRITICAL: If currentPlaylistId is null, song is playing without playlist context
-              // In this case, NEVER show as playing in any playlist screen
-              if (isCurrentSong && currentPlaylistId == null) {
-                // Song is playing from search/individual playback - don't show as playing in playlist
-                return SongItemWidget(
-                  song: song,
-                  isCurrentSong: false, // Explicitly set to false
-                  isPlaying: false,     // Explicitly set to false
-                  onTap: () => _playSong(song),
-                  index: index + 1,
-                );
-              }
+              // CRITICAL: Only show as playing if song is playing FROM THIS PLAYLIST
+              // If currentPlaylistId is null OR different from this playlist, don't show as playing
+              
+              final shouldShowAsPlaying = isCurrentSong && 
+                                        isPlayingFromThisPlaylist && 
+                                        playerState.isPlaying;
               
               // Additional validation: Check queue position to prevent race conditions
               bool isActuallyPlayingFromQueue = false;
-              if (isCurrentSong && isPlayingFromThisPlaylist && playerState.queue.isNotEmpty) {
+              if (shouldShowAsPlaying && playerState.queue.isNotEmpty) {
                 final currentIndex = playerState.currentIndex;
                 if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
                   final queueSong = playerState.queue[currentIndex];
@@ -930,15 +943,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               }
               
               // FINAL CHECK: All conditions must be true
-              final isPlaying = isCurrentSong && 
-                               isPlayingFromThisPlaylist && 
-                               playerState.isPlaying && 
-                               isActuallyPlayingFromQueue;
+              final isPlaying = shouldShowAsPlaying && isActuallyPlayingFromQueue;
               
               // Note: Race condition fix is working correctly - song playing without playlist context is properly handled
               
               return SongItemWidget(
                 song: song,
+                isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
                 isPlaying: isPlaying,
                 onTap: () => _playSong(song),
                 index: index + 1,
@@ -1059,34 +1070,90 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-      child: SongItemWidget(
-        song: song,
-        subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
-        contentPadding: const EdgeInsets.symmetric(vertical: 4),
-        trailing: isAdding
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : IconButton(
-                onPressed: () => _addSongToPlaylist(song),
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.white,
-                  size: 24,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-        onTap: () {
-          // Always allow playing recommended songs without playlist context
-          ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
+      child: Consumer(
+        builder: (context, ref, child) {
+          final playerState = ref.watch(playerControllerProvider);
+          final currentPlaylistId = playerState.currentPlaylistId;
+          
+          // For recommended songs, only show as playing if:
+          // 1. Song is currently playing
+          // 2. Song was the last one clicked from recommended section
+          
+          final isCurrentSong = playerState.currentSong?.id == song.id;
+          final isLastRecommendedSong = _lastRecommendedSongId == song.id;
+          
+          // Only show as playing if this song was clicked from recommended AND is currently playing
+          final isPlayingFromRecommended = isCurrentSong && 
+                                         isLastRecommendedSong &&
+                                         playerState.isPlaying;
+          
+          final isPlaying = isPlayingFromRecommended;
+          
+          // DEBUG: Log the state for troubleshooting animated bars
+          if (isCurrentSong) {
+            print('🎵 RECOMMENDED BARS: Song ${song.title} - isCurrentSong: $isCurrentSong, isLastRecommended: $isLastRecommendedSong, playerIsPlaying: ${playerState.isPlaying}, finalIsPlaying: $isPlaying');
+          }
+          
+          return SongItemWidget(
+            song: song,
+            subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
+            contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            isCurrentSong: isPlayingFromRecommended,
+            isPlaying: isPlaying,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Show animated sound bars if playing
+                if (isPlaying)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 8.0),
+                    child: AnimatedSoundBars(
+                      color: Colors.red,
+                      size: 20.0,
+                      isAnimating: true,
+                    ),
+                  ),
+                // Show loading or add button
+                isAdding
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : IconButton(
+                        onPressed: () => _addSongToPlaylist(song),
+                        icon: const Icon(
+                          Icons.add_circle_outline,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+              ],
+            ),
+            onTap: () {
+              // Check if this is the same song currently playing
+              final playerState = ref.read(playerControllerProvider);
+              final isCurrentSong = playerState.currentSong?.id == song.id;
+              
+              // Track that this song was played from recommended section BEFORE playing
+              // This ensures the tracking is set when the player state updates
+              _lastRecommendedSongId = song.id;
+              
+              // Force a rebuild to update the UI immediately
+              setState(() {});
+              
+              // Always play with force restart if same song (like playlist behavior)
+              // This ensures song restarts from beginning when clicked from recommended
+              ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song, forceRestart: isCurrentSong);
+            },
+          );
         },
       ),
     );

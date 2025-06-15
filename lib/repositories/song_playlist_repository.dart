@@ -55,15 +55,12 @@ class SongPlaylistRepository {
   /// Get playlists containing a specific song
   Future<List<Playlist>> getPlaylistsContainingSong(String songId) async {
     try {
-      debugPrint('🎵 REPOSITORY: Searching playlists containing song ID: $songId');
       
       // Use song_playlists collection to find playlists containing the song
       final songPlaylistRecords = await _pb.collection('song_playlists').getList(
         filter: 'song_id = "$songId"',
         expand: 'playlist_id',
       );
-      
-      debugPrint('🎵 REPOSITORY: Found ${songPlaylistRecords.items.length} song_playlist records');
       
       final List<Playlist> playlists = [];
       final Set<String> playlistIds = {};
@@ -94,37 +91,29 @@ class SongPlaylistRepository {
             );
             
             playlists.add(playlistWithSongs);
-            debugPrint('🎵 REPOSITORY: Playlist "${playlist.name}" contains song (via song_playlists)');
-            debugPrint('🎵 REPOSITORY: Playlist songs: $songIds');
-          } catch (e) {
-            debugPrint('🎵 REPOSITORY: Error getting playlist $playlistId: $e');
-            continue;
-          }
+
+                      } catch (e) {
+              continue;
+            }
         }
       }
       
-      debugPrint('🎵 REPOSITORY: Successfully found ${playlists.length} playlists containing song');
-      
-      return playlists;
-    } catch (e) {
-      debugPrint('🎵 REPOSITORY: Error getting playlists containing song: $e');
+              
+        return playlists;
+      } catch (e) {
       throw Exception('Failed to get playlists containing song: $e');
     }
   }
 
   Future<List<Playlist>> getAllPlaylists() async {
     try {
-      debugPrint('🎵 REPOSITORY: Fetching all playlists...');
       
       final records = await _pb.collection('playlists').getList();
-      
-      debugPrint('🎵 REPOSITORY: Found ${records.items.length} total playlists');
       
       final List<Playlist> playlists = [];
       
       for (final record in records.items) {
         try {
-          debugPrint('🎵 REPOSITORY: Processing playlist ${record.id}');
           
           final playlist = Playlist.fromRecord(record);
           
@@ -144,18 +133,14 @@ class SongPlaylistRepository {
           );
           
           playlists.add(playlistWithSongs);
-          debugPrint('🎵 REPOSITORY: Successfully parsed playlist: "${playlist.name}" with ${songIds.length} songs');
         } catch (e) {
-          debugPrint('🎵 REPOSITORY: Error parsing playlist record ${record.id}: $e');
           continue;
         }
       }
       
-      debugPrint('🎵 REPOSITORY: Successfully parsed ${playlists.length} playlists');
       
       return playlists;
     } catch (e) {
-      debugPrint('🎵 REPOSITORY: Error getting all playlists: $e');
       throw Exception('Failed to get all playlists: $e');
     }
   }
@@ -163,7 +148,6 @@ class SongPlaylistRepository {
   /// Add song to playlist
   Future<void> addSongToPlaylist(String playlistId, String songId) async {
     try {
-      debugPrint('🎵 REPOSITORY: Adding song $songId to playlist $playlistId');
       
       // Check if relationship already exists
       final existingRecords = await _pb.collection('song_playlists').getList(
@@ -186,7 +170,6 @@ class SongPlaylistRepository {
             nextOrder = (highestOrder ?? 0) + 1;
           }
         } catch (e) {
-          debugPrint('🎵 REPOSITORY: Warning - Could not determine next order, using default: $e');
           // Continue with nextOrder = 1 as fallback
         }
         
@@ -196,12 +179,9 @@ class SongPlaylistRepository {
           'song_id': songId,
           'order': nextOrder,
         });
-        debugPrint('🎵 REPOSITORY: Successfully added song to playlist at position $nextOrder');
       } else {
-        debugPrint('🎵 REPOSITORY: Song already exists in playlist');
       }
     } catch (e) {
-      debugPrint('🎵 REPOSITORY: Error adding song to playlist: $e');
       throw Exception('Failed to add song to playlist: $e');
     }
   }
@@ -211,7 +191,6 @@ class SongPlaylistRepository {
     if (songIds.isEmpty) return;
     
     try {
-      debugPrint('🎵 REPOSITORY: Adding ${songIds.length} songs to playlist $playlistId');
       
       // Get the highest order value in this playlist
       int nextOrder = 1; // Default for empty playlist
@@ -228,7 +207,6 @@ class SongPlaylistRepository {
           nextOrder = (highestOrder ?? 0) + 1;
         }
       } catch (e) {
-        debugPrint('🎵 REPOSITORY: Warning - Could not determine next order, using default: $e');
         // Continue with nextOrder = 1 as fallback
       }
       
@@ -247,15 +225,11 @@ class SongPlaylistRepository {
             'song_id': songId,
             'order': nextOrder + i,
           });
-          debugPrint('🎵 REPOSITORY: Added song $songId at position ${nextOrder + i}');
         } else {
-          debugPrint('🎵 REPOSITORY: Song $songId already exists in playlist, skipping');
         }
       }
       
-      debugPrint('🎵 REPOSITORY: Successfully added multiple songs to playlist');
     } catch (e) {
-      debugPrint('🎵 REPOSITORY: Error adding multiple songs to playlist: $e');
       throw Exception('Failed to add multiple songs to playlist: $e');
     }
   }
@@ -263,7 +237,6 @@ class SongPlaylistRepository {
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
-      debugPrint('🎵 REPOSITORY: Removing song $songId from playlist $playlistId');
       
       // Find and delete the song_playlist relationship
       final records = await _pb.collection('song_playlists').getList(
@@ -272,12 +245,9 @@ class SongPlaylistRepository {
       
       for (final record in records.items) {
         await _pb.collection('song_playlists').delete(record.id);
-        debugPrint('🎵 REPOSITORY: Deleted song_playlist relationship ${record.id}');
       }
       
-      debugPrint('🎵 REPOSITORY: Successfully removed song from playlist');
     } catch (e) {
-      debugPrint('🎵 REPOSITORY: Error removing song from playlist: $e');
       throw Exception('Failed to remove song from playlist: $e');
     }
   }

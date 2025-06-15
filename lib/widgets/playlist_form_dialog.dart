@@ -46,9 +46,8 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
       try {
         final pbService = PocketBaseService();
         _currentImageUrl = pbService.pb.files.getUrl(widget.playlist, coverImage).toString();
-        debugPrint('🖼️ Generated playlist form dialog cover URL: $_currentImageUrl');
+
       } catch (e) {
-        debugPrint('⚠️ Error generating playlist form dialog cover URL: $e');
         _currentImageUrl = null;
       }
     }

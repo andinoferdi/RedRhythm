@@ -100,7 +100,7 @@ class SongRepository {
   /// Fetch songs by artist name (for Jelajahi Artist feature)
   Future<List<Song>> getSongsByArtistName(String artistName, {String? excludeSongId}) async {
     try {
-      debugPrint('🔍 Searching for songs by artist: "$artistName"');
+
       
       // Get all songs and filter in memory (more reliable for complex queries)
       final allSongs = await getAllSongs();
@@ -110,12 +110,12 @@ class SongRepository {
         return song.artist.toLowerCase() == artistName.toLowerCase();
       }).toList();
       
-      debugPrint('🎵 Found ${artistSongs.length} songs by "$artistName"');
+
       
       // Exclude current playing song if provided
       if (excludeSongId != null) {
         artistSongs = artistSongs.where((song) => song.id != excludeSongId).toList();
-        debugPrint('🎵 After excluding current song: ${artistSongs.length} songs');
+
       }
       
       // Limit to 20 songs for horizontal scroll
@@ -125,7 +125,7 @@ class SongRepository {
       
       return artistSongs;
     } catch (e) {
-      debugPrint('❌ Error fetching songs by artist name: $e');
+
       throw Exception('Failed to fetch songs by artist name: $e');
     }
   }

@@ -723,14 +723,15 @@ class PlayerController extends StateNotifier<PlayerState> {
   }
   
   /// Play song without playlist context (for individual song playback)
-  Future<void> playSongWithoutPlaylist(Song song) async {
+  Future<void> playSongWithoutPlaylist(Song song, {bool forceRestart = false}) async {
     if (_isDisposed) return;
     
     final isCurrentSong = state.currentSong?.id == song.id;
     final isDifferentContext = state.currentPlaylistId != null;
     
     // Force restart if same song but different context (e.g., from playlist to search)
-    final shouldForceRestart = isCurrentSong && isDifferentContext;
+    // OR if explicitly requested (e.g., from recommended songs)
+    final shouldForceRestart = forceRestart || (isCurrentSong && isDifferentContext);
     
     // Only reset shuffle mode if not in general shuffle mode
     // General shuffle should persist when playing individual songs
@@ -795,8 +796,8 @@ class PlayerController extends StateNotifier<PlayerState> {
         return;
       }
       
-      debugPrint('✅ Loaded song: ${song.title} - Album Art: ${song.albumArtUrl}');
-      debugPrint('🔍 Album Art URL Collection ID: ${song.albumArtUrl.contains('pbc_') ? song.albumArtUrl.split('/')[5] : 'N/A'}');
+      
+  
       
       await playSongWithoutPlaylist(song);
     } catch (e) {

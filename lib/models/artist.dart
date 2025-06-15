@@ -26,7 +26,7 @@ class Artist {
       try {
         imageUrl = pb.files.getUrl(record, record.data['image']).toString();
       } catch (e) {
-        debugPrint('Error generating artist image URL: $e');
+
         imageUrl = null;
       }
     }

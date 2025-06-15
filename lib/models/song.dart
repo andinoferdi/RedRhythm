@@ -45,7 +45,7 @@ class Song with _$Song {
     if (albumRecord != null && albumRecord.data['cover_image'] != null) {
       try {
         final coverImage = albumRecord.data['cover_image'];
-        debugPrint('🔍 Processing cover image: "$coverImage" for album ${albumRecord.id}');
+        
         
         if (coverImage is String && coverImage.trim().isNotEmpty) {
           // CRITICAL: Validate filename format before generating URL
@@ -54,7 +54,7 @@ class Song with _$Song {
           // Check if it's a valid filename (must contain extension)
           if (!trimmedImage.contains('.') || trimmedImage.startsWith('.') || 
               trimmedImage.endsWith('.') || trimmedImage.length < 3) {
-            debugPrint('⚠️ Invalid cover image filename format: "$trimmedImage"');
+
             albumArtUrl = '';
           } else {
             // Generate proper PocketBase file URL using service
@@ -69,29 +69,29 @@ class Song with _$Song {
                 recordId.trim().isNotEmpty) {
               
               albumArtUrl = '$baseUrl/api/files/$collectionId/$recordId/$trimmedImage';
-              debugPrint('🖼️ Generated album art URL: $albumArtUrl');
+
               
               // ENHANCED: Validate the generated URL immediately
               if (!_isValidPocketBaseUrl(albumArtUrl)) {
-                debugPrint('⚠️ Generated URL failed validation, clearing URL');
+
                 albumArtUrl = '';
               }
             } else {
-              debugPrint('⚠️ Invalid album art URL components - baseUrl: "$baseUrl", collectionId: "$collectionId", recordId: "$recordId"');
+
               albumArtUrl = '';
             }
           }
         } else {
-          debugPrint('⚠️ Cover image is null, empty, or not string: $coverImage');
+
           albumArtUrl = '';
         }
       } catch (e) {
         // Enhanced error handling with fallback
-        debugPrint('⚠️ Error generating album art URL: $e');
+
         albumArtUrl = '';
       }
     } else {
-      debugPrint('🔍 No album record or cover_image field found');
+
     }
     
     final lyrics = record.data['lyrics'] as String?;

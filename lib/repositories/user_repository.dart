@@ -173,7 +173,6 @@ class UserRepository {
       // Pastikan email dalam format lowercase untuk menghindari masalah case sensitivity
       final emailLowercase = email.toLowerCase().trim();
       
-      debugPrint("Mencari email: $emailLowercase");
       
       // Coba dengan filter yang lebih sederhana
       final result = await _pb.collection('users').getList(
@@ -182,31 +181,20 @@ class UserRepository {
         perPage: 10,  // Meningkatkan jumlah hasil untuk debugging
       );
       
-      debugPrint("Hasil pencarian: ${result.items.length} item ditemukan");
-      
-      // Debug output - lihat semua email yang ditemukan
-      for (final item in result.items) {
-        debugPrint("Email ditemukan: ${item.data['email']}");
-      }
-      
       if (result.items.isEmpty) {
-        debugPrint("Tidak ada email yang ditemukan");
         return null;
       }
       
       // Cari email yang tepat sama
       for (final item in result.items) {
         if (item.data['email'].toString().toLowerCase() == emailLowercase) {
-          debugPrint("Email yang cocok ditemukan: ${item.id}");
           return item;
         }
       }
       
       // Jika tidak ada yang cocok persis
-      debugPrint("Tidak ada email yang cocok persis");
       return null;
     } catch (e) {
-      debugPrint("Error saat mencari email: $e");
       // Untuk debugging, lemparkan error agar dapat dilihat
       throw Exception("Error mencari email: $e");
     }
@@ -240,11 +228,9 @@ class UserRepository {
   /// Reset password directly with email (tanpa memerlukan user ID)
   Future<Map<String, dynamic>> resetPasswordDirect(String email, String newPassword) async {
     try {
-      debugPrint("Mencoba reset password langsung untuk: $email");
       
       // Pendekatan 1: Menggunakan filter yang lebih tepat untuk menemukan user
       try {
-        debugPrint("Mencoba menemukan user dengan email exact match");
         
         // Cari user dengan filter yang lebih tepat
         final searchResult = await _pb.collection('users').getList(
@@ -252,11 +238,8 @@ class UserRepository {
           sort: '-created',
         );
         
-        debugPrint("Hasil pencarian exact: ${searchResult.items.length} users");
-        
         if (searchResult.items.isNotEmpty) {
           final userId = searchResult.items[0].id;
-          debugPrint("Ditemukan user dengan ID: $userId");
           
           // Update password user
           await _pb.collection('users').update(
@@ -269,13 +252,11 @@ class UserRepository {
           
           return {'success': true, 'method': 'exact_match_update'};
         }
-      } catch (e) {
-        debugPrint("Error pada exact match: $e");
+              } catch (e) {
       }
       
       // Pendekatan 2: Menggunakan API sendiri untuk pengubahan password langsung
       try {
-        debugPrint("Mencoba API admin untuk reset password");
         
         // Mencari user dengan email di database (case insensitive)
         final emailLower = email.toLowerCase();
@@ -284,13 +265,10 @@ class UserRepository {
           sort: '-created',
         );
         
-        debugPrint("Ditemukan ${users.items.length} users dengan email yang mirip");
-        
         // Temukan yang cocok persis
         for (final user in users.items) {
           final userEmail = user.data['email'].toString().toLowerCase();
           if (userEmail == emailLower) {
-            debugPrint("Match ditemukan: ${user.id}");
             
             // Update password
             await _pb.collection('users').update(
@@ -304,13 +282,11 @@ class UserRepository {
             return {'success': true, 'method': 'admin_reset'};
           }
         }
-      } catch (e) {
-        debugPrint("Error pada admin reset: $e");
+              } catch (e) {
       }
       
       // Pendekatan 3: Menggunakan collection API langsung
       try {
-        debugPrint("Mencoba collection API langsung untuk reset password");
         
         // Gunakan getFullList dengan filter yang lebih spesifik
         final records = await _pb.collection('users').getFullList(
@@ -319,7 +295,6 @@ class UserRepository {
         
         if (records.isNotEmpty) {
           final userId = records[0].id;
-          debugPrint("Ditemukan user ID dari collection API: $userId");
           
           // Reset password
           await _pb.collection('users').update(
@@ -332,8 +307,7 @@ class UserRepository {
           
           return {'success': true, 'method': 'direct_collection_api'};
         }
-      } catch (e) {
-        debugPrint("Error pada collection API: $e");
+              } catch (e) {
       }
       
       // Jika sampai di sini, berarti tidak berhasil mengubah password
@@ -342,7 +316,6 @@ class UserRepository {
         'error': 'Tidak dapat menemukan akun dengan email $email. Silakan periksa alamat email Anda.'
       };
     } catch (e) {
-      debugPrint("Error utama saat reset password: $e");
       
       return {
         'success': false,

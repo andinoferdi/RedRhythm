@@ -80,7 +80,6 @@ class ImageHelpers {
     
     // CRITICAL: Multiple layers of validation to prevent 404 errors
     if (!isValidImageUrl(imageUrl)) {
-      debugPrint('🚨 Invalid image URL rejected: $imageUrl');
       return borderRadius != null 
           ? ClipRRect(borderRadius: borderRadius, child: fallback)
           : fallback;
@@ -89,7 +88,6 @@ class ImageHelpers {
     // ADDITIONAL: Check for incomplete URLs (ending with slash)
     final cleanUrl = imageUrl!.trim();
     if (cleanUrl.endsWith('/') || cleanUrl.split('/').last.isEmpty) {
-      debugPrint('🚨 Incomplete URL rejected (no filename): $cleanUrl');
       return borderRadius != null 
           ? ClipRRect(borderRadius: borderRadius, child: fallback)
           : fallback;
@@ -97,7 +95,6 @@ class ImageHelpers {
     
     // ADDITIONAL: Check for old collection IDs that are known to cause issues
     if (cleanUrl.contains('pbc_2683869272')) {
-      debugPrint('🚨 Old collection ID detected and rejected: $cleanUrl');
       return borderRadius != null 
           ? ClipRRect(borderRadius: borderRadius, child: fallback)
           : fallback;
@@ -109,8 +106,6 @@ class ImageHelpers {
       height: height,
       fit: fit,
       errorBuilder: (context, error, stackTrace) {
-        debugPrint('🚨 Image failed to load: $cleanUrl');
-        debugPrint('🚨 Error: $error');
         return fallback;
       },
       loadingBuilder: showLoadingIndicator ? (context, child, loadingProgress) {

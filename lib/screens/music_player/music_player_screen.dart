@@ -51,8 +51,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
         oldWidget.song?.id != widget.song?.id && 
         _originalSong?.id != widget.song?.id) {
       
-      debugPrint('🎵 Widget song changed from ${oldWidget.song?.title} to ${widget.song?.title}');
-      debugPrint('🎵 Resetting original song reference');
+
       
       _originalSong = widget.song;
       _originalArtistName = widget.song?.artist;
@@ -86,7 +85,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _isLoadingArtist = false;
         });
       }
-      debugPrint('Error loading artist info: $e');
+      
     }
   }
 
@@ -99,7 +98,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     });
 
     try {
-      debugPrint('🎵 Loading songs for artist: "$artistName"');
+
       final songs = await _songRepository.getSongsByArtistName(
         artistName, 
         excludeSongId: currentSongId,
@@ -109,7 +108,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _artistSongs = songs;
           _isLoadingArtistSongs = false;
         });
-        debugPrint('✅ Successfully loaded ${songs.length} songs for "$artistName"');
+
       }
     } catch (e) {
       if (mounted) {
@@ -117,7 +116,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _isLoadingArtistSongs = false;
         });
       }
-      debugPrint('❌ Error loading artist songs: $e');
+
     }
   }
 
@@ -147,7 +146,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       _originalSong = widget.song ?? currentSong;
       _originalArtistName = _originalSong?.artist;
       
-      debugPrint('🎵 Setting original song: ${_originalSong?.title} by ${_originalArtistName}');
+
       
       // Load artist info and songs based on original song
       if (_originalArtistName != null) {
@@ -158,7 +157,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     // Update artist info for "Tentang artis" section based on current song
     // but keep Jelajahi Artist section based on original song
     else if (_currentArtist?.name != currentSong.artist) {
-      debugPrint('🎵 Updating artist info for current song: ${currentSong.title} by ${currentSong.artist}');
+
       _loadArtistInfo(currentSong.artist);
       // Don't reload artist songs - keep them based on original song
     }
@@ -328,7 +327,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           try {
                             await ref.read(playerControllerProvider.notifier).skipPrevious();
                           } catch (e) {
-                            debugPrint('Error skipping to previous song: $e');
+                    
                           }
                         },
                       ),
@@ -371,7 +370,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           try {
                             await ref.read(playerControllerProvider.notifier).skipNext();
                           } catch (e) {
-                            debugPrint('Error skipping to next song: $e');
+                    
                           }
                         },
                       ),

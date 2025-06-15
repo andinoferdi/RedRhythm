@@ -38,7 +38,7 @@ class PlaylistImageWidget extends StatefulWidget {
       _mosaicWidgetCache.remove(key);
     }
     
-    debugPrint('🗑️ PLAYLIST_IMAGE: Cleared cache for playlist $playlistId (songs: $songsRemoved, mosaic keys: ${keysToRemove.length})');
+
   }
 
   /// Clear all cached playlist data
@@ -49,7 +49,7 @@ class PlaylistImageWidget extends StatefulWidget {
     _playlistSongsCache.clear();
     _mosaicWidgetCache.clear();
     
-    debugPrint('🗑️ PLAYLIST_IMAGE: Cleared ALL cache (songs: $songsCount, mosaic: $mosaicCount)');
+
   }
 
   @override
@@ -77,7 +77,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     final playlistChanged = oldWidget.playlist.id != widget.playlist.id;
     
     if (playlistChanged) {
-      debugPrint('🔄 PLAYLIST_IMAGE: Playlist ID changed, reloading');
+
       
       _currentPlaylistId = widget.playlist.id;
       _lastBuiltCacheKey = null; // Reset cache key
@@ -87,7 +87,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       // If only key changed (forced update), just rebuild without clearing cache
       final keyChanged = oldWidget.key != widget.key;
       if (keyChanged) {
-        debugPrint('🔄 PLAYLIST_IMAGE: Key changed, forcing rebuild without cache clear');
+
         _lastBuiltCacheKey = null; // Reset cache key to force mosaic rebuild
         if (mounted) {
           setState(() {
@@ -110,7 +110,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     
     if (useCache && PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
       final cachedSongs = PlaylistImageWidget._playlistSongsCache[playlistId]!;
-      debugPrint('📋 PLAYLIST_IMAGE: Using cached songs for $playlistId (${cachedSongs.length} songs)');
+
       if (mounted) {
         setState(() {
           _songs = cachedSongs;
@@ -122,7 +122,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
 
     // Only show loading if we don't have any data yet
     if (_songs == null) {
-      debugPrint('⏳ PLAYLIST_IMAGE: Loading fresh songs for playlist $playlistId');
+
       if (mounted) {
         setState(() {
           _isLoading = true;
@@ -131,7 +131,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     }
 
     _getPlaylistSongs(playlistId).then((songs) {
-      debugPrint('✅ PLAYLIST_IMAGE: Loaded ${songs.length} songs for playlist $playlistId');
+      
       if (mounted && _currentPlaylistId == playlistId) {
         setState(() {
           _songs = songs;
@@ -139,7 +139,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         });
       }
     }).catchError((error) {
-      debugPrint('❌ PLAYLIST_IMAGE: Error loading songs for playlist $playlistId: $error');
+      
       if (mounted && _currentPlaylistId == playlistId) {
         setState(() {
           _songs = [];
@@ -177,22 +177,22 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         customImageUrl = repository.getCoverImageUrl(widget.playlist as RecordModel);
         // Only log if there's actually a custom image
         if (customImageUrl.isNotEmpty) {
-          debugPrint('🖼️ PLAYLIST_IMAGE: Custom image URL for ${widget.playlist.id}: $customImageUrl');
+  
         }
       } else {
         // Handle fake record from playlist selection modal
         final coverImage = widget.playlist.data['cover_image'] as String?;
         if (coverImage != null && coverImage.isNotEmpty) {
           customImageUrl = coverImage;
-          debugPrint('🖼️ PLAYLIST_IMAGE: Fake record cover image: $customImageUrl');
+
         }
       }
     } catch (e) {
-      debugPrint('⚠️ PLAYLIST_IMAGE: Error getting custom image URL: $e');
+      
     }
 
     if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {
-      debugPrint('✅ PLAYLIST_IMAGE: Using custom cover image');
+      
       return ImageHelpers.buildSafeNetworkImage(
         imageUrl: customImageUrl,
         width: widget.size,

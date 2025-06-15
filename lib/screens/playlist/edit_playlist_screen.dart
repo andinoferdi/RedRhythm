@@ -90,9 +90,8 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           final pbService = PocketBaseService();
           _currentImageUrl = pbService.pb.files.getUrl(widget.playlist, coverImage).toString();
           _originalImageUrl = _currentImageUrl;
-          debugPrint('🖼️ Generated edit playlist cover URL: $_currentImageUrl');
+  
         } catch (e) {
-          debugPrint('⚠️ Error generating edit playlist cover URL: $e');
           _currentImageUrl = null;
           _originalImageUrl = null;
         }
@@ -233,7 +232,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         try {
           await songPlaylistRepo.removeSongFromPlaylist(widget.playlist.id, songId);
         } catch (e) {
-          debugPrint('Error removing song $songId: $e');
+  
           // Continue with other removals even if one fails
         }
       }
@@ -333,7 +332,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         );
       }
           } catch (e) {
-        debugPrint('Error saving song order: $e');
+
         rethrow; // Re-throw to be handled by _savePlaylist
       }
   }
@@ -437,7 +436,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     // Auto-refresh when global playlist state changes
     ref.listen(playlistProvider, (previous, next) {
       if (previous?.lastUpdated != next.lastUpdated && !_isLoading) {
-        debugPrint('🔔 EDIT_PLAYLIST: Global playlist state changed, refreshing');
+
         _loadPlaylistSongs();
       }
     });
