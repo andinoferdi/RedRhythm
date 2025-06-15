@@ -559,6 +559,31 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
+  /// Stop playback and reset player state
+  Future<void> stopAndReset() async {
+    if (_isDisposed) return;
+    
+    try {
+      debugPrint('🛑 Stopping and resetting player state');
+      
+      // Stop audio player
+      await _audioPlayer.stop();
+      
+      // Clear current audio URL
+      _currentAudioUrl = null;
+      
+      // Reset state to initial values
+      state = PlayerState.initial();
+      
+      debugPrint('✅ Player state reset complete');
+    } catch (e) {
+      debugPrint('❌ Error stopping and resetting player: $e');
+      // Force reset state even if stop fails
+      _currentAudioUrl = null;
+      state = PlayerState.initial();
+    }
+  }
+
   void skipToNext() {
     if (_isDisposed) return;
     

@@ -4,18 +4,20 @@ import 'package:get_it/get_it.dart';
 import '../../repositories/user_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../states/auth_state.dart';
+import 'player_controller.dart';
 
 /// Provider for the AuthController
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
-  (ref) => GetIt.I<AuthController>(),
+  (ref) => AuthController(GetIt.I<UserRepository>(), ref),
 );
 
 /// Controller for handling authentication
 class AuthController extends StateNotifier<AuthState> {
   final UserRepository _userRepository;
   final PocketBaseService _pocketBaseService = GetIt.I<PocketBaseService>();
+  final Ref _ref;
   
-  AuthController(this._userRepository) : super(AuthState.initial()) {
+  AuthController(this._userRepository, this._ref) : super(AuthState.initial()) {
     _initializeAuth();
   }
   
@@ -91,6 +93,16 @@ class AuthController extends StateNotifier<AuthState> {
       
       // If we reach here, user is not authenticated
       debugPrint('AuthController: User not authenticated, setting unauthenticated state');
+      
+      // Stop audio player when not authenticated
+      try {
+        final playerController = _ref.read(playerControllerProvider.notifier);
+        await playerController.stopAndReset();
+        debugPrint('🎵 AuthController: Audio player stopped (not authenticated)');
+      } catch (e) {
+        debugPrint('❌ AuthController: Error stopping audio player (not authenticated): $e');
+      }
+      
       state = AuthState.unauthenticated();
     } catch (e) {
       debugPrint('AuthController: Error during auth initialization: $e');
@@ -100,6 +112,16 @@ class AuthController extends StateNotifier<AuthState> {
           e.toString().contains('SocketException') ||
           e.toString().contains('NetworkException')) {
         debugPrint('AuthController: Network error during initialization, setting unauthenticated');
+        
+        // Stop audio player on network error
+        try {
+          final playerController = _ref.read(playerControllerProvider.notifier);
+          await playerController.stopAndReset();
+          debugPrint('🎵 AuthController: Audio player stopped (network error)');
+        } catch (playerError) {
+          debugPrint('❌ AuthController: Error stopping audio player (network error): $playerError');
+        }
+        
         state = AuthState.unauthenticated();
       } else {
         state = AuthState.error('Connection failed. Please check your network and try again.');
@@ -107,6 +129,16 @@ class AuthController extends StateNotifier<AuthState> {
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) {
             debugPrint('AuthController: Fallback to unauthenticated after error');
+            
+            // Stop audio player on fallback
+            try {
+              final playerController = _ref.read(playerControllerProvider.notifier);
+              playerController.stopAndReset();
+              debugPrint('🎵 AuthController: Audio player stopped (fallback)');
+            } catch (playerError) {
+              debugPrint('❌ AuthController: Error stopping audio player (fallback): $playerError');
+            }
+            
             state = AuthState.unauthenticated();
           }
         });
@@ -149,11 +181,34 @@ class AuthController extends StateNotifier<AuthState> {
   /// Logout the current user
   Future<void> logout() async {
     try {
+      debugPrint('🚪 AuthController: Starting logout process');
+      
+      // Stop audio player and reset state
+      try {
+        final playerController = _ref.read(playerControllerProvider.notifier);
+        await playerController.stopAndReset();
+        debugPrint('🎵 AuthController: Audio player stopped and reset');
+      } catch (e) {
+        debugPrint('❌ AuthController: Error stopping audio player: $e');
+      }
+      
+      // Perform logout operations
       await _userRepository.logout();
       await _pocketBaseService.setRememberMe(false);
+      
+      debugPrint('✅ AuthController: Logout completed successfully');
       state = AuthState.unauthenticated();
     } catch (e) {
-      // Even if logout fails, clear local state
+      debugPrint('❌ AuthController: Error during logout: $e');
+      
+             // Even if logout fails, clear local state and stop player
+       try {
+         final playerController = _ref.read(playerControllerProvider.notifier);
+         await playerController.stopAndReset();
+       } catch (playerError) {
+         debugPrint('❌ AuthController: Error stopping audio player during fallback: $playerError');
+       }
+      
       state = AuthState.unauthenticated();
     }
   }
@@ -175,7 +230,8 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e) {
       // If refresh fails, logout
       if (e.toString().contains('401') || e.toString().contains('auth')) {
-        logout();
+        debugPrint('AuthController: Auth refresh failed, performing logout');
+        await logout();
       }
     }
   }
@@ -199,6 +255,15 @@ class AuthController extends StateNotifier<AuthState> {
       if (state.isAuthenticated) {
         debugPrint('Remember me is false but user is authenticated, logging out');
         await logout();
+      } else {
+        // Even if not authenticated, stop any playing audio
+        try {
+          final playerController = _ref.read(playerControllerProvider.notifier);
+          await playerController.stopAndReset();
+          debugPrint('🎵 AuthController: Audio player stopped (remember me disabled)');
+        } catch (e) {
+          debugPrint('❌ AuthController: Error stopping audio player (remember me disabled): $e');
+        }
       }
       return;
     }

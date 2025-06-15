@@ -4,7 +4,6 @@ import '../../services/audio_duration_service.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../repositories/genre_repository.dart';
-import '../../controllers/auth_controller.dart';
 
 /// Sets up dependency injection using GetIt
 Future<void> setupServiceLocator() async {
@@ -27,10 +26,6 @@ Future<void> setupServiceLocator() async {
     getIt<PocketBaseService>(),
   ));
   
-  // Controllers - Factory (new instance each time)
-  getIt.registerFactory<AuthController>(() => AuthController(
-    getIt<UserRepository>(),
-  ));
-  
-  // PlayerController is now managed by Riverpod, not GetIt
+  // Controllers are now managed by Riverpod, not GetIt
+  // AuthController and PlayerController use Riverpod providers
 }
