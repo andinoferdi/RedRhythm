@@ -73,6 +73,16 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const LoginScreen(),
       );
     },
+    LyricsRoute.name: (routeData) {
+      final args = routeData.argsAs<LyricsRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: LyricsScreen(
+          key: args.key,
+          song: args.song,
+        ),
+      );
+    },
     MusicPlayerRoute.name: (routeData) {
       final args = routeData.argsAs<MusicPlayerRouteArgs>(
           orElse: () => const MusicPlayerRouteArgs());
@@ -276,6 +286,43 @@ class LoginRoute extends PageRouteInfo<void> {
   static const String name = 'LoginRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [LyricsScreen]
+class LyricsRoute extends PageRouteInfo<LyricsRouteArgs> {
+  LyricsRoute({
+    Key? key,
+    required Song song,
+    List<PageRouteInfo>? children,
+  }) : super(
+          LyricsRoute.name,
+          args: LyricsRouteArgs(
+            key: key,
+            song: song,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'LyricsRoute';
+
+  static const PageInfo<LyricsRouteArgs> page = PageInfo<LyricsRouteArgs>(name);
+}
+
+class LyricsRouteArgs {
+  const LyricsRouteArgs({
+    this.key,
+    required this.song,
+  });
+
+  final Key? key;
+
+  final Song song;
+
+  @override
+  String toString() {
+    return 'LyricsRouteArgs{key: $key, song: $song}';
+  }
 }
 
 /// generated route for

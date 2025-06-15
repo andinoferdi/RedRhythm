@@ -6,6 +6,7 @@ import '../../states/player_state.dart';
 import '../../models/song.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/image_helpers.dart';
+import '../../routes/app_router.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -274,8 +275,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               
               const SizedBox(height: 40),
               
-              // Lyrics Section
-              _buildLyricsSection(currentSong),
+              // Lyrics Preview Section (Spotify-style)
+              _buildLyricsPreviewSection(currentSong),
             ],
           ),
         ),
@@ -283,134 +284,217 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     );
   }
   
-  Widget _buildLyricsSection(Song currentSong) {
+  Widget _buildLyricsPreviewSection(Song currentSong) {
+    final hasLyrics = currentSong.lyrics != null && currentSong.lyrics!.trim().isNotEmpty;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
+        // Header with Lyrics icon
         Row(
           children: [
             const Icon(
               Icons.lyrics_outlined,
               color: AppColors.primary,
-              size: 24,
+              size: 20,
             ),
             const SizedBox(width: 8),
             const Text(
               'Lyrics',
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 fontFamily: 'Poppins',
               ),
             ),
           ],
         ),
-        const SizedBox(height: 20),
         
-        // Lyrics content
-        currentSong.lyrics == null || currentSong.lyrics!.isEmpty
-            ? Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(33, 33, 33, 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.greyDark,
-                    width: 0.5,
-                  ),
-                ),
-                child: const Column(
-                  children: [
-                    Icon(
-                      Icons.music_note_outlined,
-                      size: 48,
-                      color: AppColors.greyLight,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'No lyrics available',
-                      style: TextStyle(
-                        color: AppColors.greyLight,
-                        fontSize: 16,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Lyrics will appear here when available',
-                      style: TextStyle(
-                        color: AppColors.greyLight,
-                        fontSize: 12,
-                        fontFamily: 'Poppins',
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            : Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFE53E3E), // Red primary
-                      const Color(0xFFD53F8C), // Red-pink
-                      const Color(0xFFC53030), // Darker red
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFE53E3E).withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  currentSong.lyrics!,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    height: 1.8,
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black26,
-                        offset: Offset(1, 1),
-                        blurRadius: 2,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.left,
-                ),
-              ),
+        const SizedBox(height: 12),
         
-        const SizedBox(height: 20),
-        
-        // Footer
-        Center(
-          child: Text(
-            '♪ ${currentSong.title} - ${currentSong.artist} ♪',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-              fontStyle: FontStyle.italic,
-              fontFamily: 'Poppins',
-            ),
-            textAlign: TextAlign.center,
-          ),
+        // Lyrics preview container (Spotify-style)
+        GestureDetector(
+          onTap: () {
+            // Navigate to full-screen lyrics
+            context.router.push(LyricsRoute(song: currentSong));
+          },
+          child: hasLyrics 
+              ? _buildLyricsPreview(currentSong)
+              : Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.greyDark.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: _buildNoLyricsPreview(),
+                ),
         ),
         
-        const SizedBox(height: 40), // Extra space at bottom
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+  
+  Widget _buildLyricsPreview(Song song) {
+    // Get first few lines of lyrics for preview
+    final lyricsLines = song.lyrics!.split('\n');
+    final previewLines = lyricsLines.take(3).where((line) => line.trim().isNotEmpty).toList();
+    final previewText = previewLines.join('\n');
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFE53E3E), // Red primary
+            const Color(0xFFD53F8C), // Red-pink
+            const Color(0xFFC53030), // Darker red
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFE53E3E).withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Preview text with bold styling
+          Text(
+            previewText,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              height: 1.6,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  offset: Offset(1, 1),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Show more button with white background
+          Row(
+            children: [
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Tampilkan Lirik',
+                      style: TextStyle(
+                        color: Color(0xFFE53E3E),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: Color(0xFFE53E3E),
+                      size: 14,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildNoLyricsPreview() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.music_note_outlined,
+              size: 24,
+              color: AppColors.greyLight,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'No lyrics available for this song',
+                style: TextStyle(
+                  color: AppColors.greyLight,
+                  fontSize: 14,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // View anyway button
+        Row(
+          children: [
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.greyDark,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lihat Detail',
+                    style: TextStyle(
+                      color: AppColors.greyLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.greyLight,
+                    size: 12,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

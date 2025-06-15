@@ -14,6 +14,7 @@ import '../screens/search/search_screen.dart';
 import '../screens/library/library_screen.dart';
 import '../screens/stats/stats_screen.dart';
 import '../screens/music_player/music_player_screen.dart';
+import '../screens/music_player/lyrics_screen.dart';
 import '../screens/playlist/playlist_detail_screen.dart';
 import '../screens/playlist/edit_playlist_screen.dart';
 import '../screens/admin/duration_update_screen.dart';
@@ -63,6 +64,7 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: LibraryRoute.page),
     AutoRoute(page: StatsRoute.page),
     AutoRoute(page: MusicPlayerRoute.page, fullscreenDialog: true),
+    AutoRoute(page: LyricsRoute.page, fullscreenDialog: true),
     AutoRoute(page: PlaylistDetailRoute.page),
     AutoRoute(page: EditPlaylistRoute.page),
     AutoRoute(page: DurationUpdateRoute.page),
