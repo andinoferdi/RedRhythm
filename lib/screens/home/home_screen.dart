@@ -403,17 +403,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Row(
           children: [
             if (imageUrl != null && ImageHelpers.isValidImageUrl(imageUrl))
-              ClipRRect(
+              ImageHelpers.buildSafeNetworkImage(
+                imageUrl: imageUrl,
+                width: 24,
+                height: 24,
+                fit: BoxFit.cover,
                 borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  imageUrl,
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(icon, color: iconColor);
-                  },
-                ),
+                fallbackWidget: Icon(icon, color: iconColor),
               )
             else
               Icon(icon, color: iconColor),

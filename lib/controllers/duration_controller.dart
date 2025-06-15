@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -258,12 +256,13 @@ abstract class DurationState {
   int get totalSongs => this is DurationProgress ? (this as DurationProgress).total : 
                       this is DurationCompleted ? (this as DurationCompleted).successCount + (this as DurationCompleted).failCount : 0;
   
-  int get successCount => this is DurationCompleted ? (this as DurationCompleted).successCount : 0;
-  int get failCount => this is DurationCompleted ? (this as DurationCompleted).failCount : 0;
-  
   String? get currentSongTitle => this is DurationProgress ? (this as DurationProgress).currentSongTitle : null;
   
   double get progress => this is DurationProgress ? (this as DurationProgress).progress : 0.0;
+  
+  int get successCount => this is DurationCompleted ? (this as DurationCompleted).successCount : 0;
+  
+  int get failCount => this is DurationCompleted ? (this as DurationCompleted).failCount : 0;
 }
 
 class DurationIdle extends DurationState {
@@ -277,6 +276,7 @@ class DurationLoading extends DurationState {
 class DurationProgress extends DurationState {
   final int current;
   final int total;
+  @override
   final String currentSongTitle;
   
   const DurationProgress({
@@ -285,11 +285,14 @@ class DurationProgress extends DurationState {
     required this.currentSongTitle,
   });
   
+  @override
   double get progress => total > 0 ? current / total : 0.0;
 }
 
 class DurationCompleted extends DurationState {
+  @override
   final int successCount;
+  @override
   final int failCount;
   final String message;
   

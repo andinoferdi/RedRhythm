@@ -45,21 +45,17 @@ class SongItemWidget extends ConsumerWidget {
 
         return ListTile(
           contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: ClipRRect(
+          leading: ImageHelpers.buildSafeNetworkImage(
+            imageUrl: song.albumArtUrl,
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(4),
-            child: Container(
+            fallbackWidget: Container(
               width: 48,
               height: 48,
               color: Colors.grey[800],
-              child: song.albumArtUrl.isNotEmpty && ImageHelpers.isValidImageUrl(song.albumArtUrl)
-                  ? Image.network(
-                      song.albumArtUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.music_note, color: Colors.white);
-                      },
-                    )
-                  : const Icon(Icons.music_note, color: Colors.white),
+              child: const Icon(Icons.music_note, color: Colors.white),
             ),
           ),
           title: Text(

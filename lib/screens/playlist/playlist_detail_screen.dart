@@ -15,6 +15,7 @@ import '../../widgets/mini_player.dart';
 
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/song_item_widget.dart';
+import '../../utils/image_helpers.dart';
 
 @RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -476,35 +477,22 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       try {
         final imageUrl = pbService.pb.files.getUrl(_creatorUser!, avatarUrl).toString();
         debugPrint('🖼️ Generated user avatar URL: $imageUrl');
-      return CircleAvatar(
-        radius: 12,
-        backgroundColor: Colors.grey[700],
-        child: ClipOval(
-          child: Image.network(
-            imageUrl,
+        return CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.grey[700],
+          child: ImageHelpers.buildSafeNetworkImage(
+            imageUrl: imageUrl,
             width: 24,
             height: 24,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              debugPrint('🚨 User avatar failed to load: $imageUrl');
-              debugPrint('🚨 Error: $error');
-              return const Icon(
-                Icons.person,
-                size: 16,
-                color: Colors.white,
-              );
-            },
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return const Icon(
-                Icons.person,
-                size: 16,
-                color: Colors.white,
-              );
-            },
+            borderRadius: BorderRadius.circular(12),
+            fallbackWidget: const Icon(
+              Icons.person,
+              size: 16,
+              color: Colors.white,
+            ),
           ),
-        ),
-      );
+        );
       } catch (e) {
         debugPrint('⚠️ Error generating user avatar URL: $e');
         // Fall through to default avatar

@@ -82,30 +82,26 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   borderRadius: BorderRadius.circular(20),
                   child: Stack(
                     children: [
-                      // Album art image with error handling
-                      if (ImageHelpers.isValidImageUrl(currentSong.albumArtUrl))
-                        Image.network(
-                          currentSong.albumArtUrl,
-                          height: 280,
-                          width: 280,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            debugPrint('🚨 Album art failed to load: ${currentSong.albumArtUrl}');
-                            debugPrint('🚨 Error: $error');
-                            return _buildFallbackAlbumArt();
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return _buildFallbackAlbumArt();
-                          },
-                        )
-                      else
-                        _buildFallbackAlbumArt(),
+                      // Album art image with enhanced error handling
+                      ImageHelpers.buildSafeNetworkImage(
+                        imageUrl: currentSong.albumArtUrl,
+                        width: 280,
+                        height: 280,
+                        fit: BoxFit.cover,
+                        borderRadius: BorderRadius.circular(20),
+                        showLoadingIndicator: true,
+                        fallbackWidget: _buildFallbackAlbumArt(),
+                      ),
                       
                       // Show loading indicator when buffering
                       if (playerState.isBuffering)
                         Container(
-                          color: const Color.fromRGBO(0, 0, 0, 0.5),
+                          height: 280,
+                          width: 280,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           child: const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primary,

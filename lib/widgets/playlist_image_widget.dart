@@ -141,12 +141,13 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     }
 
     if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {
-      return Image.network(
-        customImageUrl,
+      return ImageHelpers.buildSafeNetworkImage(
+        imageUrl: customImageUrl,
         width: widget.size,
         height: widget.size,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildFallbackImage(),
+        borderRadius: BorderRadius.circular(widget.borderRadius),
+        fallbackWidget: _buildFallbackImage(),
       );
     }
 
@@ -233,12 +234,13 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       return _buildPlaceholderImage();
     }
     
-    return Image.network(
-      imageUrl,
+    return ImageHelpers.buildSafeNetworkImage(
+      imageUrl: imageUrl,
       width: widget.size,
       height: widget.size,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+      borderRadius: BorderRadius.circular(widget.borderRadius),
+      fallbackWidget: _buildPlaceholderImage(),
     );
   }
 
@@ -303,11 +305,12 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       );
     }
     
-    return Image.network(
-      imageUrl,
-      height: height,
+    return ImageHelpers.buildSafeNetworkImage(
+      imageUrl: imageUrl,
+      width: double.infinity,
+      height: height ?? (widget.size / 2),
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Container(
+      fallbackWidget: Container(
         color: AppColors.textSecondary.withValues(alpha: 0.2),
       ),
     );

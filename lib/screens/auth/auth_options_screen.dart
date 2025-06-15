@@ -219,7 +219,7 @@ class AuthOptionsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     
                     // Sign up button with outline style
-                    Container(
+                    SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: OutlinedButton(

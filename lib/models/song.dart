@@ -40,41 +40,58 @@ class Song with _$Song {
                   'Unknown Album';
     }
     
-    // Extract album cover URL
+    // Extract album cover URL with enhanced error handling
     String albumArtUrl = '';
     if (albumRecord != null && albumRecord.data['cover_image'] != null) {
       try {
         final coverImage = albumRecord.data['cover_image'];
-        if (coverImage is String && coverImage.isNotEmpty) {
-          // Generate proper PocketBase file URL using service
-          final pbService = PocketBaseService();
-          final baseUrl = pbService.pb.baseUrl;
-          final collectionId = albumRecord.collectionId;
-          final recordId = albumRecord.id;
+        debugPrint('🔍 Processing cover image: "$coverImage" for album ${albumRecord.id}');
+        
+        if (coverImage is String && coverImage.trim().isNotEmpty) {
+          // CRITICAL: Validate filename format before generating URL
+          final trimmedImage = coverImage.trim();
           
-          // Validate that all components are not empty and not just whitespace
-          if (baseUrl.trim().isNotEmpty && 
-              collectionId.trim().isNotEmpty && 
-              recordId.trim().isNotEmpty &&
-              coverImage.trim().isNotEmpty) {
-            
-            // Additional validation: check if coverImage looks like a valid filename
-            if (coverImage.contains('.') && !coverImage.startsWith('.')) {
-              albumArtUrl = '$baseUrl/api/files/$collectionId/$recordId/$coverImage';
-              // Debug logging to track album art URL generation
-              debugPrint('🖼️ Generated album art URL: $albumArtUrl');
-            } else {
-              debugPrint('⚠️ Invalid cover image filename: $coverImage');
-            }
+          // Check if it's a valid filename (must contain extension)
+          if (!trimmedImage.contains('.') || trimmedImage.startsWith('.') || 
+              trimmedImage.endsWith('.') || trimmedImage.length < 3) {
+            debugPrint('⚠️ Invalid cover image filename format: "$trimmedImage"');
+            albumArtUrl = '';
           } else {
-            debugPrint('⚠️ Invalid album art URL components - baseUrl: "$baseUrl", collectionId: "$collectionId", recordId: "$recordId", coverImage: "$coverImage"');
+            // Generate proper PocketBase file URL using service
+            final pbService = PocketBaseService();
+            final baseUrl = pbService.pb.baseUrl;
+            final collectionId = albumRecord.collectionId;
+            final recordId = albumRecord.id;
+            
+            // Validate that all components are not empty and not just whitespace
+            if (baseUrl.trim().isNotEmpty && 
+                collectionId.trim().isNotEmpty && 
+                recordId.trim().isNotEmpty) {
+              
+              albumArtUrl = '$baseUrl/api/files/$collectionId/$recordId/$trimmedImage';
+              debugPrint('🖼️ Generated album art URL: $albumArtUrl');
+              
+              // ENHANCED: Validate the generated URL immediately
+              if (!_isValidPocketBaseUrl(albumArtUrl)) {
+                debugPrint('⚠️ Generated URL failed validation, clearing URL');
+                albumArtUrl = '';
+              }
+            } else {
+              debugPrint('⚠️ Invalid album art URL components - baseUrl: "$baseUrl", collectionId: "$collectionId", recordId: "$recordId"');
+              albumArtUrl = '';
+            }
           }
+        } else {
+          debugPrint('⚠️ Cover image is null, empty, or not string: $coverImage');
+          albumArtUrl = '';
         }
       } catch (e) {
-        // Silently handle album cover URL generation errors
+        // Enhanced error handling with fallback
         debugPrint('⚠️ Error generating album art URL: $e');
         albumArtUrl = '';
       }
+    } else {
+      debugPrint('🔍 No album record or cover_image field found');
     }
     
     final lyrics = record.data['lyrics'] as String?;
@@ -107,6 +124,32 @@ class Song with _$Song {
       audioFileName: audioFileName,
       audioFileUrl: null, // URL akan dibuat di PlayerController
     );
+  }
+  
+  /// Validate if a PocketBase URL is likely to be valid
+  static bool _isValidPocketBaseUrl(String url) {
+    if (url.isEmpty) return false;
+    
+    try {
+      final uri = Uri.parse(url);
+      // Basic validation - should have proper structure
+      final pathSegments = uri.pathSegments;
+      if (pathSegments.length < 4 || 
+          pathSegments[0] != 'api' || 
+          pathSegments[1] != 'files') {
+        return false;
+      }
+      
+      // Check that the last segment (filename) is not empty
+      final filename = pathSegments.last;
+      if (filename.isEmpty || !filename.contains('.')) {
+        return false;
+      }
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
 

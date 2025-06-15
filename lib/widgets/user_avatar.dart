@@ -49,32 +49,17 @@ class UserAvatar extends ConsumerWidget {
         color: backgroundColor,
       ),
       child: avatarUrl != null 
-        ? ClipOval(
-            child: Image.network(
-              avatarUrl,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(
-                  Icons.person,
-                  color: AppColors.text,
-                  size: iconSize,
-                );
-              },
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Center(
-                  child: SizedBox(
-                    width: size * 0.48, // Scale the indicator based on avatar size
-                    height: size * 0.48,
-                    child: const CircularProgressIndicator(
-                      color: AppColors.text,
-                      strokeWidth: 2.0,
-                    ),
-                  ),
-                );
-              },
+        ? ImageHelpers.buildSafeNetworkImage(
+            imageUrl: avatarUrl,
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(size / 2), // Make it circular
+            showLoadingIndicator: true,
+            fallbackWidget: Icon(
+              Icons.person,
+              color: AppColors.text,
+              size: iconSize,
             ),
           )
         : Icon(

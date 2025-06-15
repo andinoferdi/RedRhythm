@@ -48,7 +48,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
         if (message != null) {
           _addOutput(message);
         }
-        originalDebugPrint?.call(message, wrapWidth: wrapWidth);
+        originalDebugPrint(message, wrapWidth: wrapWidth);
       };
       
       await tool.checkAllAlbumImages();
@@ -87,7 +87,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
         if (message != null) {
           _addOutput(message);
         }
-        originalDebugPrint?.call(message, wrapWidth: wrapWidth);
+        originalDebugPrint(message, wrapWidth: wrapWidth);
       };
       
       await tool.listAlbumFiles(_albumIdController.text.trim());
@@ -126,7 +126,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
         if (message != null) {
           _addOutput(message);
         }
-        originalDebugPrint?.call(message, wrapWidth: wrapWidth);
+        originalDebugPrint(message, wrapWidth: wrapWidth);
       };
       
       await tool.updateAlbumCoverImage(

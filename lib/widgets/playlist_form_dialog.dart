@@ -6,6 +6,7 @@ import '../../utils/app_colors.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../widgets/loading_button.dart';
+import '../../utils/image_helpers.dart';
 
 class PlaylistFormDialog extends StatefulWidget {
   final RecordModel playlist; // Only for edit mode
@@ -463,18 +464,14 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                     fit: BoxFit.cover,
                   )
                 : _currentImageUrl != null
-                    ? Image.network(
-                        _currentImageUrl!,
+                    ? ImageHelpers.buildSafeNetworkImage(
+                        imageUrl: _currentImageUrl!,
+                        width: double.infinity,
+                        height: 160,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(color: Colors.red),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildImagePlaceholder();
-                        },
+                        borderRadius: BorderRadius.circular(12),
+                        showLoadingIndicator: true,
+                        fallbackWidget: _buildImagePlaceholder(),
                       )
                     : _buildImagePlaceholder(),
           ),

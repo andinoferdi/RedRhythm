@@ -55,6 +55,90 @@ class ImageHelpers {
   static String getSafeImageUrl(String? url) {
     return isValidImageUrl(url) ? url! : '';
   }
+  
+  /// Build a safe network image widget with robust error handling
+  static Widget buildSafeNetworkImage({
+    required String? imageUrl,
+    required double width,
+    required double height,
+    BoxFit fit = BoxFit.cover,
+    Widget? fallbackWidget,
+    BorderRadius? borderRadius,
+    bool showLoadingIndicator = false,
+  }) {
+    final fallback = fallbackWidget ?? Container(
+      width: width,
+      height: height,
+      color: Colors.grey[800],
+      child: Icon(
+        Icons.music_note,
+        color: Colors.white,
+        size: width * 0.4,
+      ),
+    );
+    
+    // CRITICAL: Multiple layers of validation to prevent 404 errors
+    if (!isValidImageUrl(imageUrl)) {
+      debugPrint('🚨 Invalid image URL rejected: $imageUrl');
+      return borderRadius != null 
+          ? ClipRRect(borderRadius: borderRadius, child: fallback)
+          : fallback;
+    }
+    
+    // ADDITIONAL: Check for incomplete URLs (ending with slash)
+    final cleanUrl = imageUrl!.trim();
+    if (cleanUrl.endsWith('/') || cleanUrl.split('/').last.isEmpty) {
+      debugPrint('🚨 Incomplete URL rejected (no filename): $cleanUrl');
+      return borderRadius != null 
+          ? ClipRRect(borderRadius: borderRadius, child: fallback)
+          : fallback;
+    }
+    
+    // ADDITIONAL: Check for old collection IDs that are known to cause issues
+    if (cleanUrl.contains('pbc_2683869272')) {
+      debugPrint('🚨 Old collection ID detected and rejected: $cleanUrl');
+      return borderRadius != null 
+          ? ClipRRect(borderRadius: borderRadius, child: fallback)
+          : fallback;
+    }
+    
+    final imageWidget = Image.network(
+      cleanUrl,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('🚨 Image failed to load: $cleanUrl');
+        debugPrint('🚨 Error: $error');
+        return fallback;
+      },
+      loadingBuilder: showLoadingIndicator ? (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          width: width,
+          height: height,
+          color: Colors.grey[800],
+          child: Center(
+            child: SizedBox(
+              width: width * 0.4,
+              height: width * 0.4,
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                    : null,
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            ),
+          ),
+        );
+      } : null,
+    );
+    
+    return borderRadius != null 
+        ? ClipRRect(borderRadius: borderRadius, child: imageWidget)
+        : imageWidget;
+  }
 }
 
 /// Extension methods for RecordModel

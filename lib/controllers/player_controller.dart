@@ -776,17 +776,31 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
-      final pbService = PocketBaseService();
-      final record = await pbService.pb.collection('songs').getOne(
-        songId,
-        expand: 'artist_id,album_id',
-      );
+      // CRITICAL: Clear cache to ensure fresh data loading and avoid old collection IDs
+      SongRepository.clearCache();
+      debugPrint('🔄 Cleared song cache for fresh data loading');
       
-      final song = Song.fromRecord(record);
+      // ENHANCED: Use improved song repository with caching
+      final songRepository = GetIt.instance<SongRepository>();
+      
+      // Use the new getSongById method which checks cache first, then loads from database
+      final song = await songRepository.getSongById(songId);
+      
+      if (song == null) {
+        debugPrint('❌ Song not found with ID: $songId');
+        // Reset buffering state on error
+        if (!_isDisposed) {
+          state = state.copyWith(isBuffering: false);
+        }
+        return;
+      }
+      
+      debugPrint('✅ Loaded song: ${song.title} - Album Art: ${song.albumArtUrl}');
+      debugPrint('🔍 Album Art URL Collection ID: ${song.albumArtUrl.contains('pbc_') ? song.albumArtUrl.split('/')[5] : 'N/A'}');
       
       await playSongWithoutPlaylist(song);
     } catch (e) {
-      debugPrint('Error loading song by ID: $e');
+      debugPrint('❌ Error loading song by ID: $e');
       // Reset buffering state on error
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);

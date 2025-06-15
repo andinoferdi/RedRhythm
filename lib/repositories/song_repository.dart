@@ -6,24 +6,77 @@ import '../models/song.dart';
 class SongRepository {
   final PocketBaseService _pocketBaseService;
   
+  // Simple cache for all songs
+  static List<Song>? _allSongsCache;
+  static DateTime? _cacheTimestamp;
+  static const Duration _cacheExpiry = Duration(minutes: 5);
+  
   SongRepository(this._pocketBaseService);
   
   /// Get PocketBase instance
   PocketBase get _pb => _pocketBaseService.pb;
   
-  /// Fetch all songs
+  /// Fetch all songs with caching
   Future<List<Song>> getAllSongs() async {
     try {
+      // Check cache first
+      if (_allSongsCache != null && _cacheTimestamp != null) {
+        final cacheAge = DateTime.now().difference(_cacheTimestamp!);
+        if (cacheAge < _cacheExpiry) {
+          return _allSongsCache!;
+        }
+      }
+      
+      // Load from database with higher perPage to get all songs
       final response = await _pb.collection('songs').getList(
         page: 1,
-        perPage: 100,
+        perPage: 500, // Increased from 100 to ensure we get all songs
         expand: 'artist_id,album_id',
         sort: 'title',
       );
       
-      return response.items.map((record) => Song.fromRecord(record)).toList();
+      final songs = response.items.map((record) => Song.fromRecord(record)).toList();
+      
+      // Update cache
+      _allSongsCache = songs;
+      _cacheTimestamp = DateTime.now();
+      
+      return songs;
     } catch (e) {
+      // If error and we have cache, return cache
+      if (_allSongsCache != null) {
+        return _allSongsCache!;
+      }
       throw Exception('Failed to fetch songs: $e');
+    }
+  }
+  
+  /// Clear the cache (useful for refresh)
+  static void clearCache() {
+    _allSongsCache = null;
+    _cacheTimestamp = null;
+  }
+  
+  /// Get a specific song by ID from cache or database
+  Future<Song?> getSongById(String songId) async {
+    try {
+      // Try to find in cached songs first
+      final allSongs = await getAllSongs();
+      final cachedSong = allSongs.where((song) => song.id == songId).firstOrNull;
+      
+      if (cachedSong != null) {
+        return cachedSong;
+      }
+      
+      // If not found in cache, load directly from database
+      final record = await _pb.collection('songs').getOne(
+        songId,
+        expand: 'artist_id,album_id',
+      );
+      
+      return Song.fromRecord(record);
+    } catch (e) {
+      return null;
     }
   }
   
