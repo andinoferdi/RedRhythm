@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../controllers/player_controller.dart';
 import '../routes/app_router.dart';
 import '../utils/app_colors.dart';
+import '../utils/image_helpers.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
 import '../models/playlist.dart';
@@ -251,10 +252,54 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                         margin: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
-                          image: DecorationImage(
-                            image: NetworkImage(currentSong.albumArtUrl),
-                            fit: BoxFit.cover,
-                          ),
+                          color: AppColors.greyDark,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: ImageHelpers.isValidImageUrl(currentSong.albumArtUrl)
+                              ? Image.network(
+                                  currentSong.albumArtUrl,
+                                  width: 48,
+                                  height: 48,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    debugPrint('🚨 Mini player album art failed to load: ${currentSong.albumArtUrl}');
+                                    debugPrint('🚨 Error: $error');
+                                    return Container(
+                                      width: 48,
+                                      height: 48,
+                                      color: AppColors.greyDark,
+                                      child: const Icon(
+                                        Icons.music_note,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                    );
+                                  },
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 48,
+                                      height: 48,
+                                      color: AppColors.greyDark,
+                                      child: const Icon(
+                                        Icons.music_note,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  width: 48,
+                                  height: 48,
+                                  color: AppColors.greyDark,
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
                         ),
                       ),
                       // Song Info

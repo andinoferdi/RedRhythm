@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 /// Utility functions for handling images
@@ -20,6 +21,39 @@ class ImageHelpers {
     
     // Format: {baseUrl}/api/files/{collectionId}/{recordId}/{fileName}
     return '$baseUrl/api/files/${user.collectionId}/${user.id}/$avatar';
+  }
+
+  /// Validate if a URL is a valid image URL
+  static bool isValidImageUrl(String? url) {
+    if (url == null || url.trim().isEmpty) return false;
+    
+    try {
+      final uri = Uri.parse(url);
+      
+      // Check if it's a valid HTTP/HTTPS URL
+      if (!uri.hasScheme || (!uri.scheme.startsWith('http'))) {
+        return false;
+      }
+      
+      // Check if it has a valid host
+      if (!uri.hasAuthority || uri.host.isEmpty) {
+        return false;
+      }
+      
+      // Check if path looks like a file path
+      if (uri.path.isEmpty || !uri.path.contains('/')) {
+        return false;
+      }
+      
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  /// Get a safe image URL, returns empty string if invalid
+  static String getSafeImageUrl(String? url) {
+    return isValidImageUrl(url) ? url! : '';
   }
 }
 

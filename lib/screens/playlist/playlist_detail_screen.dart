@@ -472,16 +472,43 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final avatarUrl = _creatorUser?.data['avatar'] as String?;
     final pbService = PocketBaseService();
     
-    if (avatarUrl != null && avatarUrl.isNotEmpty && _creatorUser != null) {
-      final imageUrl = pbService.pb.files.getUrl(_creatorUser!, avatarUrl).toString();
+    if (avatarUrl != null && avatarUrl.trim().isNotEmpty && _creatorUser != null) {
+      try {
+        final imageUrl = pbService.pb.files.getUrl(_creatorUser!, avatarUrl).toString();
+        debugPrint('🖼️ Generated user avatar URL: $imageUrl');
       return CircleAvatar(
         radius: 12,
-        backgroundImage: NetworkImage(imageUrl),
-        onBackgroundImageError: (exception, stackTrace) {
-          // Fallback to default avatar
-        },
-        child: null,
+        backgroundColor: Colors.grey[700],
+        child: ClipOval(
+          child: Image.network(
+            imageUrl,
+            width: 24,
+            height: 24,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('🚨 User avatar failed to load: $imageUrl');
+              debugPrint('🚨 Error: $error');
+              return const Icon(
+                Icons.person,
+                size: 16,
+                color: Colors.white,
+              );
+            },
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Icon(
+                Icons.person,
+                size: 16,
+                color: Colors.white,
+              );
+            },
+          ),
+        ),
       );
+      } catch (e) {
+        debugPrint('⚠️ Error generating user avatar URL: $e');
+        // Fall through to default avatar
+      }
     }
 
     return CircleAvatar(

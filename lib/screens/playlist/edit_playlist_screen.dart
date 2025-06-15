@@ -75,10 +75,17 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       
       // Get current image URL if exists
       final coverImage = widget.playlist.data['cover_image'] as String?;
-      if (coverImage != null && coverImage.isNotEmpty) {
-        final pbService = PocketBaseService();
-        _currentImageUrl = pbService.pb.files.getUrl(widget.playlist, coverImage).toString();
-        _originalImageUrl = _currentImageUrl;
+      if (coverImage != null && coverImage.trim().isNotEmpty) {
+        try {
+          final pbService = PocketBaseService();
+          _currentImageUrl = pbService.pb.files.getUrl(widget.playlist, coverImage).toString();
+          _originalImageUrl = _currentImageUrl;
+          debugPrint('🖼️ Generated edit playlist cover URL: $_currentImageUrl');
+        } catch (e) {
+          debugPrint('⚠️ Error generating edit playlist cover URL: $e');
+          _currentImageUrl = null;
+          _originalImageUrl = null;
+        }
       }
 
       // Load playlist songs

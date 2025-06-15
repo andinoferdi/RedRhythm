@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' hide PlayerState;
+import 'package:get_it/get_it.dart';
 import '../../models/song.dart';
 import '../../services/pocketbase_service.dart';
+import '../../repositories/song_repository.dart';
 import '../states/player_state.dart';
 import 'play_history_controller.dart';
 
@@ -300,7 +302,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   /// Try fallback audio URL (demo file)
   Future<void> _tryFallbackAudio(Song song) async {
     try {
-      const fallbackUrl = 'http://10.0.2.2:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
+      const fallbackUrl = 'http://127.0.0.1:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
       
       await _audioPlayer.stop();
       await Future.delayed(const Duration(milliseconds: 100));
@@ -337,7 +339,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       return url;
     } catch (e) {
       debugPrint('Error getting song audio URL: $e, using fallback');
-      return 'http://10.0.2.2:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
+      return 'http://127.0.0.1:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
     }
   }
   
@@ -521,20 +523,67 @@ class PlayerController extends StateNotifier<PlayerState> {
     final newShuffleMode = !state.shuffleMode;
     state = state.copyWith(shuffleMode: newShuffleMode);
     
-    if (newShuffleMode && state.queue.isNotEmpty) {
-      // Shuffle the queue but keep current song as first
-      final currentSong = state.currentSong;
-      final List<Song> shuffledQueue = List.from(state.queue)..shuffle();
+    if (newShuffleMode) {
+      // Check if playing from playlist or individual song
+      if (state.currentPlaylistId != null && state.queue.isNotEmpty) {
+        // Playlist shuffle: shuffle current playlist queue
+        _shuffleCurrentQueue();
+      } else {
+        // General shuffle: shuffle all songs from database
+        _shuffleAllSongs();
+      }
+    }
+  }
+  
+  /// Shuffle current queue (for playlist context)
+  void _shuffleCurrentQueue() {
+    if (state.queue.isEmpty) return;
+    
+    final currentSong = state.currentSong;
+    final List<Song> shuffledQueue = List.from(state.queue)..shuffle();
+    
+    if (currentSong != null) {
+      shuffledQueue.remove(currentSong);
+      shuffledQueue.insert(0, currentSong);
+    }
+    
+    state = state.copyWith(
+      queue: shuffledQueue,
+      currentIndex: 0,
+    );
+  }
+  
+  /// Shuffle all songs from database (for general shuffle)
+  Future<void> _shuffleAllSongs() async {
+    try {
+      final songRepository = GetIt.instance<SongRepository>();
+      final allSongs = await songRepository.getAllSongs();
       
+      if (allSongs.isEmpty) return;
+      
+      // Shuffle all songs
+      final List<Song> shuffledSongs = List.from(allSongs)..shuffle();
+      
+      // Keep current song as first if it exists in the list
+      final currentSong = state.currentSong;
       if (currentSong != null) {
-        shuffledQueue.remove(currentSong);
-        shuffledQueue.insert(0, currentSong);
+        shuffledSongs.remove(currentSong);
+        shuffledSongs.insert(0, currentSong);
       }
       
+      // Update state with shuffled queue
       state = state.copyWith(
-        queue: shuffledQueue,
+        queue: shuffledSongs,
         currentIndex: 0,
+        currentPlaylistId: null, // Clear playlist context for general shuffle
       );
+      
+    } catch (e) {
+      debugPrint('Error shuffling all songs: $e');
+      // Fallback to current queue shuffle if available
+      if (state.queue.isNotEmpty) {
+        _shuffleCurrentQueue();
+      }
     }
   }
   
@@ -683,17 +732,41 @@ class PlayerController extends StateNotifier<PlayerState> {
     // Force restart if same song but different context (e.g., from playlist to search)
     final shouldForceRestart = isCurrentSong && isDifferentContext;
     
-    // Reset shuffle mode when playing without playlist context
-    if (state.shuffleMode) {
+    // Only reset shuffle mode if not in general shuffle mode
+    // General shuffle should persist when playing individual songs
+    final shouldResetShuffle = state.shuffleMode && state.currentPlaylistId != null;
+    
+    if (shouldResetShuffle) {
       state = state.copyWith(shuffleMode: false);
     }
     
-    // Clear playlist context and set single song queue
-    state = state.copyWith(
-      queue: [song],
-      currentIndex: 0,
-      currentPlaylistId: null,
-    );
+    // If shuffle is active and no playlist context, keep the shuffled queue
+    // Otherwise, set single song queue
+    if (state.shuffleMode && state.currentPlaylistId == null) {
+      // Keep current shuffled queue, just update current song if needed
+      final songIndex = state.queue.indexWhere((s) => s.id == song.id);
+      if (songIndex != -1) {
+        state = state.copyWith(
+          currentIndex: songIndex,
+          currentPlaylistId: null,
+        );
+      } else {
+        // Song not in current queue, add it and play
+        final newQueue = [song, ...state.queue];
+        state = state.copyWith(
+          queue: newQueue,
+          currentIndex: 0,
+          currentPlaylistId: null,
+        );
+      }
+    } else {
+      // Clear playlist context and set single song queue
+      state = state.copyWith(
+        queue: [song],
+        currentIndex: 0,
+        currentPlaylistId: null,
+      );
+    }
     
     await playSong(song, forceRestart: shouldForceRestart);
   }

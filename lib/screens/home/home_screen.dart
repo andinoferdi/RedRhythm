@@ -19,6 +19,7 @@ import '../../widgets/song_item_widget.dart';
 
 import '../../models/song.dart';
 import '../../utils/app_colors.dart';
+import '../debug/album_sync_debug_screen.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -41,9 +42,9 @@ Future<String> determinePocketBaseUrl() async {
   const String localComputerIP = '192.168.1.100'; // Sesuaikan dengan IP komputer Anda
   
   final List<String> possibleUrls = [
-    'http://$localComputerIP:8090',  // IP komputer di jaringan lokal
+    'http://127.0.0.1:8090',        // Local server (prioritas pertama)
     'http://10.0.2.2:8090',         // Standard Android emulator
-    'http://127.0.0.1:8090',        // iOS simulator or local
+    'http://$localComputerIP:8090',  // IP komputer di jaringan lokal
   ];
   
   for (final url in possibleUrls) {
@@ -63,8 +64,8 @@ Future<String> determinePocketBaseUrl() async {
     }
   }
   
-  // Default ke IP lokal jika semua gagal
-  return 'http://$localComputerIP:8090';
+  // Default ke localhost jika semua gagal
+  return 'http://127.0.0.1:8090';
 }
 
 // PocketBase instance with lazy initialization
@@ -401,7 +402,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         padding: const EdgeInsets.all(12.0),
         child: Row(
           children: [
-            if (imageUrl != null)
+            if (imageUrl != null && ImageHelpers.isValidImageUrl(imageUrl))
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
                 child: Image.network(
@@ -508,6 +509,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onTap: () {
                   Navigator.of(context).pop();
                   // Add profile view navigation here
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bug_report, color: Colors.orange),
+                title: const Text(
+                  'Album Sync Tool',
+                  style: TextStyle(color: Colors.orange),
+                ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AlbumSyncDebugScreen(),
+                    ),
+                  );
                 },
               ),
               ListTile(

@@ -5,6 +5,7 @@ import '../services/pocketbase_service.dart';
 import '../repositories/playlist_repository.dart';
 import '../repositories/song_playlist_repository.dart';
 import '../utils/app_colors.dart';
+import '../utils/image_helpers.dart';
 
 /// A unified widget for displaying playlist images consistently across the app
 class PlaylistImageWidget extends StatefulWidget {
@@ -139,7 +140,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       // Reduced debug logging for better performance
     }
 
-    if (customImageUrl.isNotEmpty) {
+    if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {
       return Image.network(
         customImageUrl,
         width: widget.size,
@@ -197,7 +198,9 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     final List<String> albumCovers = [];
     
     for (final song in songs) {
-      if (song.albumArtUrl.isNotEmpty && !uniqueCovers.contains(song.albumArtUrl)) {
+      if (song.albumArtUrl.isNotEmpty && 
+          ImageHelpers.isValidImageUrl(song.albumArtUrl) &&
+          !uniqueCovers.contains(song.albumArtUrl)) {
         uniqueCovers.add(song.albumArtUrl);
         albumCovers.add(song.albumArtUrl);
         if (albumCovers.length >= 4) break;
@@ -226,6 +229,10 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   }
 
   Widget _buildSingleCover(String imageUrl) {
+    if (!ImageHelpers.isValidImageUrl(imageUrl)) {
+      return _buildPlaceholderImage();
+    }
+    
     return Image.network(
       imageUrl,
       width: widget.size,
@@ -241,24 +248,10 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       return Row(
         children: [
           Expanded(
-            child: Image.network(
-              imageUrls[0],
-              height: widget.size,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.textSecondary.withValues(alpha: 0.2),
-              ),
-            ),
+            child: _buildGridImageWidget(imageUrls[0], height: widget.size),
           ),
           Expanded(
-            child: Image.network(
-              imageUrls[1],
-              height: widget.size,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                color: AppColors.textSecondary.withValues(alpha: 0.2),
-              ),
-            ),
+            child: _buildGridImageWidget(imageUrls[1], height: widget.size),
           ),
         ],
       );
@@ -270,22 +263,10 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
             child: Row(
               children: [
                 Expanded(
-                  child: Image.network(
-                    imageUrls[0],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.textSecondary.withValues(alpha: 0.2),
-                    ),
-                  ),
+                  child: _buildGridImageWidget(imageUrls[0]),
                 ),
                 Expanded(
-                  child: Image.network(
-                    imageUrls[1],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.textSecondary.withValues(alpha: 0.2),
-                    ),
-                  ),
+                  child: _buildGridImageWidget(imageUrls[1]),
                 ),
               ],
             ),
@@ -295,26 +276,14 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
               children: [
                 Expanded(
                   child: imageUrls.length > 2
-                      ? Image.network(
-                          imageUrls[2],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.textSecondary.withValues(alpha: 0.2),
-                          ),
-                        )
+                      ? _buildGridImageWidget(imageUrls[2])
                       : Container(
                           color: AppColors.textSecondary.withValues(alpha: 0.2),
                         ),
                 ),
                 Expanded(
                   child: imageUrls.length > 3
-                      ? Image.network(
-                          imageUrls[3],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: AppColors.textSecondary.withValues(alpha: 0.2),
-                          ),
-                        )
+                      ? _buildGridImageWidget(imageUrls[3])
                       : Container(
                           color: AppColors.textSecondary.withValues(alpha: 0.2),
                         ),
@@ -325,6 +294,23 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         ],
       );
     }
+  }
+
+  Widget _buildGridImageWidget(String imageUrl, {double? height}) {
+    if (!ImageHelpers.isValidImageUrl(imageUrl)) {
+      return Container(
+        color: AppColors.textSecondary.withValues(alpha: 0.2),
+      );
+    }
+    
+    return Image.network(
+      imageUrl,
+      height: height,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Container(
+        color: AppColors.textSecondary.withValues(alpha: 0.2),
+      ),
+    );
   }
 
   Widget _buildPlaceholderImage() {

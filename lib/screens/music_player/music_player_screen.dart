@@ -5,6 +5,7 @@ import '../../controllers/player_controller.dart';
 import '../../states/player_state.dart';
 import '../../models/song.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/image_helpers.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -75,22 +76,45 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 width: 280,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  image: DecorationImage(
-                    image: NetworkImage(currentSong.albumArtUrl),
-                    fit: BoxFit.cover,
+                  color: AppColors.greyDark, // Background color for fallback
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      // Album art image with error handling
+                      if (ImageHelpers.isValidImageUrl(currentSong.albumArtUrl))
+                        Image.network(
+                          currentSong.albumArtUrl,
+                          height: 280,
+                          width: 280,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            debugPrint('🚨 Album art failed to load: ${currentSong.albumArtUrl}');
+                            debugPrint('🚨 Error: $error');
+                            return _buildFallbackAlbumArt();
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return _buildFallbackAlbumArt();
+                          },
+                        )
+                      else
+                        _buildFallbackAlbumArt(),
+                      
+                      // Show loading indicator when buffering
+                      if (playerState.isBuffering)
+                        Container(
+                          color: const Color.fromRGBO(0, 0, 0, 0.5),
+                          child: const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                // Show loading indicator when buffering
-                child: playerState.isBuffering 
-                  ? Container(
-                      color: const Color.fromRGBO(0, 0, 0, 0.5),
-                      child: const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    )
-                  : null,
               ),
               
               const SizedBox(height: 30),
@@ -163,19 +187,17 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Only show shuffle button if playing from a playlist
-                      playerState.currentPlaylistId != null
-                          ? IconButton(
-                              icon: Icon(
-                                Icons.shuffle,
-                                color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
-                                size: 24,
-                              ),
-                              onPressed: () {
-                                ref.read(playerControllerProvider.notifier).toggleShuffle();
-                              },
-                            )
-                          : const SizedBox(width: 48), // Placeholder to maintain spacing
+                      // Always show shuffle button - supports both playlist and general shuffle
+                      IconButton(
+                        icon: Icon(
+                          Icons.shuffle,
+                          color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
+                          size: 24,
+                        ),
+                        onPressed: () {
+                          ref.read(playerControllerProvider.notifier).toggleShuffle();
+                        },
+                      ),
                       IconButton(
                         icon: const Icon(
                           Icons.skip_previous,
@@ -397,6 +419,46 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     );
   }
   
+  /// Build fallback album art when image fails to load
+  Widget _buildFallbackAlbumArt() {
+    return Container(
+      height: 280,
+      width: 280,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.3),
+            AppColors.greyDark,
+            AppColors.background,
+          ],
+        ),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.music_note,
+            size: 80,
+            color: AppColors.primary,
+          ),
+          SizedBox(height: 16),
+          Text(
+            'No Album Art',
+            style: TextStyle(
+              color: AppColors.greyLight,
+              fontSize: 16,
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));

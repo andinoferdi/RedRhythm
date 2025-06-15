@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/player_controller.dart';
 import '../models/song.dart';
+import '../utils/image_helpers.dart';
 import 'animated_sound_bars.dart';
 
 class SongItemWidget extends ConsumerWidget {
@@ -50,7 +51,7 @@ class SongItemWidget extends ConsumerWidget {
               width: 48,
               height: 48,
               color: Colors.grey[800],
-              child: song.albumArtUrl.isNotEmpty
+              child: song.albumArtUrl.isNotEmpty && ImageHelpers.isValidImageUrl(song.albumArtUrl)
                   ? Image.network(
                       song.albumArtUrl,
                       fit: BoxFit.cover,

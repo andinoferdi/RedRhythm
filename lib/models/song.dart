@@ -48,10 +48,32 @@ class Song with _$Song {
         if (coverImage is String && coverImage.isNotEmpty) {
           // Generate proper PocketBase file URL using service
           final pbService = PocketBaseService();
-          albumArtUrl = '${pbService.pb.baseUrl}/api/files/${albumRecord.collectionId}/${albumRecord.id}/$coverImage';
+          final baseUrl = pbService.pb.baseUrl;
+          final collectionId = albumRecord.collectionId;
+          final recordId = albumRecord.id;
+          
+          // Validate that all components are not empty and not just whitespace
+          if (baseUrl.trim().isNotEmpty && 
+              collectionId.trim().isNotEmpty && 
+              recordId.trim().isNotEmpty &&
+              coverImage.trim().isNotEmpty) {
+            
+            // Additional validation: check if coverImage looks like a valid filename
+            if (coverImage.contains('.') && !coverImage.startsWith('.')) {
+              albumArtUrl = '$baseUrl/api/files/$collectionId/$recordId/$coverImage';
+              // Debug logging to track album art URL generation
+              debugPrint('🖼️ Generated album art URL: $albumArtUrl');
+            } else {
+              debugPrint('⚠️ Invalid cover image filename: $coverImage');
+            }
+          } else {
+            debugPrint('⚠️ Invalid album art URL components - baseUrl: "$baseUrl", collectionId: "$collectionId", recordId: "$recordId", coverImage: "$coverImage"');
+          }
         }
       } catch (e) {
         // Silently handle album cover URL generation errors
+        debugPrint('⚠️ Error generating album art URL: $e');
+        albumArtUrl = '';
       }
     }
     

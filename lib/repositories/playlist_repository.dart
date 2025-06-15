@@ -124,8 +124,15 @@ class PlaylistRepository {
   /// Get cover image URL for a playlist
   String getCoverImageUrl(RecordModel playlist) {
     final coverImage = playlist.data['cover_image'] as String?;
-    if (coverImage != null && coverImage.isNotEmpty) {
-      return _pb.files.getUrl(playlist, coverImage).toString();
+    if (coverImage != null && coverImage.trim().isNotEmpty) {
+      try {
+        final url = _pb.files.getUrl(playlist, coverImage).toString();
+        debugPrint('🖼️ Generated playlist cover URL: $url');
+        return url;
+      } catch (e) {
+        debugPrint('⚠️ Error generating playlist cover URL: $e');
+        return '';
+      }
     }
     return '';
   }
