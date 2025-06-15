@@ -128,27 +128,37 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> _handleSongCompletion() async {
     if (_isDisposed) return;
     
+    debugPrint('🎵 SONG_COMPLETE: Song completed - Repeat mode: ${state.repeatMode}, Current index: ${state.currentIndex}, Queue length: ${state.queue.length}');
+    
     switch (state.repeatMode) {
       case RepeatMode.off:
         if (state.currentIndex < state.queue.length - 1) {
+          debugPrint('🎵 SONG_COMPLETE: Auto-playing next song');
           await skipNext();
         } else {
-          state = state.copyWith(isPlaying: false, currentPosition: state.currentSong?.duration ?? Duration.zero);
+          debugPrint('🎵 SONG_COMPLETE: Last song reached, stopping playback');
+          state = state.copyWith(
+            isPlaying: false, 
+            currentPosition: state.currentSong?.duration ?? Duration.zero
+          );
         }
         break;
       case RepeatMode.all:
         if (state.currentIndex < state.queue.length - 1) {
+          debugPrint('🎵 SONG_COMPLETE: Auto-playing next song (repeat all)');
           await skipNext();
         } else if (state.queue.isNotEmpty) {
-          // Loop back to first song
-          await playQueue(state.queue, 0);
+          debugPrint('🎵 SONG_COMPLETE: Looping back to first song (repeat all)');
+          // Use skipNext which will handle the loop logic
+          await skipNext();
         }
         break;
       case RepeatMode.one:
-        // Replay current song
-        final currentSong = state.currentSong;
-        if (currentSong != null) {
-          await playSong(currentSong);
+        debugPrint('🎵 SONG_COMPLETE: Replaying current song (repeat one)');
+        // Restart current song
+        await seekTo(Duration.zero);
+        if (!state.isPlaying) {
+          await resume();
         }
         break;
     }
@@ -359,17 +369,48 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> skipNext() async {
     if (_isDisposed) return;
     
-    if (state.queue.isEmpty || state.currentIndex >= state.queue.length - 1) {
+    if (state.queue.isEmpty) {
+      debugPrint('🎵 SKIP_NEXT: Queue is empty, cannot skip');
       return;
     }
     
-    final nextIndex = state.currentIndex + 1;
+    debugPrint('🎵 SKIP_NEXT: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Repeat mode: ${state.repeatMode}');
+    
+    // Handle repeat modes
+    if (state.repeatMode == RepeatMode.one) {
+      // Repeat current song
+      debugPrint('🎵 SKIP_NEXT: Repeat mode ONE - restarting current song');
+      await seekTo(Duration.zero);
+      return;
+    }
+    
+    int nextIndex;
+    
+    if (state.currentIndex >= state.queue.length - 1) {
+      // We're at the last song
+      if (state.repeatMode == RepeatMode.all) {
+        // Go back to first song
+        nextIndex = 0;
+        debugPrint('🎵 SKIP_NEXT: Repeat mode ALL - going to first song');
+      } else {
+        // No repeat, stop playback
+        debugPrint('🎵 SKIP_NEXT: At last song with no repeat - stopping playback');
+        await pause();
+        return;
+      }
+    } else {
+      // Normal next song
+      nextIndex = state.currentIndex + 1;
+      debugPrint('🎵 SKIP_NEXT: Going to next song at index $nextIndex');
+    }
+    
     final nextSong = state.queue[nextIndex];
     
     state = state.copyWith(
       currentIndex: nextIndex,
     );
     
+    debugPrint('🎵 SKIP_NEXT: Playing "${nextSong.title}" at index $nextIndex');
     await playSong(nextSong);
   }
   
@@ -377,23 +418,47 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> skipPrevious() async {
     if (_isDisposed) return;
     
+    if (state.queue.isEmpty) {
+      debugPrint('🎵 SKIP_PREV: Queue is empty, cannot skip');
+      return;
+    }
+    
+    debugPrint('🎵 SKIP_PREV: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Position: ${state.currentPosition.inSeconds}s');
+    
     // If we're more than 3 seconds into the song, restart it instead
     if (state.currentPosition.inSeconds > 3) {
+      debugPrint('🎵 SKIP_PREV: More than 3s into song - restarting current song');
       await seekTo(Duration.zero);
       return;
     }
     
-    if (state.queue.isEmpty || state.currentIndex <= 0) {
-      return;
+    int prevIndex;
+    
+    if (state.currentIndex <= 0) {
+      // We're at the first song
+      if (state.repeatMode == RepeatMode.all) {
+        // Go to last song
+        prevIndex = state.queue.length - 1;
+        debugPrint('🎵 SKIP_PREV: At first song with repeat ALL - going to last song');
+      } else {
+        // No repeat, restart current song
+        debugPrint('🎵 SKIP_PREV: At first song with no repeat - restarting current song');
+        await seekTo(Duration.zero);
+        return;
+      }
+    } else {
+      // Normal previous song
+      prevIndex = state.currentIndex - 1;
+      debugPrint('🎵 SKIP_PREV: Going to previous song at index $prevIndex');
     }
     
-    final prevIndex = state.currentIndex - 1;
     final prevSong = state.queue[prevIndex];
     
     state = state.copyWith(
       currentIndex: prevIndex,
     );
     
+    debugPrint('🎵 SKIP_PREV: Playing "${prevSong.title}" at index $prevIndex');
     await playSong(prevSong);
   }
   
@@ -587,9 +652,8 @@ class PlayerController extends StateNotifier<PlayerState> {
   void skipToNext() {
     if (_isDisposed) return;
     
-    // Implement next song logic here
-    // For now, just pause the current song
-    pauseSong();
+    // Use the proper skipNext implementation
+    skipNext();
   }
   
   /// Add song to play history
@@ -616,14 +680,15 @@ class PlayerController extends StateNotifier<PlayerState> {
     
     debugPrint('🎵 Playing song WITHOUT playlist context: ${song.title}');
     
-    // Clear any existing playlist context first
+    // Clear any existing playlist context and reset shuffle mode
     state = state.copyWith(
       currentPlaylistId: null,
       queue: [song], // Set queue to just this song
       currentIndex: 0,
+      shuffleMode: false, // Reset shuffle when playing without playlist
     );
     
-    debugPrint('🎵 Cleared playlist context - currentPlaylistId: ${state.currentPlaylistId}');
+    debugPrint('🎵 Cleared playlist context - currentPlaylistId: ${state.currentPlaylistId}, shuffleMode: ${state.shuffleMode}');
     
     // Then play the song (this will now preserve the null playlist ID)
     await playSong(song);
@@ -635,11 +700,12 @@ class PlayerController extends StateNotifier<PlayerState> {
     
     debugPrint('🎵 Playing individual song: ${song.title}');
     
-    // First clear playlist context
+    // First clear playlist context and reset shuffle
     state = state.copyWith(
       currentPlaylistId: null,
       queue: [song],
       currentIndex: 0,
+      shuffleMode: false, // Reset shuffle when playing without playlist
     );
     
     // Then play the song
@@ -670,5 +736,28 @@ class PlayerController extends StateNotifier<PlayerState> {
         state = state.copyWith(isBuffering: false);
       }
     }
+  }
+  
+  /// Update the current queue and index (for shuffle functionality)
+  void updateQueue(List<Song> newQueue, int newIndex) {
+    if (_isDisposed) return;
+    
+    debugPrint('🔄 Updating queue with ${newQueue.length} songs, new index: $newIndex');
+    
+    // Validate new index
+    if (newIndex < 0 || newIndex >= newQueue.length) {
+      debugPrint('❌ Invalid new index: $newIndex for queue of length ${newQueue.length}');
+      return;
+    }
+    
+    final newCurrentSong = newQueue[newIndex];
+    
+    state = state.copyWith(
+      queue: newQueue,
+      currentIndex: newIndex,
+      currentSong: newCurrentSong,
+    );
+    
+    debugPrint('✅ Queue updated: current song "${newCurrentSong.title}" at index $newIndex');
   }
 }

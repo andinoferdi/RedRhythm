@@ -168,16 +168,19 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.shuffle,
-                          color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          ref.read(playerControllerProvider.notifier).toggleShuffle();
-                        },
-                      ),
+                      // Only show shuffle button if playing from a playlist
+                      playerState.currentPlaylistId != null
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.shuffle,
+                                color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
+                                size: 24,
+                              ),
+                              onPressed: () {
+                                ref.read(playerControllerProvider.notifier).toggleShuffle();
+                              },
+                            )
+                          : const SizedBox(width: 48), // Placeholder to maintain spacing
                       IconButton(
                         icon: const Icon(
                           Icons.skip_previous,

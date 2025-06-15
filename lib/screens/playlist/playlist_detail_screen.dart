@@ -43,6 +43,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   List<Song> _recommendedSongs = [];
   bool _isLoadingRecommended = false;
   final Set<String> _addingSongIds = {};
+  
+  // Note: Shuffle state is now managed by PlayerController
 
   @override
   void initState() {
@@ -265,7 +267,74 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   /// Play song (show in mini player, don't navigate)
   void _playSong(Song song, int index) {
     debugPrint('🎧 PLAYLIST_DETAIL: Playing song "${song.title}" from playlist "${_currentPlaylist.data['name']}" - using playQueueFromPlaylist');
-    ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, index, _currentPlaylist.id);
+    
+    final playerState = ref.read(playerControllerProvider);
+    List<Song> playQueue;
+    int startIndex;
+
+    if (playerState.shuffleMode) {
+      // Create shuffled queue with selected song at index 0
+      playQueue = List.from(_songs);
+      playQueue.shuffle();
+      
+      // Move selected song to first position
+      playQueue.removeWhere((s) => s.id == song.id);
+      playQueue.insert(0, song);
+      startIndex = 0;
+    } else {
+      // Use original order
+      playQueue = List.from(_songs);
+      startIndex = index;
+    }
+
+    ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(playQueue, startIndex, _currentPlaylist.id);
+  }
+
+  /// Toggle shuffle mode
+  void _toggleShuffle() {
+    final playerState = ref.read(playerControllerProvider);
+    
+    // Only allow shuffle toggle if playing from this playlist or no playlist context
+    if (playerState.currentPlaylistId == null || playerState.currentPlaylistId == _currentPlaylist.id) {
+      ref.read(playerControllerProvider.notifier).toggleShuffle();
+      
+      // If currently playing from this playlist, update the queue accordingly
+      if (playerState.currentPlaylistId == _currentPlaylist.id && playerState.currentSong != null) {
+        _updateShuffleForCurrentPlayback();
+      }
+    }
+  }
+
+  /// Update shuffle for current playback
+  void _updateShuffleForCurrentPlayback() {
+    final playerState = ref.read(playerControllerProvider);
+    final currentSong = playerState.currentSong;
+    if (currentSong == null) return;
+
+    // Find current song index in original list
+    final currentIndex = _songs.indexWhere((song) => song.id == currentSong.id);
+    if (currentIndex == -1) return;
+
+    List<Song> newQueue;
+    int newIndex;
+
+    if (playerState.shuffleMode) {
+      // Create shuffled queue with current song at index 0
+      newQueue = List.from(_songs);
+      newQueue.shuffle();
+      
+      // Move current song to first position
+      newQueue.removeWhere((song) => song.id == currentSong.id);
+      newQueue.insert(0, currentSong);
+      newIndex = 0;
+    } else {
+      // Restore original order
+      newQueue = List.from(_songs);
+      newIndex = currentIndex;
+    }
+
+    // Update player queue
+    ref.read(playerControllerProvider.notifier).updateQueue(newQueue, newIndex);
   }
 
   /// Play all songs in playlist starting from first
@@ -285,8 +354,23 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         ref.read(playerControllerProvider.notifier).resume();
       }
     } else {
-      // Start playing from first song with playlist context
-      ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(_songs, 0, _currentPlaylist.id);
+      // Prepare queue based on shuffle setting
+      List<Song> playQueue;
+      int startIndex;
+
+      if (playerState.shuffleMode) {
+        // Create shuffled queue
+        playQueue = List.from(_songs);
+        playQueue.shuffle();
+        startIndex = 0;
+      } else {
+        // Use original order
+        playQueue = List.from(_songs);
+        startIndex = 0;
+      }
+
+      // Start playing with prepared queue
+      ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(playQueue, startIndex, _currentPlaylist.id);
     }
   }
 
@@ -567,12 +651,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           ),
           const SizedBox(width: 16),
           IconButton(
-            onPressed: () {
-              // TODO: Implement shuffle functionality
-            },
-            icon: const Icon(Icons.shuffle, color: Colors.white),
+            onPressed: _toggleShuffle,
+            icon: Icon(
+              Icons.shuffle, 
+              color: playerState.shuffleMode ? Colors.red : Colors.white,
+            ),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.grey[800],
+              backgroundColor: playerState.shuffleMode ? Colors.red.withOpacity(0.2) : Colors.grey[800],
               padding: const EdgeInsets.all(12),
             ),
           ),
