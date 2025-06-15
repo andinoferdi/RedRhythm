@@ -39,6 +39,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
   File? _selectedImage;
   String? _currentImageUrl;
   bool _isPublic = false;
+  bool _isEditingDescription = false;
   
   // Original values for change detection
   String _originalName = '';
@@ -125,6 +126,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     // Check if description changed
     if (_descriptionController.text.trim() != _originalDescription) return true;
     
+    // Check if currently editing description (unsaved changes)
+    if (_isEditingDescription) return true;
+    
     // Check if public status changed
     if (_isPublic != _originalIsPublic) return true;
     
@@ -171,6 +175,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     if (_nameController.text.trim().isEmpty) {
       _showErrorMessage('Nama playlist tidak boleh kosong');
       return;
+    }
+
+    // Save description if currently editing
+    if (_isEditingDescription) {
+      _saveDescription();
     }
 
     setState(() {
@@ -360,17 +369,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                     offset: const Offset(0, -30),
                     child: Column(
                       children: [
-                        _buildDescriptionButton(),
-                        const SizedBox(height: 2),
-                        // Description text like Spotify
-                        Text(
-                          'Beri playlist kamu deskripsi yang menarik',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        _buildDescriptionSection(),
                       ],
                     ),
                   ),
@@ -585,9 +584,31 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
   }
 
+  Widget _buildDescriptionSection() {
+    return Column(
+      children: [
+        // Show button or current description
+        if (!_isEditingDescription && _descriptionController.text.isEmpty)
+          _buildDescriptionButton()
+        else if (!_isEditingDescription && _descriptionController.text.isNotEmpty)
+          _buildExistingDescription()
+        else
+          _buildDescriptionInput(),
+        
+        // Help text - only show when not editing or when field is empty
+        if (!_isEditingDescription)
+          Column(
+            children: [
+              const SizedBox(height: 2),
+            ],
+          ),
+      ],
+    );
+  }
+
   Widget _buildDescriptionButton() {
     return OutlinedButton(
-      onPressed: _showDescriptionDialog,
+      onPressed: _startEditingDescription,
       style: OutlinedButton.styleFrom(
         side: const BorderSide(color: Colors.white54),
         shape: RoundedRectangleBorder(
@@ -595,11 +616,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       ),
-      child: Text(
-        _descriptionController.text.isEmpty 
-          ? 'Tambahkan deskripsi' 
-          : 'Edit deskripsi',
-        style: const TextStyle(
+      child: const Text(
+        'Tambahkan deskripsi',
+        style: TextStyle(
           color: Colors.white,
           fontSize: 14,
         ),
@@ -607,33 +626,120 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
   }
 
-  void _showDescriptionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text(
-          'Deskripsi Playlist',
-          style: TextStyle(color: Colors.white),
+  Widget _buildExistingDescription() {
+    return GestureDetector(
+      onTap: _startEditingDescription,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.white24),
+          borderRadius: BorderRadius.circular(8),
         ),
-        content: TextField(
-          controller: _descriptionController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Tambahkan deskripsi playlist...',
-            hintStyle: TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _descriptionController.text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ketuk untuk mengedit',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDescriptionInput() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          TextField(
+            controller: _descriptionController,
+            autofocus: true,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Tambahkan deskripsi playlist...',
+              hintStyle: const TextStyle(color: Colors.white54),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.white),
+              ),
+              filled: true,
+              fillColor: Colors.transparent,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+            maxLines: 3,
+            cursorColor: Colors.white,
           ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Simpan'),
+          const SizedBox(height: 12),
+          // Action buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _cancelEditingDescription,
+                child: const Text(
+                  'Batal',
+                  style: TextStyle(color: Colors.white54),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _saveDescription,
+                child: const Text(
+                  'Simpan',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  void _startEditingDescription() {
+    setState(() {
+      _isEditingDescription = true;
+    });
+  }
+
+  void _saveDescription() {
+    setState(() {
+      _isEditingDescription = false;
+    });
+  }
+
+  void _cancelEditingDescription() {
+    setState(() {
+      // Reset to original description
+      _descriptionController.text = _originalDescription;
+      _isEditingDescription = false;
+    });
   }
 
   Widget _buildSongsSection() {
@@ -727,7 +833,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             child: SongItemWidget(
               song: song,
               subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
-              onTap: null, // Disabled tap functionality in edit mode
+              isDisabled: true, // Completely disable tap functionality in edit mode
             ),
           ),
           // Drag handle with proper listener

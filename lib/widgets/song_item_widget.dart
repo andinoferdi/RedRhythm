@@ -12,6 +12,7 @@ class SongItemWidget extends ConsumerWidget {
   final EdgeInsets? contentPadding;
   final bool? isCurrentSong;
   final bool? isPlaying;
+  final bool isDisabled; // New parameter to explicitly disable tap
 
   const SongItemWidget({
     super.key,
@@ -22,14 +23,20 @@ class SongItemWidget extends ConsumerWidget {
     this.contentPadding,
     this.isCurrentSong,
     this.isPlaying,
+    this.isDisabled = false, // Default to enabled
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playerState = ref.watch(playerControllerProvider);
     
-    final actualIsCurrentSong = isCurrentSong ?? (playerState.currentSong?.id == song.id);
-    final actualIsPlaying = isPlaying ?? (actualIsCurrentSong && playerState.isPlaying);
+    // If disabled, never show as current song or playing
+    final actualIsCurrentSong = isDisabled 
+        ? false 
+        : (isCurrentSong ?? (playerState.currentSong?.id == song.id));
+    final actualIsPlaying = isDisabled 
+        ? false 
+        : (isPlaying ?? (actualIsCurrentSong && playerState.isPlaying));
 
     return ListTile(
       contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -76,10 +83,12 @@ class SongItemWidget extends ConsumerWidget {
               isAnimating: true,
             )
           : null),
-      onTap: onTap ?? () {
-        debugPrint('🎤 SONG_ITEM: Playing song "${song.title}" using playSongWithoutPlaylist (default behavior)');
-        ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
-      },
+      onTap: isDisabled 
+          ? null // Completely disable tap if isDisabled is true
+          : (onTap ?? () {
+              debugPrint('🎤 SONG_ITEM: Playing song "${song.title}" using playSongWithoutPlaylist (default behavior)');
+              ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
+            }),
     );
   }
 } 
