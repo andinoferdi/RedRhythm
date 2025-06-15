@@ -68,11 +68,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       final repository = SongPlaylistRepository(pbService);
       final songs = await repository.getPlaylistSongs(_currentPlaylist.id);
 
-      debugPrint('Fetched ${songs.length} playlist songs');
-      for (final song in songs.take(3)) {
-        debugPrint('Playlist Song: ${song.title} by ${song.artist}, Album Art: ${song.albumArtUrl}');
-      }
-
       setState(() {
         _songs = songs;
         _isLoading = false;
@@ -136,11 +131,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       
       // Take first 10 songs as recommendations
       final recommended = filteredSongs.take(10).toList();
-
-      debugPrint('Fetched ${recommended.length} recommended songs');
-      for (final song in recommended.take(3)) {
-        debugPrint('Song: ${song.title} by ${song.artist}, Album Art: ${song.albumArtUrl}');
-      }
 
       setState(() {
         _recommendedSongs = recommended;
@@ -266,8 +256,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
   /// Play song (show in mini player, don't navigate)
   void _playSong(Song song) {
-    debugPrint('🎧 PLAYLIST_DETAIL: Playing song "${song.title}" from playlist "${_currentPlaylist.data['name']}" - using playQueueFromPlaylist');
-    
     final playerState = ref.read(playerControllerProvider);
     List<Song> playQueue;
     int startIndex;
@@ -380,7 +368,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     
     // Watch for playlist updates and refresh
     ref.listen(playlistUpdateNotifierProvider, (previous, next) {
-      debugPrint('Playlist updated, refreshing playlist detail screen');
       _fetchPlaylistSongs();
       _fetchRecommendedSongs();
     });
@@ -654,7 +641,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                   color: playerState.shuffleMode ? Colors.red : Colors.white,
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: playerState.shuffleMode ? Colors.red.withOpacity(0.2) : Colors.grey[800],
+                  backgroundColor: playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
                   padding: const EdgeInsets.all(12),
                 ),
               ),

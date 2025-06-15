@@ -25,16 +25,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    debugPrint('SplashScreen: initState');
     
     // Quick check if user is already authenticated (from previous session)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authState = ref.read(authControllerProvider);
-      debugPrint('SplashScreen: Initial auth state - isAuthenticated: ${authState.isAuthenticated}, isLoading: ${authState.isLoading}');
       
       // If user is clearly authenticated and not loading, skip splash
       if (authState.isAuthenticated && !authState.isLoading) {
-        debugPrint('SplashScreen: User already authenticated, navigating to home');
         _navigateToHome();
         return;
       }
@@ -43,7 +40,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Minimum display time (1 second for better UX)
     _minDisplayTimer = Timer(const Duration(seconds: 1), () {
       if (mounted) {
-        debugPrint('SplashScreen: Minimum time elapsed');
         setState(() {
           _minTimeElapsed = true;
         });
@@ -54,7 +50,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Maximum wait time (5 seconds - force navigation if taking too long)
     _maxWaitTimer = Timer(const Duration(seconds: 5), () {
       if (mounted && !_hasNavigated) {
-        debugPrint('SplashScreen: Maximum wait time exceeded, forcing navigation');
         final authState = ref.read(authControllerProvider);
         if (authState.isAuthenticated) {
           _navigateToHome();
@@ -67,14 +62,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   
   void _navigateToHome() {
     if (_hasNavigated) return;
-    debugPrint('SplashScreen: Navigating to home');
     _hasNavigated = true;
     context.router.replace(const HomeRoute());
   }
   
   void _navigateToOnboarding() {
     if (_hasNavigated) return;
-    debugPrint('SplashScreen: Navigating to onboarding');
     _hasNavigated = true;
     context.router.replace(const OnboardingRoute());
   }
@@ -85,11 +78,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }
     
     final authState = ref.read(authControllerProvider);
-    debugPrint('SplashScreen: Checking navigation - isAuthenticated: ${authState.isAuthenticated}, isLoading: ${authState.isLoading}');
     
     // Don't navigate while loading
     if (authState.isLoading) {
-      debugPrint('SplashScreen: Still loading, waiting...');
       return;
     }
     
@@ -103,7 +94,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   
   @override
   void dispose() {
-    debugPrint('SplashScreen: dispose');
     _minDisplayTimer?.cancel();
     _maxWaitTimer?.cancel();
     super.dispose();
@@ -115,7 +105,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     
     // Listen for auth state changes
     ref.listen<AuthState>(authControllerProvider, (previous, state) {
-      debugPrint('SplashScreen: Auth state changed - was: ${previous?.isAuthenticated}/${previous?.isLoading}, now: ${state.isAuthenticated}/${state.isLoading}');
       _checkAndNavigate();
     });
     

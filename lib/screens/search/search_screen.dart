@@ -128,13 +128,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void _playSong(Song song, int index) {
     // Add song to recent searched songs when played from search results
     _addToRecentSearchedSongs(song);
-    debugPrint('🔍 SEARCH: Playing song "${song.title}" from search results - using playQueue (no playlist context)');
     // Play without playlist context - playQueue sets currentPlaylistId to null
     ref.read(playerControllerProvider.notifier).playQueue(_searchResults, index);
   }
 
   void _playSongFromRecent(Song song) {
-    debugPrint('🔍 SEARCH: Playing song "${song.title}" from recent - using playSongByIdWithoutPlaylist');
     // Just play the song without moving it to top of recent list
     ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
   }
