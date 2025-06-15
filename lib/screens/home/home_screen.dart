@@ -47,28 +47,23 @@ Future<String> determinePocketBaseUrl() async {
   ];
   
   for (final url in possibleUrls) {
-    debugPrint('Mencoba URL: $url');
     try {
-      debugPrint('Memeriksa koneksi ke $url/api/health');
       final response = await http.get(Uri.parse('$url/api/health')).timeout(
         const Duration(seconds: 2), // Kurangi timeout untuk pengujian lebih cepat
         onTimeout: () {
-          debugPrint('Timeout saat menghubungi $url');
           return http.Response('Timeout', 408);
         },
       );
       
       if (response.statusCode < 400) {
-        debugPrint('Berhasil terhubung ke $url');
         return url;
       }
     } catch (e) {
-      debugPrint('Error saat menghubungi $url: $e');
+      // Silently handle connection errors and try next URL
     }
   }
   
   // Default ke IP lokal jika semua gagal
-  debugPrint('Semua URL gagal, menggunakan IP lokal');
   return 'http://$localComputerIP:8090';
 }
 
@@ -685,7 +680,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       subtitle: 'Song • ${history.artistName ?? 'Unknown Artist'}',
                       contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
                       onTap: () {
-                        debugPrint('🏠 HOME: Playing song "${history.songTitle}" from recently played - using playSongByIdWithoutPlaylist');
                         // Use playSongById to load complete song data without playlist context
                         ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(history.songId);
                       },

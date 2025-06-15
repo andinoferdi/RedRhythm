@@ -266,11 +266,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
   }
   
   Widget _buildLyricsSection(Song currentSong) {
-    // Debug print
-    debugPrint('Music Player - Song: ${currentSong.title}, Lyrics: ${currentSong.lyrics?.isNotEmpty == true ? "HAS LYRICS (${currentSong.lyrics!.length} chars)" : "NO LYRICS"}');
-    if (currentSong.lyrics?.isNotEmpty == true) {
-      debugPrint('Lyrics content preview: ${currentSong.lyrics!.substring(0, currentSong.lyrics!.length > 100 ? 100 : currentSong.lyrics!.length)}...');
-    }
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
