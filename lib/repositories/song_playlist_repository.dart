@@ -20,7 +20,7 @@ class SongPlaylistRepository {
       final songPlaylistResult = await _pb.collection('song_playlists').getList(
         filter: 'playlist_id = "$playlistId"',
         expand: 'song_id,song_id.artist_id,song_id.album_id',
-        sort: 'created', // Get all records first
+        sort: 'order', // Sort by order field properly
         perPage: 500, // Make sure we get all songs
       );
       
@@ -33,8 +33,8 @@ class SongPlaylistRepository {
           final song = Song.fromRecord(songRecord);
           final order = record.data['order'] as int?;
           
-          // Use order if available, otherwise use a high number + index to maintain original order
-          final finalOrder = order ?? (1000 + songsWithOrder.length);
+          // Use order if available, otherwise use created timestamp as fallback
+          final finalOrder = order ?? DateTime.parse(record.created).millisecondsSinceEpoch;
           songsWithOrder.add(MapEntry(song, finalOrder));
         }
       }
@@ -171,13 +171,32 @@ class SongPlaylistRepository {
       );
       
       if (existingRecords.items.isEmpty) {
-        // Create new song_playlist relationship
+        // Get the highest order value in this playlist to determine the next position
+        int nextOrder = 1; // Default for empty playlist
+        
+        try {
+          final playlistSongs = await _pb.collection('song_playlists').getList(
+            filter: 'playlist_id = "$playlistId"',
+            sort: '-order', // Sort by order descending to get highest first
+            perPage: 1, // Only need the first (highest) record
+          );
+          
+          if (playlistSongs.items.isNotEmpty) {
+            final highestOrder = playlistSongs.items.first.data['order'] as int?;
+            nextOrder = (highestOrder ?? 0) + 1;
+          }
+        } catch (e) {
+          debugPrint('🎵 REPOSITORY: Warning - Could not determine next order, using default: $e');
+          // Continue with nextOrder = 1 as fallback
+        }
+        
+        // Create new song_playlist relationship with proper order
         await _pb.collection('song_playlists').create(body: {
           'playlist_id': playlistId,
           'song_id': songId,
-          'order': DateTime.now().millisecondsSinceEpoch, // Use timestamp as order
+          'order': nextOrder,
         });
-        debugPrint('🎵 REPOSITORY: Successfully added song to playlist via song_playlists');
+        debugPrint('🎵 REPOSITORY: Successfully added song to playlist at position $nextOrder');
       } else {
         debugPrint('🎵 REPOSITORY: Song already exists in playlist');
       }
@@ -187,6 +206,60 @@ class SongPlaylistRepository {
     }
   }
   
+  /// Add multiple songs to playlist with proper ordering
+  Future<void> addMultipleSongsToPlaylist(String playlistId, List<String> songIds) async {
+    if (songIds.isEmpty) return;
+    
+    try {
+      debugPrint('🎵 REPOSITORY: Adding ${songIds.length} songs to playlist $playlistId');
+      
+      // Get the highest order value in this playlist
+      int nextOrder = 1; // Default for empty playlist
+      
+      try {
+        final playlistSongs = await _pb.collection('song_playlists').getList(
+          filter: 'playlist_id = "$playlistId"',
+          sort: '-order', // Sort by order descending to get highest first
+          perPage: 1, // Only need the first (highest) record
+        );
+        
+        if (playlistSongs.items.isNotEmpty) {
+          final highestOrder = playlistSongs.items.first.data['order'] as int?;
+          nextOrder = (highestOrder ?? 0) + 1;
+        }
+      } catch (e) {
+        debugPrint('🎵 REPOSITORY: Warning - Could not determine next order, using default: $e');
+        // Continue with nextOrder = 1 as fallback
+      }
+      
+      // Add each song with incremental order
+      for (int i = 0; i < songIds.length; i++) {
+        final songId = songIds[i];
+        
+        // Check if relationship already exists
+        final existingRecords = await _pb.collection('song_playlists').getList(
+          filter: 'playlist_id = "$playlistId" && song_id = "$songId"',
+        );
+        
+        if (existingRecords.items.isEmpty) {
+          await _pb.collection('song_playlists').create(body: {
+            'playlist_id': playlistId,
+            'song_id': songId,
+            'order': nextOrder + i,
+          });
+          debugPrint('🎵 REPOSITORY: Added song $songId at position ${nextOrder + i}');
+        } else {
+          debugPrint('🎵 REPOSITORY: Song $songId already exists in playlist, skipping');
+        }
+      }
+      
+      debugPrint('🎵 REPOSITORY: Successfully added multiple songs to playlist');
+    } catch (e) {
+      debugPrint('🎵 REPOSITORY: Error adding multiple songs to playlist: $e');
+      throw Exception('Failed to add multiple songs to playlist: $e');
+    }
+  }
+
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {

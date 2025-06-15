@@ -156,8 +156,73 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     
     // If changes were made, refresh the playlist
     if (result == true) {
-      _refreshPlaylist();
+      // Force complete refresh of all components
+      await _forceCompleteRefresh();
       widget.onPlaylistUpdated?.call();
+    }
+  }
+
+  /// Force complete refresh of all playlist components
+  Future<void> _forceCompleteRefresh() async {
+    debugPrint('🔄 PLAYLIST_DETAIL: Starting force complete refresh');
+    
+    // Clear all caches to force complete reload
+    PlaylistImageWidget.clearCache(_currentPlaylist.id);
+    
+    // Clear mini player cache if it exists (import required at top of file)
+    // This ensures mini player also reflects updated playlist image
+    try {
+      final miniPlayerCache = ref.read(playlistUpdateNotifierProvider.notifier);
+      miniPlayerCache.notifyPlaylistUpdated();
+    } catch (e) {
+      debugPrint('Note: Mini player cache clear failed: $e');
+    }
+    
+    // Set loading states
+    setState(() {
+      _isLoading = true;
+      _isLoadingRecommended = true;
+      _isLoadingCreator = true;
+    });
+
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      // First refresh the playlist data
+      final updatedPlaylist = await pbService.pb
+          .collection('playlists')
+          .getOne(_currentPlaylist.id);
+      
+      setState(() {
+        _currentPlaylist = updatedPlaylist;
+      });
+      
+      // Then refresh all related data simultaneously
+      await Future.wait([
+        _fetchPlaylistSongs(),
+        _fetchRecommendedSongs(),
+        _fetchCreatorInfo(),
+      ]);
+      
+      // Force UI rebuild by updating state with a short delay for better UX
+      setState(() {
+        // This will trigger a rebuild to ensure all widgets reflect new data
+      });
+      
+      // Small delay to ensure all widgets are properly rebuilt
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      debugPrint('✅ PLAYLIST_DETAIL: Force complete refresh completed successfully');
+    } catch (e) {
+      debugPrint('❌ PLAYLIST_DETAIL: Error in force complete refresh: $e');
+      
+      // Reset loading states even on error
+      setState(() {
+        _isLoading = false;
+        _isLoadingRecommended = false;
+        _isLoadingCreator = false;
+      });
     }
   }
 
@@ -174,9 +239,16 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _currentPlaylist = updatedPlaylist;
       });
       
-      // Also refresh the songs list to reflect any changes
-      await _fetchPlaylistSongs();
+      // Comprehensive refresh of all related data
+      await Future.wait([
+        _fetchPlaylistSongs(),
+        _fetchRecommendedSongs(),
+        _fetchCreatorInfo(),
+      ]);
+      
+      debugPrint('🔄 PLAYLIST_DETAIL: Complete playlist refresh completed');
     } catch (e) {
+      debugPrint('❌ PLAYLIST_DETAIL: Error refreshing playlist: $e');
       // Handle error silently or show a message
     }
   }
@@ -189,10 +261,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       ),
     );
 
-    // If songs were added successfully, refresh the playlist
+    // If songs were added successfully, refresh all components
     if (result == true) {
-      _fetchPlaylistSongs();
-      _fetchRecommendedSongs(); // Refresh recommendations too
+      debugPrint('🔄 PLAYLIST_DETAIL: Songs added, performing complete refresh');
+      await _forceCompleteRefresh();
     }
   }
 
@@ -212,8 +284,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       );
 
       // Refresh playlist songs and recommendations
-      await _fetchPlaylistSongs();
-      await _fetchRecommendedSongs();
+      await Future.wait([
+        _fetchPlaylistSongs(),
+        _fetchRecommendedSongs(),
+      ]);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -367,10 +441,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     
-    // Watch for playlist updates and refresh
+    // Watch for playlist updates and refresh comprehensively
     ref.listen(playlistUpdateNotifierProvider, (previous, next) {
-      _fetchPlaylistSongs();
-      _fetchRecommendedSongs();
+      debugPrint('🔔 PLAYLIST_DETAIL: Playlist update notification received');
+      
+      // Use force complete refresh to ensure all components are updated
+      _forceCompleteRefresh();
     });
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -442,6 +518,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               height: 200,
               margin: const EdgeInsets.only(top: 60),
               child: PlaylistImageWidget(
+                key: ValueKey('playlist_image_${_currentPlaylist.id}_${_currentPlaylist.updated}'),
                 playlist: _currentPlaylist,
                 size: 200,
                 borderRadius: 4,

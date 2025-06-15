@@ -98,34 +98,18 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       final pbService = PocketBaseService();
       final songPlaylistRepository = SongPlaylistRepository(pbService);
 
-      int successCount = 0;
-      int failCount = 0;
-
-      for (final songId in _selectedSongIds) {
-        try {
-          await songPlaylistRepository.addSongToPlaylist(
-            widget.playlist.id,
-            songId,
-          );
-          successCount++;
-        } catch (e) {
-          failCount++;
-          debugPrint('Failed to add song $songId: $e');
-        }
-      }
+      // Use the new batch method for better performance and proper ordering
+      final songIdsList = _selectedSongIds.toList();
+      await songPlaylistRepository.addMultipleSongsToPlaylist(
+        widget.playlist.id,
+        songIdsList,
+      );
 
       if (mounted) {
-        String message;
-        if (failCount == 0) {
-          message = '$successCount lagu berhasil ditambahkan';
-        } else {
-          message = '$successCount lagu ditambahkan, $failCount gagal';
-        }
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              message,
+              '${songIdsList.length} lagu berhasil ditambahkan',
               style: const TextStyle(
                 color: Colors.black,
                 fontWeight: FontWeight.w500,
