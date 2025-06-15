@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
-import '../../repositories/user_repository.dart';
-import '../../services/pocketbase_service.dart';
+import '../repositories/user_repository.dart';
+import '../services/pocketbase_service.dart';
 import '../states/auth_state.dart';
 import 'player_controller.dart';
 
@@ -16,53 +16,42 @@ class AuthController extends StateNotifier<AuthState> {
   final UserRepository _userRepository;
   final PocketBaseService _pocketBaseService = GetIt.I<PocketBaseService>();
   final Ref _ref;
-  
+
   AuthController(this._userRepository, this._ref) : super(AuthState.initial()) {
     _initializeAuth();
   }
-  
+
   /// Initialize authentication and check for stored credentials
   Future<void> _initializeAuth() async {
     try {
-      debugPrint('AuthController: Starting auth initialization...');
       state = AuthState.loading();
       
       // First ensure PocketBase is initialized
       await _pocketBaseService.initialize();
-      debugPrint('AuthController: PocketBase initialized with URL: ${_pocketBaseService.pb.baseUrl}');
-      
+
       // Check remember me preference
       final rememberMe = await _pocketBaseService.getRememberMe();
-      debugPrint('AuthController: Remember me preference: $rememberMe');
       
-            if (rememberMe && _pocketBaseService.isAuthenticated) {
-        debugPrint('AuthController: Found stored auth, verifying...');
+      if (rememberMe && _pocketBaseService.isAuthenticated) {
         // Try to get current user from stored auth
         final user = _pocketBaseService.currentUser;
+        
         if (user != null) {
-          debugPrint('AuthController: User found in storage: ${user.id}');
-          
           // Try auth refresh with retry logic
           try {
-            debugPrint('AuthController: Attempting auth refresh...');
-            
             // First try normal refresh
             await _userRepository.refreshAuth();
             final freshUser = _userRepository.currentUser;
             if (freshUser != null) {
-              debugPrint('AuthController: Auth token valid, user authenticated');
               state = AuthState.authenticated(freshUser);
               return;
             }
           } catch (e) {
-            debugPrint('AuthController: Initial auth refresh failed: $e');
-            
             // Try one more time with PocketBase service retry
             final retrySuccess = await _pocketBaseService.retryAuthRefresh();
             if (retrySuccess) {
               final freshUser = _userRepository.currentUser;
               if (freshUser != null) {
-                debugPrint('AuthController: Auth refresh retry successful, user authenticated');
                 state = AuthState.authenticated(freshUser);
                 return;
               }
@@ -72,12 +61,10 @@ class AuthController extends StateNotifier<AuthState> {
             if (e.toString().contains('Connection') || 
                 e.toString().contains('SocketException') ||
                 e.toString().contains('NetworkException')) {
-              debugPrint('AuthController: Network error detected, keeping stored auth for later retry');
               // Don't clear auth on network errors, just set unauthenticated state
               state = AuthState.unauthenticated();
               return;
             } else {
-              debugPrint('AuthController: Auth token expired/invalid, clearing stored auth');
               // Token might be expired, clear stored auth
               await _pocketBaseService.logout();
               await _pocketBaseService.setRememberMe(false);
@@ -85,41 +72,34 @@ class AuthController extends StateNotifier<AuthState> {
           }
         }
       } else if (rememberMe) {
-        debugPrint('AuthController: Remember me enabled but no stored auth found');
+        // Remember me enabled but no stored auth found - just continue to unauthenticated
       } else {
-        debugPrint('AuthController: Remember me disabled, clearing any stored auth');
+        // Remember me disabled, clear any stored auth
         await _pocketBaseService.logout();
       }
       
       // If we reach here, user is not authenticated
-      debugPrint('AuthController: User not authenticated, setting unauthenticated state');
-      
       // Stop audio player when not authenticated
       try {
         final playerController = _ref.read(playerControllerProvider.notifier);
         await playerController.stopAndReset();
-        debugPrint('🎵 AuthController: Audio player stopped (not authenticated)');
       } catch (e) {
-        debugPrint('❌ AuthController: Error stopping audio player (not authenticated): $e');
+        debugPrint('Error stopping audio player (not authenticated): $e');
       }
       
       state = AuthState.unauthenticated();
     } catch (e) {
-      debugPrint('AuthController: Error during auth initialization: $e');
-      
-      // Check if it's a network error
       if (e.toString().contains('Connection') || 
           e.toString().contains('SocketException') ||
           e.toString().contains('NetworkException')) {
-        debugPrint('AuthController: Network error during initialization, setting unauthenticated');
+        // Network error during initialization - set as unauthenticated for now
         
         // Stop audio player on network error
         try {
           final playerController = _ref.read(playerControllerProvider.notifier);
           await playerController.stopAndReset();
-          debugPrint('🎵 AuthController: Audio player stopped (network error)');
         } catch (playerError) {
-          debugPrint('❌ AuthController: Error stopping audio player (network error): $playerError');
+          debugPrint('Error stopping audio player (network error): $playerError');
         }
         
         state = AuthState.unauthenticated();
@@ -128,15 +108,12 @@ class AuthController extends StateNotifier<AuthState> {
         // Fallback to unauthenticated state after showing error
         Future.delayed(const Duration(seconds: 3), () {
           if (mounted) {
-            debugPrint('AuthController: Fallback to unauthenticated after error');
-            
             // Stop audio player on fallback
             try {
               final playerController = _ref.read(playerControllerProvider.notifier);
               playerController.stopAndReset();
-              debugPrint('🎵 AuthController: Audio player stopped (fallback)');
             } catch (playerError) {
-              debugPrint('❌ AuthController: Error stopping audio player (fallback): $playerError');
+              debugPrint('Error stopping audio player (fallback): $playerError');
             }
             
             state = AuthState.unauthenticated();
@@ -145,14 +122,12 @@ class AuthController extends StateNotifier<AuthState> {
       }
     }
   }
-  
-
 
   /// Login with email and password
   Future<void> login(String email, String password, [bool rememberMe = false]) async {
     try {
       state = AuthState.loading();
-      
+
       // Set remember me preference before login
       await _pocketBaseService.setRememberMe(rememberMe);
       
@@ -181,33 +156,29 @@ class AuthController extends StateNotifier<AuthState> {
   /// Logout the current user
   Future<void> logout() async {
     try {
-      debugPrint('🚪 AuthController: Starting logout process');
-      
       // Stop audio player and reset state
       try {
         final playerController = _ref.read(playerControllerProvider.notifier);
         await playerController.stopAndReset();
-        debugPrint('🎵 AuthController: Audio player stopped and reset');
       } catch (e) {
-        debugPrint('❌ AuthController: Error stopping audio player: $e');
+        debugPrint('Error stopping audio player: $e');
       }
-      
+
       // Perform logout operations
       await _userRepository.logout();
       await _pocketBaseService.setRememberMe(false);
-      
-      debugPrint('✅ AuthController: Logout completed successfully');
+
       state = AuthState.unauthenticated();
     } catch (e) {
-      debugPrint('❌ AuthController: Error during logout: $e');
+      debugPrint('Error during logout: $e');
       
-             // Even if logout fails, clear local state and stop player
-       try {
-         final playerController = _ref.read(playerControllerProvider.notifier);
-         await playerController.stopAndReset();
-       } catch (playerError) {
-         debugPrint('❌ AuthController: Error stopping audio player during fallback: $playerError');
-       }
+      // Even if logout fails, clear local state and stop player
+      try {
+        final playerController = _ref.read(playerControllerProvider.notifier);
+        await playerController.stopAndReset();
+      } catch (playerError) {
+        debugPrint('Error stopping audio player during fallback: $playerError');
+      }
       
       state = AuthState.unauthenticated();
     }
@@ -230,57 +201,48 @@ class AuthController extends StateNotifier<AuthState> {
     } catch (e) {
       // If refresh fails, logout
       if (e.toString().contains('401') || e.toString().contains('auth')) {
-        debugPrint('AuthController: Auth refresh failed, performing logout');
         await logout();
       }
     }
   }
-  
+
   /// Force re-initialization of auth (useful for app resume)
   Future<void> reinitializeAuth() async {
-    debugPrint('Reinitializing auth...');
-    
     // Only reinitialize if we're not currently loading
     if (state.isLoading) {
-      debugPrint('Auth already loading, skipping reinitialize');
       return;
     }
     
     // Check remember me preference first
     final rememberMe = await _pocketBaseService.getRememberMe();
-    debugPrint('Remember me preference: $rememberMe');
     
     if (!rememberMe) {
       // If remember me is false, ensure we're not authenticated
       if (state.isAuthenticated) {
-        debugPrint('Remember me is false but user is authenticated, logging out');
         await logout();
       } else {
         // Even if not authenticated, stop any playing audio
         try {
           final playerController = _ref.read(playerControllerProvider.notifier);
           await playerController.stopAndReset();
-          debugPrint('🎵 AuthController: Audio player stopped (remember me disabled)');
         } catch (e) {
-          debugPrint('❌ AuthController: Error stopping audio player (remember me disabled): $e');
+          debugPrint('Error stopping audio player (remember me disabled): $e');
         }
       }
       return;
     }
-    
+
     // If remember me is true, check if we need to restore auth
     if (!state.isAuthenticated && _pocketBaseService.isAuthenticated) {
-      debugPrint('Restoring auth from stored credentials');
       await _initializeAuth();
     } else if (state.isAuthenticated) {
       // If already authenticated, just verify the token is still valid
       try {
         await _userRepository.refreshAuth();
-        debugPrint('Auth token refreshed successfully');
       } catch (e) {
-        debugPrint('Auth token refresh failed, re-initializing');
         await _initializeAuth();
       }
     }
   }
 }
+

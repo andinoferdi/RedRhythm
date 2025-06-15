@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_it/get_it.dart';
-import '../../repositories/genre_repository.dart';
-import '../../models/genre_model.dart';
+import '../repositories/genre_repository.dart';
+import '../models/genre_model.dart';
+import '../services/pocketbase_service.dart';
 
-/// Genre state class without freezed
+/// Genre state management
 class GenreState {
   final List<GenreModel> genres;
   final bool isLoading;
@@ -36,7 +36,7 @@ class GenreState {
   factory GenreState.initial() => const GenreState();
 }
 
-/// Genre controller notifier
+/// Genre controller
 class GenreController extends StateNotifier<GenreState> {
   final GenreRepository _genreRepository;
 
@@ -44,6 +44,7 @@ class GenreController extends StateNotifier<GenreState> {
 
   /// Load all genres
   Future<void> loadGenres() async {
+    // Skip loading if already loaded and no errors
     if (state.genres.isNotEmpty && state.error == null) {
       return;
     }
@@ -65,9 +66,43 @@ class GenreController extends StateNotifier<GenreState> {
       );
     }
   }
+
+  /// Refresh genres (force reload)
+  Future<void> refreshGenres() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final genres = await _genreRepository.getGenres();
+      
+      state = state.copyWith(
+        genres: genres,
+        isLoading: false,
+        hasLoaded: true,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  /// Clear error state
+  void clearError() {
+    if (state.error != null) {
+      state = state.copyWith(error: null);
+    }
+  }
 }
+
+/// Provider for genre repository
+final genreRepositoryProvider = Provider<GenreRepository>((ref) {
+  final pbService = PocketBaseService();
+  return GenreRepository(pbService);
+});
 
 /// Provider for genre controller
 final genreControllerProvider = StateNotifierProvider<GenreController, GenreState>((ref) {
-  return GenreController(GetIt.I<GenreRepository>());
+  final repository = ref.watch(genreRepositoryProvider);
+  return GenreController(repository);
 });

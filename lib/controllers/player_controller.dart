@@ -50,8 +50,6 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
-      debugPrint('🔄 Recreating audio player...');
-      
       // Cancel position timer
       _positionTimer?.cancel();
       
@@ -67,9 +65,8 @@ class PlayerController extends StateNotifier<PlayerState> {
       // Reinitialize listeners
       _initAudioPlayer();
       
-      debugPrint('✅ Audio player recreated successfully');
     } catch (e) {
-      debugPrint('❌ Error recreating audio player: $e');
+      debugPrint('Error recreating audio player: $e');
       rethrow;
     }
   }
@@ -151,8 +148,6 @@ class PlayerController extends StateNotifier<PlayerState> {
   Song _updateSongWithRealDuration(Song song, Duration realDuration) {
     // Only update if the real duration is significantly different or if duration is 0
     if ((song.duration - realDuration).inSeconds.abs() > 5 || song.durationInSeconds == 0) {
-      debugPrint('Memperbarui durasi lagu dari ${song.durationInSeconds}s menjadi ${realDuration.inSeconds}s');
-      
       // Update the song duration in database if it's 0 or significantly different
       _updateDurationInDatabase(song.id, realDuration.inSeconds);
       
@@ -168,9 +163,8 @@ class PlayerController extends StateNotifier<PlayerState> {
       await pbService.pb.collection('songs').update(songId, body: {
         'duration': durationInSeconds,
       });
-      debugPrint('✅ Song duration updated in database: $songId -> ${durationInSeconds}s');
     } catch (e) {
-      debugPrint('❌ Error updating song duration in database: $e');
+      debugPrint('Error updating song duration in database: $e');
     }
   }
   
@@ -178,15 +172,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> _handleSongCompletion() async {
     if (_isDisposed) return;
     
-    debugPrint('🎵 SONG_COMPLETE: Song completed - Repeat mode: ${state.repeatMode}, Current index: ${state.currentIndex}, Queue length: ${state.queue.length}');
-    
     switch (state.repeatMode) {
       case RepeatMode.off:
         if (state.currentIndex < state.queue.length - 1) {
-          debugPrint('🎵 SONG_COMPLETE: Auto-playing next song');
           await skipNext();
         } else {
-          debugPrint('🎵 SONG_COMPLETE: Last song reached, stopping playback');
           state = state.copyWith(
             isPlaying: false, 
             currentPosition: state.currentSong?.duration ?? Duration.zero
@@ -195,32 +185,25 @@ class PlayerController extends StateNotifier<PlayerState> {
         break;
       case RepeatMode.all:
         if (state.currentIndex < state.queue.length - 1) {
-          debugPrint('🎵 SONG_COMPLETE: Auto-playing next song (repeat all)');
           await skipNext();
         } else if (state.queue.isNotEmpty) {
-          debugPrint('🎵 SONG_COMPLETE: Looping back to first song (repeat all)');
-          // Use skipNext which will handle the loop logic
-          await skipNext();
+          // Loop back to first song
+          state = state.copyWith(currentIndex: 0);
+          await playSong(state.queue[0]);
         }
         break;
       case RepeatMode.one:
-        debugPrint('🎵 SONG_COMPLETE: Replaying current song (repeat one)');
-        // Restart current song
+        // Replay current song
         await seekTo(Duration.zero);
-        if (!state.isPlaying) {
-          await resume();
-        }
         break;
     }
   }
   
-  /// Play song by ID (load full data from PocketBase)
-  Future<void> playSongById(String songId) async {
-    if (_isDisposed) return;
+  /// Load song by ID and return Song object
+  Future<Song> loadSongById(String songId) async {
+    if (_isDisposed) throw Exception('Player is disposed');
     
     try {
-      debugPrint('Loading song by ID: $songId');
-      
       final pbService = PocketBaseService();
       final record = await pbService.pb.collection('songs').getOne(
         songId,
@@ -228,190 +211,133 @@ class PlayerController extends StateNotifier<PlayerState> {
       );
       
       final song = Song.fromRecord(record);
-      debugPrint('Loaded song from PocketBase: ${song.title}');
-      
-      await playSong(song);
+      return song;
     } catch (e) {
       debugPrint('Error loading song by ID: $e');
-      // Reset buffering state on error
+      throw Exception('Failed to load song: $e');
+    }
+  }
+  
+  /// Core play song method that handles all playback logic
+  Future<void> playSong(Song song) async {
+    if (_isDisposed) return;
+    
+    try {
+      // Set buffering state immediately for better UX
+      state = state.copyWith(
+        isBuffering: true,
+        currentSong: song,
+      );
+      
+      // Get audio URL
+      final audioUrl = await _getSongAudioUrl(song);
+      
+      // Check if song has changed during URL fetching
+      if (state.currentSong?.id != song.id) {
+        return;
+      }
+      
+      // Check if this URL is already playing
+      if (_currentAudioUrl == audioUrl && _audioPlayer.playing) {
+        return;
+      }
+      
+      // Stop current playback first
+      try {
+        await _audioPlayer.stop();
+        await Future.delayed(const Duration(milliseconds: 100));
+      } catch (e) {
+        // Ignore stop errors, continue with playback
+      }
+      
+      // Load and play new audio
+      await _audioPlayer.setUrl(audioUrl);
+      _currentAudioUrl = audioUrl;
+      
+      // Verify song hasn't changed during loading
+      if (state.currentSong?.id != song.id) {
+        return;
+      }
+      
+      await _audioPlayer.play();
+      
+      // Add to play history
+      _addToPlayHistory(song.id);
+      
+    } catch (e) {
+      debugPrint('Error playing song "${song.title}": $e');
+      
+      // Try to handle specific errors
+      if (e.toString().contains('AudioPlayer has already been disposed') ||
+          e.toString().contains('Player instance')) {
+        try {
+          await _recreateAudioPlayer();
+          
+          // Wait a bit for the new player to initialize
+          await Future.delayed(const Duration(milliseconds: 300));
+          
+          // Check if song is still the same before retrying
+          if (state.currentSong?.id == song.id) {
+            final audioUrl = await _getSongAudioUrl(song);
+            await _audioPlayer.setUrl(audioUrl);
+            _currentAudioUrl = audioUrl;
+            await _audioPlayer.play();
+            
+            _addToPlayHistory(song.id);
+          }
+        } catch (recreateError) {
+          debugPrint('Failed to recreate player and play song: $recreateError');
+          // Try fallback audio URL if recreation fails
+          await _tryFallbackAudio(song);
+        }
+      } else {
+        // Try fallback audio URL for other errors
+        await _tryFallbackAudio(song);
+      }
+    }
+  }
+
+  /// Try fallback audio URL (demo file)
+  Future<void> _tryFallbackAudio(Song song) async {
+    try {
+      const fallbackUrl = 'http://10.0.2.2:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
+      
+      await _audioPlayer.stop();
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      await _audioPlayer.setUrl(fallbackUrl);
+      _currentAudioUrl = fallbackUrl;
+      await _audioPlayer.play();
+      
+      _addToPlayHistory(song.id);
+      
+    } catch (fallbackError) {
+      debugPrint('Fallback audio also failed: $fallbackError');
+      // Reset buffering state on complete failure
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
       }
     }
   }
 
-  /// Play a song
-  Future<void> playSong(Song song) async {
-    if (_isDisposed) return;
-    
-    // Get audio URL
-    final audioUrl = _getSongAudioUrl(song);
-    if (audioUrl == null) {
-      // If no audio URL is available, update state but don't play
-      state = state.copyWith(
-        currentSong: song,
-        isPlaying: false,
-        isBuffering: false,
-        // Don't modify currentPlaylistId here - preserve existing context
-      );
-      return;
-    }
-    
-    try {
-      debugPrint('Attempting to play song: ${song.title} with URL: $audioUrl');
-      
-      // Check if we're already playing this URL to avoid unnecessary loading
-      if (_currentAudioUrl == audioUrl && _audioPlayer.playing) {
-        debugPrint('Song already playing, skipping load');
-        return;
-      }
-      
-      // Set state to buffering while we prepare to play
-      state = state.copyWith(
-        currentSong: song,
-        isBuffering: true,
-        currentPosition: Duration.zero,
-        isPlaying: false,
-        // Don't modify currentPlaylistId here - preserve existing context
-      );
-      
-      // Properly stop and dispose current playback to avoid "player already exists" error
-      try {
-        if (_audioPlayer.playing) {
-          await _audioPlayer.stop();
-        }
-        // Clear any existing audio source
-        await _audioPlayer.setUrl('');
-        // Small delay to ensure cleanup completes
-        await Future.delayed(const Duration(milliseconds: 200));
-      } catch (e) {
-        debugPrint('Warning: Error stopping current playback: $e');
-      }
-      
-      // Set the audio source with timeout
-      _currentAudioUrl = audioUrl;
-      
-      // Use a timeout to prevent loading from hanging
-      await Future.any([
-        _audioPlayer.setUrl(audioUrl),
-        Future.delayed(const Duration(seconds: 15), () => throw TimeoutException('Audio loading timeout')),
-      ]);
-      
-      // Check if we're still supposed to be playing this song (user might have changed song)
-      if (_isDisposed || _currentAudioUrl != audioUrl) {
-        debugPrint('Song changed during loading, aborting');
-        return;
-      }
-      
-      // Start playback
-      await _audioPlayer.play();
-      
-      // Update state only if everything succeeded
-      if (!_isDisposed && _currentAudioUrl == audioUrl) {
-        state = state.copyWith(
-          isPlaying: true,
-          isBuffering: false,
-        );
-        debugPrint('Successfully started playing: ${song.title}');
-        
-        // Add to play history when song starts playing
-        _addToPlayHistory(song.id);
-      }
-    } catch (e) {
-      // Handle errors
-      debugPrint('Error playing song "${song.title}": $e');
-      
-      // Reset current URL on error
-      _currentAudioUrl = null;
-      
-      if (!_isDisposed) {
-        state = state.copyWith(
-          isBuffering: false,
-          isPlaying: false,
-        );
-      }
-      
-      // Handle "player already exists" error by recreating the player
-      if (e.toString().contains('already exists')) {
-        debugPrint('Player instance conflict detected, recreating audio player...');
-        try {
-          // Dispose current player and create new one
-          await _recreateAudioPlayer();
-          
-          // Retry playing the song with new player
-          await Future.delayed(const Duration(milliseconds: 300));
-          await _audioPlayer.setUrl(audioUrl);
-          await _audioPlayer.play();
-          _currentAudioUrl = audioUrl;
-          
-          if (!_isDisposed) {
-            state = state.copyWith(
-              isPlaying: true,
-              isBuffering: false,
-            );
-          }
-          debugPrint('Successfully played song after recreating player');
-          
-          // Add to play history when song starts playing
-          _addToPlayHistory(song.id);
-          return;
-        } catch (recreateError) {
-          debugPrint('Failed to recreate player and play song: $recreateError');
-        }
-      }
-      
-      // Try fallback URL if available and it's not a player instance error
-      if (!audioUrl.contains('soundhelix.com') && !e.toString().contains('already exists')) {
-        debugPrint('Trying fallback audio URL...');
-        final fallbackUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-        try {
-          // Wait a bit more before trying fallback to ensure cleanup
-          await Future.delayed(const Duration(milliseconds: 500));
-          await _audioPlayer.setUrl(fallbackUrl);
-          await _audioPlayer.play();
-          _currentAudioUrl = fallbackUrl;
-          
-          if (!_isDisposed) {
-            state = state.copyWith(
-              isPlaying: true,
-              isBuffering: false,
-            );
-          }
-          debugPrint('Fallback audio playing successfully');
-        } catch (fallbackError) {
-          debugPrint('Fallback audio also failed: $fallbackError');
-        }
-      }
-    }
-  }
-  
-  /// Get audio URL from a song
-  String? _getSongAudioUrl(Song song) {
-    // File audio contoh untuk fallback jika audio PocketBase gagal
-    final String demoAudioUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-    
+  /// Get song audio URL with fallback
+  Future<String> _getSongAudioUrl(Song song) async {
     try {
       final pbService = PocketBaseService();
+      final baseUrl = pbService.pb.baseUrl;
       
-      // Log untuk debugging
-      debugPrint('Song ID: ${song.id}');
-      String? url;
-      
-      // Coba gunakan nama file audio dari model jika tersedia
-      if (song.audioFileName != null && song.audioFileName!.isNotEmpty) {
-        url = '${pbService.pb.baseUrl}/api/files/songs/${song.id}/${song.audioFileName}';
-        debugPrint('Menggunakan nama file dari model: ${song.audioFileName}');
+      String url;
+      if (song.audioFileName?.isNotEmpty == true) {
+        url = '$baseUrl/api/files/songs/${song.id}/${song.audioFileName}';
       } else {
-        // Gunakan nama file default jika tidak tersedia di model
-        url = '${pbService.pb.baseUrl}/api/files/songs/${song.id}/dream_on_no3ma56xq7.mp3';
-        debugPrint('Menggunakan nama file default: dream_on_no3ma56xq7.mp3');
+        // Fallback to demo file
+        url = '$baseUrl/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
       }
       
-      debugPrint('URL audio final: $url');
       return url;
     } catch (e) {
-      debugPrint('Error getting song audio URL: $e, menggunakan file audio demo');
-      return demoAudioUrl; // Fallback ke demo jika terjadi error
+      debugPrint('Error getting song audio URL: $e, using fallback');
+      return 'http://10.0.2.2:8090/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
     }
   }
   
@@ -420,10 +346,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
-      if (state.isPlaying) {
-        await _audioPlayer.pause();
-        state = state.copyWith(isPlaying: false);
-      }
+      await _audioPlayer.pause();
     } catch (e) {
       debugPrint('Error pausing playback: $e');
     }
@@ -434,19 +357,20 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
-      if (!state.isPlaying && state.currentSong != null) {
-        if (_audioPlayer.playing) {
-          state = state.copyWith(isPlaying: true);
-        } else {
-          await _audioPlayer.play();
-        }
-      }
+      await _audioPlayer.play();
     } catch (e) {
       debugPrint('Error resuming playback: $e');
-      // Try to restart the song if resume fails
-      if (state.currentSong != null) {
-        await playSong(state.currentSong!);
-      }
+    }
+  }
+  
+  /// Toggle between play and pause
+  Future<void> togglePlayPause() async {
+    if (_isDisposed) return;
+    
+    if (state.isPlaying) {
+      await pause();
+    } else {
+      await resume();
     }
   }
   
@@ -457,8 +381,6 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
-      
-      // Reduced debug logging for better performance
       
       if (queueLength == 0) {
         return;
@@ -484,10 +406,8 @@ class PlayerController extends StateNotifier<PlayerState> {
       
       state = state.copyWith(currentIndex: nextIndex);
       
-      // Reduced debug logging for better performance
       await playSong(nextSong);
     } catch (e) {
-      // Reduced debug logging for better performance
       // Reset buffering state on error
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
@@ -502,8 +422,6 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
-      
-      // Reduced debug logging for better performance
       
       if (queueLength == 0) {
         return;
@@ -529,10 +447,8 @@ class PlayerController extends StateNotifier<PlayerState> {
       
       state = state.copyWith(currentIndex: prevIndex);
       
-      // Reduced debug logging for better performance
       await playSong(prevSong);
     } catch (e) {
-      // Reduced debug logging for better performance
       // Reset buffering state on error
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
@@ -558,6 +474,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
+    // Reduced debug logging for better performance
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
@@ -572,6 +489,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
+    // Reduced debug logging for better performance
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
@@ -699,8 +617,6 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     try {
-      debugPrint('🛑 Stopping and resetting player state');
-      
       // Stop audio player
       await _audioPlayer.stop();
       
@@ -710,9 +626,8 @@ class PlayerController extends StateNotifier<PlayerState> {
       // Reset state to initial values
       state = PlayerState.initial();
       
-      debugPrint('✅ Player state reset complete');
     } catch (e) {
-      debugPrint('❌ Error stopping and resetting player: $e');
+      debugPrint('Error stopping and resetting player: $e');
       // Force reset state even if stop fails
       _currentAudioUrl = null;
       state = PlayerState.initial();
@@ -741,53 +656,31 @@ class PlayerController extends StateNotifier<PlayerState> {
   void debugCurrentPlaylistId() {
     // Reduced debug logging for better performance
   }
-
-  /// Play a song without playlist context (for individual song playback)
+  
+  /// Play song without playlist context (for individual song playback)
   Future<void> playSongWithoutPlaylist(Song song) async {
     if (_isDisposed) return;
     
-    debugPrint('🎵 Playing song WITHOUT playlist context: ${song.title}');
-    debugPrint('🎵 STACK TRACE: ${StackTrace.current}');
+    // Reset shuffle mode when playing without playlist context
+    if (state.shuffleMode) {
+      state = state.copyWith(shuffleMode: false);
+    }
     
-    // Clear any existing playlist context and reset shuffle mode
+    // Clear playlist context and set single song queue
     state = state.copyWith(
-      currentPlaylistId: null,
-      queue: [song], // Set queue to just this song
+      queue: [song],
       currentIndex: 0,
-      shuffleMode: false, // Reset shuffle when playing without playlist
+      currentPlaylistId: null,
     );
     
-    debugPrint('🎵 Cleared playlist context - currentPlaylistId: ${state.currentPlaylistId}, shuffleMode: ${state.shuffleMode}');
-    
-    // Then play the song (this will now preserve the null playlist ID)
     await playSong(song);
   }
   
-  /// Play a song and explicitly clear playlist context
-  Future<void> playSongWithoutPlaylistContext(Song song) async {
-    if (_isDisposed) return;
-    
-    debugPrint('🎵 Playing individual song: ${song.title}');
-    
-    // First clear playlist context and reset shuffle
-    state = state.copyWith(
-      currentPlaylistId: null,
-      queue: [song],
-      currentIndex: 0,
-      shuffleMode: false, // Reset shuffle when playing without playlist
-    );
-    
-    // Then play the song
-    await playSong(song);
-  }
-
   /// Play song by ID without playlist context (for individual song playback)
   Future<void> playSongByIdWithoutPlaylist(String songId) async {
     if (_isDisposed) return;
     
     try {
-      debugPrint('🎵 Loading song by ID WITHOUT playlist context: $songId');
-      
       final pbService = PocketBaseService();
       final record = await pbService.pb.collection('songs').getOne(
         songId,
@@ -795,7 +688,6 @@ class PlayerController extends StateNotifier<PlayerState> {
       );
       
       final song = Song.fromRecord(record);
-      debugPrint('🎵 Loaded song from PocketBase: ${song.title}');
       
       await playSongWithoutPlaylist(song);
     } catch (e) {
@@ -811,11 +703,8 @@ class PlayerController extends StateNotifier<PlayerState> {
   void updateQueue(List<Song> newQueue, int newIndex) {
     if (_isDisposed) return;
     
-    debugPrint('🔄 Updating queue with ${newQueue.length} songs, new index: $newIndex');
-    
     // Validate new index
     if (newIndex < 0 || newIndex >= newQueue.length) {
-      debugPrint('❌ Invalid new index: $newIndex for queue of length ${newQueue.length}');
       return;
     }
     
@@ -826,7 +715,5 @@ class PlayerController extends StateNotifier<PlayerState> {
       currentIndex: newIndex,
       currentSong: newCurrentSong,
     );
-    
-    debugPrint('✅ Queue updated: current song "${newCurrentSong.title}" at index $newIndex');
   }
 }

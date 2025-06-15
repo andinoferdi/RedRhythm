@@ -1,188 +1,319 @@
+import 'dart:io';
+import 'dart:isolate';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:get_it/get_it.dart';
-import '../services/audio_duration_service.dart';
-import '../services/pocketbase_service.dart';
+import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
+import '../services/pocketbase_service.dart';
 
-/// State for duration update operations
-@immutable
-class DurationUpdateState {
-  final bool isUpdating;
-  final int totalSongs;
-  final int processedSongs;
-  final int successCount;
-  final int failCount;
-  final String? currentSongTitle;
-  final String? error;
+/// Provider for duration controller
+final durationControllerProvider = StateNotifierProvider<DurationController, DurationState>(
+  (ref) => DurationController(),
+);
 
-  const DurationUpdateState({
-    this.isUpdating = false,
-    this.totalSongs = 0,
-    this.processedSongs = 0,
-    this.successCount = 0,
-    this.failCount = 0,
-    this.currentSongTitle,
-    this.error,
-  });
+/// Controller for managing audio durations
+class DurationController extends StateNotifier<DurationState> {
+  static const int _batchSize = 10; // Process songs in smaller batches
+  static const Duration _timeout = Duration(seconds: 15); // Timeout per song
 
-  DurationUpdateState copyWith({
-    bool? isUpdating,
-    int? totalSongs,
-    int? processedSongs,
-    int? successCount,
-    int? failCount,
-    String? currentSongTitle,
-    String? error,
-  }) {
-    return DurationUpdateState(
-      isUpdating: isUpdating ?? this.isUpdating,
-      totalSongs: totalSongs ?? this.totalSongs,
-      processedSongs: processedSongs ?? this.processedSongs,
-      successCount: successCount ?? this.successCount,
-      failCount: failCount ?? this.failCount,
-      currentSongTitle: currentSongTitle ?? this.currentSongTitle,
-      error: error ?? this.error,
-    );
-  }
+  DurationController() : super(const DurationState.idle());
 
-  double get progress {
-    if (totalSongs == 0) return 0.0;
-    return processedSongs / totalSongs;
-  }
-
-  bool get isCompleted => processedSongs >= totalSongs && totalSongs > 0;
-}
-
-/// Controller for managing duration updates
-class DurationController extends StateNotifier<DurationUpdateState> {
-  final AudioDurationService _audioService = GetIt.I<AudioDurationService>();
-
-  DurationController() : super(const DurationUpdateState());
-
-  /// Update single song duration
-  Future<bool> updateSingleSongDuration(Song song) async {
+  /// Update durations for songs with missing duration data
+  Future<void> updateMissingSongDurations() async {
+    if (state is DurationLoading) return; // Prevent multiple simultaneous updates
+    
+    state = const DurationState.loading();
+    
     try {
-      state = state.copyWith(
-        isUpdating: true,
-        currentSongTitle: song.title,
-        error: null,
-      );
-
-      final success = await _audioService.updateSongDuration(song);
-
-      state = state.copyWith(
-        isUpdating: false,
-        currentSongTitle: null,
-      );
-
-      return success;
-    } catch (e) {
-      state = state.copyWith(
-        isUpdating: false,
-        error: e.toString(),
-        currentSongTitle: null,
-      );
-      return false;
-    }
-  }
-
-  /// Update all songs with missing duration
-  Future<void> updateAllSongsDuration() async {
-    try {
-      state = state.copyWith(
-        isUpdating: true,
-        totalSongs: 0,
-        processedSongs: 0,
-        successCount: 0,
-        failCount: 0,
-        error: null,
-      );
-
-      // Get all songs with duration = 0
-      final pbService = GetIt.I<PocketBaseService>();
+      final pbService = PocketBaseService();
+      
+      // Get songs with missing duration (duration = 0 or null)
       final response = await pbService.pb.collection('songs').getList(
         page: 1,
         perPage: 500,
-        filter: 'duration = 0',
-        expand: 'artist_id,album_id',
+        filter: 'duration = 0 || duration = null',
       );
-
-      final List<Song> songsToUpdate = response.items
-          .map((record) => Song.fromRecord(record))
-          .toList();
-
-      if (songsToUpdate.isEmpty) {
-        state = state.copyWith(
-          isUpdating: false,
-          totalSongs: 0,
+      
+      if (response.items.isEmpty) {
+        state = const DurationState.completed(
+          successCount: 0,
+          failCount: 0,
+          message: 'No songs need duration updates',
         );
         return;
       }
-
-      state = state.copyWith(totalSongs: songsToUpdate.length);
-
-      int successCount = 0;
-      int failCount = 0;
-
-      // Process each song
-      for (int i = 0; i < songsToUpdate.length; i++) {
-        final song = songsToUpdate[i];
-        
-        state = state.copyWith(
-          currentSongTitle: song.title,
-          processedSongs: i,
-        );
-
-        final success = await _audioService.updateSongDuration(song);
-        if (success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-
-        state = state.copyWith(
-          successCount: successCount,
-          failCount: failCount,
-          processedSongs: i + 1,
-        );
-
-        // Add small delay to avoid overwhelming the server
-        await Future.delayed(const Duration(milliseconds: 500));
-      }
-
-      state = state.copyWith(
-        isUpdating: false,
-        currentSongTitle: null,
-      );
-
-      debugPrint('📈 Duration update completed:');
-      debugPrint('✅ Success: $successCount songs');
-      debugPrint('❌ Failed: $failCount songs');
-      debugPrint('📊 Total processed: ${songsToUpdate.length} songs');
-
+      
+      final songsToUpdate = response.items.map((record) => Song.fromRecord(record)).toList();
+      await _updateSongDurationsInBatches(songsToUpdate);
+      
     } catch (e) {
-      state = state.copyWith(
-        isUpdating: false,
-        error: e.toString(),
-        currentSongTitle: null,
-      );
-      debugPrint('❌ Error in bulk song duration update: $e');
+      state = DurationState.error('Failed to fetch songs: $e');
     }
   }
 
-  /// Clear error state
-  void clearError() {
-    state = state.copyWith(error: null);
+  /// Update durations for all songs (force update)
+  Future<void> updateAllSongDurations() async {
+    if (state is DurationLoading) return; // Prevent multiple simultaneous updates
+    
+    state = const DurationState.loading();
+    
+    try {
+      final pbService = PocketBaseService();
+      
+      // Get all songs
+      final response = await pbService.pb.collection('songs').getList(
+        page: 1,
+        perPage: 500,
+        sort: 'created',
+      );
+      
+      if (response.items.isEmpty) {
+        state = const DurationState.completed(
+          successCount: 0,
+          failCount: 0,
+          message: 'No songs found',
+        );
+        return;
+      }
+      
+      final songsToUpdate = response.items.map((record) => Song.fromRecord(record)).toList();
+      await _updateSongDurationsInBatches(songsToUpdate);
+      
+    } catch (e) {
+      state = DurationState.error('Failed to fetch all songs: $e');
+    }
   }
 
-  /// Reset state
+  /// Alias for backward compatibility
+  Future<void> updateAllSongsDuration() async {
+    await updateAllSongDurations();
+  }
+
+  /// Process songs in batches to avoid memory issues
+  Future<void> _updateSongDurationsInBatches(List<Song> songs) async {
+    int successCount = 0;
+    int failCount = 0;
+    
+    try {
+      // Process songs in batches
+      for (int i = 0; i < songs.length; i += _batchSize) {
+        final batch = songs.skip(i).take(_batchSize).toList();
+        
+        // Update progress
+        state = DurationState.progress(
+          current: i,
+          total: songs.length,
+          currentSongTitle: batch.first.title,
+        );
+        
+        // Process batch
+        final results = await _processSongBatch(batch);
+        successCount += results['success'] as int;
+        failCount += results['fail'] as int;
+        
+        // Small delay between batches to prevent overwhelming the system
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      
+      state = DurationState.completed(
+        successCount: successCount,
+        failCount: failCount,
+        message: 'Duration update completed',
+      );
+      
+    } catch (e) {
+      debugPrint('Error in bulk song duration update: $e');
+      state = DurationState.error('Bulk update failed: $e');
+    }
+  }
+
+  /// Process a batch of songs concurrently
+  Future<Map<String, int>> _processSongBatch(List<Song> songs) async {
+    int successCount = 0;
+    int failCount = 0;
+    
+    // Process songs in the batch concurrently with limited concurrency
+    final futures = songs.map((song) => _updateSingleSongDuration(song));
+    final results = await Future.wait(futures, eagerError: false);
+    
+    for (final success in results) {
+      if (success) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+    
+    return {'success': successCount, 'fail': failCount};
+  }
+
+  /// Update duration for a single song
+  Future<bool> _updateSingleSongDuration(Song song) async {
+    AudioPlayer? audioPlayer;
+    
+    try {
+      // Create audio player instance
+      audioPlayer = AudioPlayer();
+      
+      // Get audio URL
+      final audioUrl = _getSongAudioUrl(song);
+      if (audioUrl == null) return false;
+      
+      // Set audio source with timeout
+      await Future.any([
+        audioPlayer.setUrl(audioUrl),
+        Future.delayed(_timeout, () => throw TimeoutException('Timeout loading audio')),
+      ]);
+      
+      // Get duration
+      final duration = audioPlayer.duration;
+      if (duration == null || duration.inSeconds <= 0) {
+        return false;
+      }
+      
+      // Update in database
+      await _updateDurationInDatabase(song.id, duration.inSeconds);
+      
+      return true;
+      
+    } catch (e) {
+      // Ignore individual song errors to not disrupt batch processing
+      return false;
+    } finally {
+      // Always dispose audio player
+      try {
+        await audioPlayer?.dispose();
+      } catch (e) {
+        // Ignore disposal errors
+      }
+    }
+  }
+
+  /// Get audio URL for a song
+  String? _getSongAudioUrl(Song song) {
+    try {
+      final pbService = PocketBaseService();
+      
+      if (song.audioFileName?.isNotEmpty == true) {
+        return '${pbService.pb.baseUrl}/api/files/songs/${song.id}/${song.audioFileName}';
+      } else {
+        return '${pbService.pb.baseUrl}/api/files/songs/demo/dream_on_no3ma56xq7.mp3';
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Update song duration in database
+  Future<void> _updateDurationInDatabase(String songId, int durationInSeconds) async {
+    final pbService = PocketBaseService();
+    await pbService.pb.collection('songs').update(songId, body: {
+      'duration': durationInSeconds,
+    });
+  }
+
+  /// Cancel current operation
+  void cancelOperation() {
+    if (state is! DurationLoading && state is! DurationProgress) return;
+    
+    state = const DurationState.cancelled();
+  }
+
+  /// Reset state to idle
+  void resetState() {
+    state = const DurationState.idle();
+  }
+
+  /// Alias for backward compatibility
   void reset() {
-    state = const DurationUpdateState();
+    resetState();
   }
 }
 
-/// Provider for the duration controller
-final durationControllerProvider = StateNotifierProvider<DurationController, DurationUpdateState>((ref) {
-  return DurationController();
-}); 
+/// Duration update states
+abstract class DurationState {
+  const DurationState();
+  
+  const factory DurationState.idle() = DurationIdle;
+  const factory DurationState.loading() = DurationLoading;
+  const factory DurationState.progress({
+    required int current,
+    required int total,
+    required String currentSongTitle,
+  }) = DurationProgress;
+  const factory DurationState.completed({
+    required int successCount,
+    required int failCount,
+    required String message,
+  }) = DurationCompleted;
+  const factory DurationState.error(String message) = DurationError;
+  const factory DurationState.cancelled() = DurationCancelled;
+
+  // Compatibility getters for existing UI
+  bool get isUpdating => this is DurationLoading || this is DurationProgress;
+  bool get isCompleted => this is DurationCompleted;
+  String? get error => this is DurationError ? (this as DurationError).message : null;
+  
+  int get processedSongs => this is DurationProgress ? (this as DurationProgress).current : 0;
+  int get totalSongs => this is DurationProgress ? (this as DurationProgress).total : 
+                      this is DurationCompleted ? (this as DurationCompleted).successCount + (this as DurationCompleted).failCount : 0;
+  
+  int get successCount => this is DurationCompleted ? (this as DurationCompleted).successCount : 0;
+  int get failCount => this is DurationCompleted ? (this as DurationCompleted).failCount : 0;
+  
+  String? get currentSongTitle => this is DurationProgress ? (this as DurationProgress).currentSongTitle : null;
+  
+  double get progress => this is DurationProgress ? (this as DurationProgress).progress : 0.0;
+}
+
+class DurationIdle extends DurationState {
+  const DurationIdle();
+}
+
+class DurationLoading extends DurationState {
+  const DurationLoading();
+}
+
+class DurationProgress extends DurationState {
+  final int current;
+  final int total;
+  final String currentSongTitle;
+  
+  const DurationProgress({
+    required this.current,
+    required this.total,
+    required this.currentSongTitle,
+  });
+  
+  double get progress => total > 0 ? current / total : 0.0;
+}
+
+class DurationCompleted extends DurationState {
+  final int successCount;
+  final int failCount;
+  final String message;
+  
+  const DurationCompleted({
+    required this.successCount,
+    required this.failCount,
+    required this.message,
+  });
+}
+
+class DurationError extends DurationState {
+  final String message;
+  const DurationError(this.message);
+}
+
+class DurationCancelled extends DurationState {
+  const DurationCancelled();
+}
+
+/// Timeout exception for audio loading
+class TimeoutException implements Exception {
+  final String message;
+  TimeoutException(this.message);
+  
+  @override
+  String toString() => 'TimeoutException: $message';
+} 
