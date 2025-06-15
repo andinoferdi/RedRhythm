@@ -127,11 +127,21 @@ class PocketBaseService {
       // Store model data if available
       if (_pb.authStore.model != null) {
         try {
-          final recordModel = _pb.authStore.model as RecordModel;
-          await _storage.write(
-            key: 'pb_auth_model',
-            value: jsonEncode(recordModel.toJson()),
-          );
+          final model = _pb.authStore.model;
+          if (model is RecordModel) {
+            await _storage.write(
+              key: 'pb_auth_model',
+              value: jsonEncode(model.toJson()),
+            );
+          } else if (model is Map<String, dynamic>) {
+            // Handle case where model is a Map instead of RecordModel
+            await _storage.write(
+              key: 'pb_auth_model',
+              value: jsonEncode(model),
+            );
+          } else {
+            debugPrint('PocketBase: Unknown auth model type: ${model.runtimeType}');
+          }
         } catch (e) {
           debugPrint('PocketBase: Error encoding auth model: $e');
           // Save without model if encoding fails
@@ -194,7 +204,14 @@ class PocketBaseService {
   bool get isAuthenticated => _pb.authStore.isValid;
   
   /// Get current user info
-  RecordModel? get currentUser => _pb.authStore.model;
+  RecordModel? get currentUser {
+    final model = _pb.authStore.model;
+    if (model is RecordModel) {
+      return model;
+    }
+    // Return null if model is not RecordModel type
+    return null;
+  }
 
   /// Get the PocketBase instance
   PocketBase get pb => _pb;

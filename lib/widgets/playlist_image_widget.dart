@@ -29,14 +29,26 @@ class PlaylistImageWidget extends StatefulWidget {
 
   /// Clear the cache for a specific playlist (useful when playlist is updated)
   static void clearCache(String playlistId) {
-    _playlistSongsCache.remove(playlistId);
-    _mosaicWidgetCache.remove(playlistId);
+    final songsRemoved = _playlistSongsCache.remove(playlistId) != null;
+    
+    // Clear all mosaic cache that contains this playlist ID
+    final keysToRemove = _mosaicWidgetCache.keys.where((key) => key.contains(playlistId)).toList();
+    for (final key in keysToRemove) {
+      _mosaicWidgetCache.remove(key);
+    }
+    
+    debugPrint('🗑️ PLAYLIST_IMAGE: Cleared cache for playlist $playlistId (songs: $songsRemoved, mosaic keys: ${keysToRemove.length})');
   }
 
   /// Clear all cached playlist data
   static void clearAllCache() {
+    final songsCount = _playlistSongsCache.length;
+    final mosaicCount = _mosaicWidgetCache.length;
+    
     _playlistSongsCache.clear();
     _mosaicWidgetCache.clear();
+    
+    debugPrint('🗑️ PLAYLIST_IMAGE: Cleared ALL cache (songs: $songsCount, mosaic: $mosaicCount)');
   }
 
   @override
@@ -59,11 +71,29 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   @override
   void didUpdateWidget(PlaylistImageWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only reload if playlist ID changed
-    if (oldWidget.playlist.id != widget.playlist.id) {
+    
+    // Only reload if playlist ID actually changed
+    final playlistChanged = oldWidget.playlist.id != widget.playlist.id;
+    
+    if (playlistChanged) {
+      debugPrint('🔄 PLAYLIST_IMAGE: Playlist ID changed, reloading');
+      
       _currentPlaylistId = widget.playlist.id;
       _lastBuiltCacheKey = null; // Reset cache key
+      
       _loadPlaylistSongs();
+    } else {
+      // If only key changed (forced update), just rebuild without clearing cache
+      final keyChanged = oldWidget.key != widget.key;
+      if (keyChanged) {
+        debugPrint('🔄 PLAYLIST_IMAGE: Key changed, forcing rebuild without cache clear');
+        _lastBuiltCacheKey = null; // Reset cache key to force mosaic rebuild
+        if (mounted) {
+          setState(() {
+            // Force rebuild
+          });
+        }
+      }
     }
   }
 
@@ -74,9 +104,12 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   void _loadPlaylistSongs() {
     final playlistId = widget.playlist.id;
     
-    // Check cache first
-    if (PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
+    // Use cache by default, only skip cache if explicitly cleared
+    bool useCache = true;
+    
+    if (useCache && PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
       final cachedSongs = PlaylistImageWidget._playlistSongsCache[playlistId]!;
+      debugPrint('📋 PLAYLIST_IMAGE: Using cached songs for $playlistId (${cachedSongs.length} songs)');
       if (mounted) {
         setState(() {
           _songs = cachedSongs;
@@ -86,17 +119,29 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       return;
     }
 
-    // Only set loading if we don't have cached data
-    if (_songs == null && mounted) {
-      setState(() {
-        _isLoading = true;
-      });
+    // Only show loading if we don't have any data yet
+    if (_songs == null) {
+      debugPrint('⏳ PLAYLIST_IMAGE: Loading fresh songs for playlist $playlistId');
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+        });
+      }
     }
 
     _getPlaylistSongs(playlistId).then((songs) {
+      debugPrint('✅ PLAYLIST_IMAGE: Loaded ${songs.length} songs for playlist $playlistId');
       if (mounted && _currentPlaylistId == playlistId) {
         setState(() {
           _songs = songs;
+          _isLoading = false;
+        });
+      }
+    }).catchError((error) {
+      debugPrint('❌ PLAYLIST_IMAGE: Error loading songs for playlist $playlistId: $error');
+      if (mounted && _currentPlaylistId == playlistId) {
+        setState(() {
+          _songs = [];
           _isLoading = false;
         });
       }
@@ -129,18 +174,24 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         final pbService = PocketBaseService();
         final repository = PlaylistRepository(pbService);
         customImageUrl = repository.getCoverImageUrl(widget.playlist as RecordModel);
+        // Only log if there's actually a custom image
+        if (customImageUrl.isNotEmpty) {
+          debugPrint('🖼️ PLAYLIST_IMAGE: Custom image URL for ${widget.playlist.id}: $customImageUrl');
+        }
       } else {
         // Handle fake record from playlist selection modal
         final coverImage = widget.playlist.data['cover_image'] as String?;
         if (coverImage != null && coverImage.isNotEmpty) {
           customImageUrl = coverImage;
+          debugPrint('🖼️ PLAYLIST_IMAGE: Fake record cover image: $customImageUrl');
         }
       }
     } catch (e) {
-      // Reduced debug logging for better performance
+      debugPrint('⚠️ PLAYLIST_IMAGE: Error getting custom image URL: $e');
     }
 
     if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {
+      debugPrint('✅ PLAYLIST_IMAGE: Using custom cover image');
       return ImageHelpers.buildSafeNetworkImage(
         imageUrl: customImageUrl,
         width: widget.size,
@@ -185,14 +236,16 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       return _buildPlaceholderImage();
     }
 
-    // Use cache for built widgets to prevent unnecessary rebuilds
+    // Use caching to prevent unnecessary rebuilds
     final cacheKey = _getCacheKey();
-    if (_lastBuiltCacheKey == cacheKey && 
-        PlaylistImageWidget._mosaicWidgetCache.containsKey(cacheKey)) {
+    
+    // Don't use cache if this is a fresh load (key change)
+    bool useCache = _lastBuiltCacheKey == cacheKey && 
+                   PlaylistImageWidget._mosaicWidgetCache.containsKey(cacheKey);
+    
+    if (useCache) {
       return PlaylistImageWidget._mosaicWidgetCache[cacheKey]!;
     }
-
-    // Reduced debug logging for better performance
     
     // Get unique album covers (max 4)
     final Set<String> uniqueCovers = {};

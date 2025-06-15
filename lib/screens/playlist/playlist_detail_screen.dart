@@ -45,15 +45,58 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   bool _isLoadingRecommended = false;
   final Set<String> _addingSongIds = {};
   
+  // Force rebuild counter for playlist image
+  int _imageRebuildCounter = 0;
+  
+  // Guard to prevent infinite recursion in refresh system
+  bool _isRefreshing = false;
+  
   // Note: Shuffle state is now managed by PlayerController
 
   @override
   void initState() {
     super.initState();
     _currentPlaylist = widget.playlist;
-    _fetchPlaylistSongs();
-    _fetchCreatorInfo();
-    _fetchRecommendedSongs();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    setState(() {
+      _isLoading = true;
+      _isLoadingRecommended = true;
+      _isLoadingCreator = true;
+    });
+
+    try {
+      // Fetch playlist songs first, then use for filtering recommendations
+      final playlistSongs = await _getPlaylistSongsData();
+      final results = await Future.wait([
+        Future.value(playlistSongs), // Already fetched
+        _getRecommendedSongsData(playlistSongs), // Pass songs for filtering
+        _getCreatorInfoData(),
+      ]);
+      
+      if (mounted) {
+        setState(() {
+          _songs = results[0] as List<Song>;
+          _recommendedSongs = results[1] as List<Song>;
+          _creatorUser = results[2] as RecordModel?;
+          _isLoading = false;
+          _isLoadingRecommended = false;
+          _isLoadingCreator = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing data: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load data: ${e.toString()}';
+          _isLoading = false;
+          _isLoadingRecommended = false;
+          _isLoadingCreator = false;
+        });
+      }
+    }
   }
 
   Future<void> _fetchPlaylistSongs() async {
@@ -63,12 +106,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     });
 
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      
-      final repository = SongPlaylistRepository(pbService);
-      final songs = await repository.getPlaylistSongs(_currentPlaylist.id);
-
+      final songs = await _getPlaylistSongsData();
       setState(() {
         _songs = songs;
         _isLoading = false;
@@ -82,28 +120,37 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     }
   }
 
+  Future<List<Song>> _getPlaylistSongsData() async {
+    final pbService = PocketBaseService();
+    await pbService.initialize();
+    
+    final repository = SongPlaylistRepository(pbService);
+    return await repository.getPlaylistSongs(_currentPlaylist.id);
+  }
+
   Future<void> _fetchCreatorInfo() async {
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-
-      final creatorId = _currentPlaylist.data['user_id'] as String?;
-      if (creatorId != null && creatorId.isNotEmpty) {
-        final creator = await pbService.pb.collection('users').getOne(creatorId);
-        setState(() {
-          _creatorUser = creator;
-          _isLoadingCreator = false;
-        });
-      } else {
-        setState(() {
-          _isLoadingCreator = false;
-        });
-      }
+      final creator = await _getCreatorInfoData();
+      setState(() {
+        _creatorUser = creator;
+        _isLoadingCreator = false;
+      });
     } catch (e) {
       setState(() {
         _isLoadingCreator = false;
       });
     }
+  }
+
+  Future<RecordModel?> _getCreatorInfoData() async {
+    final pbService = PocketBaseService();
+    await pbService.initialize();
+
+    final creatorId = _currentPlaylist.data['user_id'] as String?;
+    if (creatorId != null && creatorId.isNotEmpty) {
+      return await pbService.pb.collection('users').getOne(creatorId);
+    }
+    return null;
   }
 
   Future<void> _fetchRecommendedSongs() async {
@@ -112,27 +159,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     });
 
     try {
-      final pbService = PocketBaseService();
-      await pbService.initialize();
-      
-      // Get all songs from database with expanded artist and album data
-      final allSongsResult = await pbService.pb.collection('songs').getList(
-        page: 1,
-        perPage: 100,
-        sort: '@random', // Random sort for variety
-        expand: 'artist_id,album_id', // Expand artist and album relations
-      );
-      
-      // Convert to Song objects and filter out songs already in playlist
-      final currentSongIds = _songs.map((song) => song.id).toSet();
-      final allSongs = allSongsResult.items.map((record) => Song.fromRecord(record)).toList();
-      final filteredSongs = _songs.isEmpty 
-          ? allSongs // If playlist is empty, show all songs
-          : allSongs.where((song) => !currentSongIds.contains(song.id)).toList();
-      
-      // Take first 10 songs as recommendations
-      final recommended = filteredSongs.take(10).toList();
-
+      final recommended = await _getRecommendedSongsData();
       setState(() {
         _recommendedSongs = recommended;
         _isLoadingRecommended = false;
@@ -144,6 +171,32 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _isLoadingRecommended = false;
       });
     }
+  }
+
+  Future<List<Song>> _getRecommendedSongsData([List<Song>? playlistSongs]) async {
+    final pbService = PocketBaseService();
+    await pbService.initialize();
+    
+    // Get all songs from database with expanded artist and album data
+    final allSongsResult = await pbService.pb.collection('songs').getList(
+      page: 1,
+      perPage: 100,
+      sort: '@random', // Random sort for variety
+      expand: 'artist_id,album_id', // Expand artist and album relations
+    );
+    
+    // Use provided songs or current _songs for filtering
+    final songsToFilter = playlistSongs ?? _songs;
+    
+    // Convert to Song objects and filter out songs already in playlist
+    final currentSongIds = songsToFilter.map((song) => song.id).toSet();
+    final allSongs = allSongsResult.items.map((record) => Song.fromRecord(record)).toList();
+    final filteredSongs = songsToFilter.isEmpty 
+        ? allSongs // If playlist is empty, show all songs
+        : allSongs.where((song) => !currentSongIds.contains(song.id)).toList();
+    
+    // Take first 10 songs as recommendations
+    return filteredSongs.take(10).toList();
   }
 
   void _showEditPlaylistDialog() async {
@@ -164,28 +217,29 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
   /// Force complete refresh of all playlist components
   Future<void> _forceCompleteRefresh() async {
-    debugPrint('🔄 PLAYLIST_DETAIL: Starting force complete refresh');
-    
-    // Clear all caches to force complete reload
-    PlaylistImageWidget.clearCache(_currentPlaylist.id);
-    
-    // Clear mini player cache if it exists (import required at top of file)
-    // This ensures mini player also reflects updated playlist image
-    try {
-      final miniPlayerCache = ref.read(playlistUpdateNotifierProvider.notifier);
-      miniPlayerCache.notifyPlaylistUpdated();
-    } catch (e) {
-      debugPrint('Note: Mini player cache clear failed: $e');
+    // Prevent infinite recursion
+    if (_isRefreshing) {
+      debugPrint('🔄 PLAYLIST_DETAIL: Refresh already in progress, skipping');
+      return;
     }
     
-    // Set loading states
-    setState(() {
-      _isLoading = true;
-      _isLoadingRecommended = true;
-      _isLoadingCreator = true;
-    });
-
+    _isRefreshing = true;
+    debugPrint('🔄 PLAYLIST_DETAIL: Starting force complete refresh');
+    
     try {
+      // Clear all caches to force complete reload
+      PlaylistImageWidget.clearCache(_currentPlaylist.id);
+      PlaylistImageWidget.clearAllCache(); // Clear all cache to be sure
+      
+      // Clear mini player cache if it exists (import required at top of file)
+      // This ensures mini player also reflects updated playlist image
+      try {
+        final miniPlayerCache = ref.read(playlistUpdateNotifierProvider.notifier);
+        miniPlayerCache.notifyPlaylistUpdated();
+      } catch (e) {
+        debugPrint('Note: Mini player cache clear failed: $e');
+      }
+
       final pbService = PocketBaseService();
       await pbService.initialize();
       
@@ -194,24 +248,27 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           .collection('playlists')
           .getOne(_currentPlaylist.id);
       
-      setState(() {
-        _currentPlaylist = updatedPlaylist;
-      });
-      
-      // Then refresh all related data simultaneously
-      await Future.wait([
-        _fetchPlaylistSongs(),
-        _fetchRecommendedSongs(),
-        _fetchCreatorInfo(),
+      // Fetch playlist songs first, then use it for recommendations
+      final playlistSongs = await _getPlaylistSongsData();
+      final results = await Future.wait([
+        Future.value(playlistSongs), // Already fetched
+        _getRecommendedSongsData(playlistSongs), // Pass songs for filtering
+        _getCreatorInfoData(),
       ]);
       
-      // Force UI rebuild by updating state with a short delay for better UX
-      setState(() {
-        // This will trigger a rebuild to ensure all widgets reflect new data
-      });
-      
-      // Small delay to ensure all widgets are properly rebuilt
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Single setState to update everything at once
+      if (mounted) {
+        setState(() {
+          _currentPlaylist = updatedPlaylist;
+          _songs = results[0] as List<Song>;
+          _recommendedSongs = results[1] as List<Song>;
+          _creatorUser = results[2] as RecordModel?;
+          _isLoading = false;
+          _isLoadingRecommended = false;
+          _isLoadingCreator = false;
+          _imageRebuildCounter++; // Only increment once
+        });
+      }
       
       debugPrint('✅ PLAYLIST_DETAIL: Force complete refresh completed successfully');
     } catch (e) {
@@ -223,6 +280,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _isLoadingRecommended = false;
         _isLoadingCreator = false;
       });
+    } finally {
+      // Always reset the refreshing flag
+      _isRefreshing = false;
     }
   }
 
@@ -239,12 +299,23 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         _currentPlaylist = updatedPlaylist;
       });
       
-      // Comprehensive refresh of all related data
-      await Future.wait([
-        _fetchPlaylistSongs(),
-        _fetchRecommendedSongs(),
-        _fetchCreatorInfo(),
+      // Fetch playlist songs first, then use for filtering recommendations
+      final playlistSongs = await _getPlaylistSongsData();
+      final results = await Future.wait([
+        Future.value(playlistSongs), // Already fetched
+        _getRecommendedSongsData(playlistSongs), // Pass songs for filtering
+        _getCreatorInfoData(),
       ]);
+      
+      // Update state with fresh data
+      setState(() {
+        _songs = results[0] as List<Song>;
+        _recommendedSongs = results[1] as List<Song>;
+        _creatorUser = results[2] as RecordModel?;
+        _isLoading = false;
+        _isLoadingRecommended = false;
+        _isLoadingCreator = false;
+      });
       
       debugPrint('🔄 PLAYLIST_DETAIL: Complete playlist refresh completed');
     } catch (e) {
@@ -283,11 +354,26 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         song.id,
       );
 
-      // Refresh playlist songs and recommendations
-      await Future.wait([
-        _fetchPlaylistSongs(),
-        _fetchRecommendedSongs(),
-      ]);
+      // Clear playlist image cache to force mosaic update
+      PlaylistImageWidget.clearCache(_currentPlaylist.id);
+      
+      // Fetch updated playlist songs first, then use for filtering recommendations
+      final updatedPlaylistSongs = await _getPlaylistSongsData();
+      final updatedRecommendedSongs = await _getRecommendedSongsData(updatedPlaylistSongs);
+      
+      // Update state with fresh data
+      setState(() {
+        _songs = updatedPlaylistSongs;
+        _recommendedSongs = updatedRecommendedSongs;
+        _imageRebuildCounter++;
+      });
+      
+      // Notify other screens about playlist update
+      try {
+        ref.read(playlistUpdateNotifierProvider.notifier).notifyPlaylistUpdated();
+      } catch (e) {
+        debugPrint('Note: Playlist update notification failed: $e');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -445,8 +531,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     ref.listen(playlistUpdateNotifierProvider, (previous, next) {
       debugPrint('🔔 PLAYLIST_DETAIL: Playlist update notification received');
       
-      // Use force complete refresh to ensure all components are updated
-      _forceCompleteRefresh();
+      // Only refresh if not already refreshing to prevent infinite loops
+      if (!_isRefreshing) {
+        // Use force complete refresh to ensure all components are updated
+        _forceCompleteRefresh();
+      } else {
+        debugPrint('🔔 PLAYLIST_DETAIL: Skipping refresh, already in progress');
+      }
     });
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -518,7 +609,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               height: 200,
               margin: const EdgeInsets.only(top: 60),
               child: PlaylistImageWidget(
-                key: ValueKey('playlist_image_${_currentPlaylist.id}_${_currentPlaylist.updated}'),
+                key: ValueKey('playlist_image_${_currentPlaylist.id}_${_currentPlaylist.updated}_$_imageRebuildCounter'),
                 playlist: _currentPlaylist,
                 size: 200,
                 borderRadius: 4,

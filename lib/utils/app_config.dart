@@ -14,15 +14,15 @@ class AppConfig {
   static const Duration connectionTimeout = Duration(seconds: 5);
   static const Duration shortTimeout = Duration(seconds: 2);
   
-  // Get all possible URLs in priority order (localhost first)
+  // Get all possible URLs in priority order (Android emulator first for better compatibility)
   static List<String> get possibleUrls => [
-    iOSSimulatorUrl,     // Primary for localhost (127.0.0.1)
-    androidEmulatorUrl,  // For Android emulator
+    androidEmulatorUrl,  // Primary for Android emulator (most common case)
+    iOSSimulatorUrl,     // For iOS simulator (127.0.0.1)
     localhostUrl,        // Fallback
   ];
   
-  // Get default URL (localhost)
-  static String get defaultUrl => iOSSimulatorUrl;
+  // Get default URL (Android emulator for better compatibility)
+  static String get defaultUrl => androidEmulatorUrl;
   
   // Get headers for URL
   static Map<String, String> getHeadersForUrl(String url) {

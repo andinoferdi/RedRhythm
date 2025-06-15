@@ -19,6 +19,7 @@ import '../../widgets/song_item_widget.dart';
 
 import '../../models/song.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/app_config.dart';
 import '../debug/album_sync_debug_screen.dart';
 
 // Helper function to check if host is reachable
@@ -36,36 +37,39 @@ Future<bool> isHostReachable(String url) async {
   }
 }
 
-// Test and determine the best PocketBase URL
+// Test and determine the best PocketBase URL using AppConfig
 Future<String> determinePocketBaseUrl() async {
-  // Ganti dengan IP komputer Anda
-  const String localComputerIP = '192.168.1.100'; // Sesuaikan dengan IP komputer Anda
+  // Use the proper URL list from AppConfig (Android emulator prioritized)
+  final List<String> possibleUrls = AppConfig.possibleUrls;
   
-  final List<String> possibleUrls = [
-    'http://127.0.0.1:8090',        // Local server (prioritas pertama)
-    'http://10.0.2.2:8090',         // Standard Android emulator
-    'http://$localComputerIP:8090',  // IP komputer di jaringan lokal
-  ];
+  debugPrint('🔍 NETWORK: Testing PocketBase URLs: $possibleUrls');
   
   for (final url in possibleUrls) {
     try {
-      final response = await http.get(Uri.parse('$url/api/health')).timeout(
-        const Duration(seconds: 2), // Kurangi timeout untuk pengujian lebih cepat
+      debugPrint('🔍 NETWORK: Testing $url...');
+      final response = await http.get(
+        Uri.parse('$url/api/health'),
+        headers: AppConfig.getHeadersForUrl(url),
+      ).timeout(
+        AppConfig.shortTimeout,
         onTimeout: () {
           return http.Response('Timeout', 408);
         },
       );
       
       if (response.statusCode < 400) {
+        debugPrint('✅ NETWORK: Successfully connected to $url');
         return url;
       }
     } catch (e) {
-      // Silently handle connection errors and try next URL
+      debugPrint('❌ NETWORK: Failed to connect to $url: $e');
+      // Continue to next URL
     }
   }
   
-  // Default ke localhost jika semua gagal
-  return 'http://127.0.0.1:8090';
+  // Use default URL from AppConfig if all fail
+  debugPrint('⚠️ NETWORK: All URLs failed, using default: ${AppConfig.defaultUrl}');
+  return AppConfig.defaultUrl;
 }
 
 // PocketBase instance with lazy initialization
