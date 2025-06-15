@@ -51,7 +51,7 @@ class Song with _$Song {
           albumArtUrl = '${pbService.pb.baseUrl}/api/files/${albumRecord.collectionId}/${albumRecord.id}/$coverImage';
         }
       } catch (e) {
-        debugPrint('Error generating album cover URL: $e');
+        // Silently handle album cover URL generation errors
       }
     }
     

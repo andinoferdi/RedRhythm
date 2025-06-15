@@ -783,15 +783,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               final isPlayingFromThisPlaylist = currentPlaylistId != null && 
                                                currentPlaylistId == _currentPlaylist.id;
               
-              // DEBUG: Log the current state for troubleshooting
-              if (isCurrentSong) {
-                debugPrint('🔍 PLAYLIST_DETAIL DEBUG: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}');
-              }
-              
               // CRITICAL: If currentPlaylistId is null, song is playing without playlist context
               // In this case, NEVER show as playing in any playlist screen
               if (isCurrentSong && currentPlaylistId == null) {
-                debugPrint('🚫 PLAYLIST_DETAIL: Song "${song.title}" playing without playlist context - forcing isPlaying = false');
                 // Song is playing from search/individual playback - don't show as playing in playlist
                 return SongItemWidget(
                   song: song,

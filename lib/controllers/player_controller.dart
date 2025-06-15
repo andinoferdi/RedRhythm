@@ -219,7 +219,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   }
   
   /// Core play song method that handles all playback logic
-  Future<void> playSong(Song song) async {
+  Future<void> playSong(Song song, {bool forceRestart = false}) async {
     if (_isDisposed) return;
     
     try {
@@ -237,8 +237,8 @@ class PlayerController extends StateNotifier<PlayerState> {
         return;
       }
       
-      // Check if this URL is already playing
-      if (_currentAudioUrl == audioUrl && _audioPlayer.playing) {
+      // Check if this URL is already playing (unless forced restart)
+      if (!forceRestart && _currentAudioUrl == audioUrl && _audioPlayer.playing) {
         return;
       }
       
@@ -474,13 +474,21 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
-    // Reduced debug logging for better performance
+    
+    final songToPlay = songs[startIndex];
+    final isCurrentSong = state.currentSong?.id == songToPlay.id;
+    final isDifferentContext = state.currentPlaylistId != playlistId;
+    
+    // Force restart if same song but different context (e.g., from search to playlist)
+    final shouldForceRestart = isCurrentSong && isDifferentContext;
+    
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: playlistId,
     );
-    await playSong(songs[startIndex]);
+    
+    await playSong(songToPlay, forceRestart: shouldForceRestart);
   }
 
   /// Set queue and play (no playlist context)
@@ -489,13 +497,21 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) {
       return;
     }
-    // Reduced debug logging for better performance
+    
+    final songToPlay = songs[startIndex];
+    final isCurrentSong = state.currentSong?.id == songToPlay.id;
+    final isDifferentContext = state.currentPlaylistId != null;
+    
+    // Force restart if same song but different context (e.g., from playlist to search)
+    final shouldForceRestart = isCurrentSong && isDifferentContext;
+    
     state = state.copyWith(
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: null,
     );
-    await playSong(songs[startIndex]);
+    
+    await playSong(songToPlay, forceRestart: shouldForceRestart);
   }
   
   /// Toggle shuffle mode
@@ -586,7 +602,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         currentIndex: newIndex,
         currentSong: newSong,
       );
-      playSong(newSong);
+      playSong(newSong); // No force restart needed for queue removal
       return;
     }
     
@@ -661,6 +677,12 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> playSongWithoutPlaylist(Song song) async {
     if (_isDisposed) return;
     
+    final isCurrentSong = state.currentSong?.id == song.id;
+    final isDifferentContext = state.currentPlaylistId != null;
+    
+    // Force restart if same song but different context (e.g., from playlist to search)
+    final shouldForceRestart = isCurrentSong && isDifferentContext;
+    
     // Reset shuffle mode when playing without playlist context
     if (state.shuffleMode) {
       state = state.copyWith(shuffleMode: false);
@@ -673,7 +695,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       currentPlaylistId: null,
     );
     
-    await playSong(song);
+    await playSong(song, forceRestart: shouldForceRestart);
   }
   
   /// Play song by ID without playlist context (for individual song playback)

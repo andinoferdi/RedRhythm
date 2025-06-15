@@ -20,24 +20,16 @@ class Playlist with _$Playlist {
   factory Playlist.fromJson(Map<String, dynamic> json) => _$PlaylistFromJson(json);
 
   factory Playlist.fromRecord(RecordModel record) {
-    debugPrint('🎵 PLAYLIST_MODEL: Parsing record: ${record.id}');
-    debugPrint('🎵 PLAYLIST_MODEL: Record data: ${record.data}');
-    debugPrint('🎵 PLAYLIST_MODEL: Available fields: ${record.data.keys.toList()}');
-    
     // Try different possible field names for songs
     List<String> songs = [];
     if (record.data.containsKey('songs')) {
       songs = List<String>.from(record.data['songs'] ?? []);
-      debugPrint('🎵 PLAYLIST_MODEL: Found songs field: $songs');
     } else if (record.data.containsKey('song_ids')) {
       songs = List<String>.from(record.data['song_ids'] ?? []);
-      debugPrint('🎵 PLAYLIST_MODEL: Found song_ids field: $songs');
     } else if (record.data.containsKey('tracks')) {
       songs = List<String>.from(record.data['tracks'] ?? []);
-      debugPrint('🎵 PLAYLIST_MODEL: Found tracks field: $songs');
-    } else {
-      debugPrint('🎵 PLAYLIST_MODEL: No songs field found! Available fields: ${record.data.keys.toList()}');
     }
+    // Note: Songs field parsing handles multiple possible field names
     
     return Playlist(
       id: record.id,
