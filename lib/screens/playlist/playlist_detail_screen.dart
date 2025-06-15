@@ -687,22 +687,35 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           final playerState = ref.watch(playerControllerProvider);
           final currentPlaylistId = playerState.currentPlaylistId;
           
-          // Only show as "playing" if song is current AND playing from this playlist
+          // Enhanced logic: Only show as "playing" if song is current AND was started from this playlist
           final isCurrentSong = playerState.currentSong?.id == song.id;
           final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
-          final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying;
+          
+          // Additional check: Make sure the song is actually in the current queue position
+          // This prevents race condition when playlist context changes mid-song
+          bool isActuallyPlayingFromQueue = false;
+          if (isCurrentSong && isPlayingFromThisPlaylist && playerState.queue.isNotEmpty) {
+            // Check if current song matches the song at current queue index
+            final currentIndex = playerState.currentIndex;
+            if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
+              final queueSong = playerState.queue[currentIndex];
+              isActuallyPlayingFromQueue = queueSong.id == song.id;
+            }
+          }
+          
+          final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying && isActuallyPlayingFromQueue;
           
           // Debug for tracking
           if (isCurrentSong) {
-            debugPrint('🎧 PLAYLIST_DETAIL: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist');
+            debugPrint('🎧 PLAYLIST_DETAIL: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist, isActuallyPlayingFromQueue: $isActuallyPlayingFromQueue');
           }
           
           return SongItemWidget(
             song: song,
             subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            // Override the default playing state logic
-            isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
+            // Override the default playing state logic with enhanced queue checking
+            isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist && isActuallyPlayingFromQueue,
             isPlaying: isPlaying,
             onTap: () {
               // Always allow playing songs from playlist
