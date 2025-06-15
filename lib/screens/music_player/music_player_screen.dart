@@ -35,13 +35,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       );
     }
 
-    // If a song was provided but not yet played, start playback
-    if (widget.song != null && (playerState.currentSong == null || playerState.currentSong?.id != widget.song?.id)) {
-      // Use a microtask to avoid state changes during build
-      Future.microtask(() {
-        ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(widget.song!);
-      });
-    }
+    // Note: Removed automatic playback initiation to prevent interference with existing playback
+    // The music player screen should only display current state, not start new playback
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -187,8 +182,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           color: AppColors.text,
                           size: 36,
                         ),
-                        onPressed: () {
-                          ref.read(playerControllerProvider.notifier).skipPrevious();
+                        onPressed: () async {
+                          try {
+                            await ref.read(playerControllerProvider.notifier).skipPrevious();
+                          } catch (e) {
+                            debugPrint('Error skipping to previous song: $e');
+                          }
                         },
                       ),
                       Container(
@@ -226,8 +225,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           color: AppColors.text,
                           size: 36,
                         ),
-                        onPressed: () {
-                          ref.read(playerControllerProvider.notifier).skipNext();
+                        onPressed: () async {
+                          try {
+                            await ref.read(playerControllerProvider.notifier).skipNext();
+                          } catch (e) {
+                            debugPrint('Error skipping to next song: $e');
+                          }
                         },
                       ),
                       IconButton(

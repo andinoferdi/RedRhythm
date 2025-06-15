@@ -14,14 +14,64 @@ final playerControllerProvider = StateNotifierProvider<PlayerController, PlayerS
 
 /// Controller for handling music playback
 class PlayerController extends StateNotifier<PlayerState> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  late final AudioPlayer _audioPlayer;
   final Ref ref;
   Timer? _positionTimer;
   String? _currentAudioUrl;
   bool _isDisposed = false;
   
   PlayerController(this.ref) : super(PlayerState.initial()) {
-    _initAudioPlayer();
+    _initializeAudioPlayer();
+  }
+  
+  /// Initialize audio player with error handling
+  void _initializeAudioPlayer() {
+    try {
+      _audioPlayer = AudioPlayer();
+      _initAudioPlayer();
+    } catch (e) {
+      debugPrint('Error initializing audio player: $e');
+      // Try to reinitialize after a delay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (!_isDisposed) {
+          try {
+            _audioPlayer = AudioPlayer();
+            _initAudioPlayer();
+          } catch (retryError) {
+            debugPrint('Failed to reinitialize audio player: $retryError');
+          }
+        }
+      });
+    }
+  }
+  
+  /// Recreate audio player to fix instance conflicts
+  Future<void> _recreateAudioPlayer() async {
+    if (_isDisposed) return;
+    
+    try {
+      debugPrint('🔄 Recreating audio player...');
+      
+      // Cancel position timer
+      _positionTimer?.cancel();
+      
+      // Dispose current player
+      await _audioPlayer.dispose();
+      
+      // Wait for cleanup
+      await Future.delayed(const Duration(milliseconds: 200));
+      
+      // Create new player
+      _audioPlayer = AudioPlayer();
+      
+      // Reinitialize listeners
+      _initAudioPlayer();
+      
+      debugPrint('✅ Audio player recreated successfully');
+    } catch (e) {
+      debugPrint('❌ Error recreating audio player: $e');
+      rethrow;
+    }
   }
   
   @override
@@ -216,15 +266,6 @@ class PlayerController extends StateNotifier<PlayerState> {
         return;
       }
       
-      // Stop any current playback first
-      try {
-        await _audioPlayer.stop();
-        // Small delay to ensure stop completes
-        await Future.delayed(const Duration(milliseconds: 100));
-      } catch (e) {
-        debugPrint('Warning: Error stopping current playback: $e');
-      }
-      
       // Set state to buffering while we prepare to play
       state = state.copyWith(
         currentSong: song,
@@ -234,13 +275,26 @@ class PlayerController extends StateNotifier<PlayerState> {
         // Don't modify currentPlaylistId here - preserve existing context
       );
       
+      // Properly stop and dispose current playback to avoid "player already exists" error
+      try {
+        if (_audioPlayer.playing) {
+          await _audioPlayer.stop();
+        }
+        // Clear any existing audio source
+        await _audioPlayer.setUrl('');
+        // Small delay to ensure cleanup completes
+        await Future.delayed(const Duration(milliseconds: 200));
+      } catch (e) {
+        debugPrint('Warning: Error stopping current playback: $e');
+      }
+      
       // Set the audio source with timeout
       _currentAudioUrl = audioUrl;
       
       // Use a timeout to prevent loading from hanging
       await Future.any([
         _audioPlayer.setUrl(audioUrl),
-        Future.delayed(const Duration(seconds: 10), () => throw TimeoutException('Audio loading timeout')),
+        Future.delayed(const Duration(seconds: 15), () => throw TimeoutException('Audio loading timeout')),
       ]);
       
       // Check if we're still supposed to be playing this song (user might have changed song)
@@ -277,11 +331,42 @@ class PlayerController extends StateNotifier<PlayerState> {
         );
       }
       
-      // Try fallback URL if available
-      if (!audioUrl.contains('soundhelix.com')) {
+      // Handle "player already exists" error by recreating the player
+      if (e.toString().contains('already exists')) {
+        debugPrint('Player instance conflict detected, recreating audio player...');
+        try {
+          // Dispose current player and create new one
+          await _recreateAudioPlayer();
+          
+          // Retry playing the song with new player
+          await Future.delayed(const Duration(milliseconds: 300));
+          await _audioPlayer.setUrl(audioUrl);
+          await _audioPlayer.play();
+          _currentAudioUrl = audioUrl;
+          
+          if (!_isDisposed) {
+            state = state.copyWith(
+              isPlaying: true,
+              isBuffering: false,
+            );
+          }
+          debugPrint('Successfully played song after recreating player');
+          
+          // Add to play history when song starts playing
+          _addToPlayHistory(song.id);
+          return;
+        } catch (recreateError) {
+          debugPrint('Failed to recreate player and play song: $recreateError');
+        }
+      }
+      
+      // Try fallback URL if available and it's not a player instance error
+      if (!audioUrl.contains('soundhelix.com') && !e.toString().contains('already exists')) {
         debugPrint('Trying fallback audio URL...');
         final fallbackUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
         try {
+          // Wait a bit more before trying fallback to ensure cleanup
+          await Future.delayed(const Duration(milliseconds: 500));
           await _audioPlayer.setUrl(fallbackUrl);
           await _audioPlayer.play();
           _currentAudioUrl = fallbackUrl;
@@ -369,97 +454,113 @@ class PlayerController extends StateNotifier<PlayerState> {
   Future<void> skipNext() async {
     if (_isDisposed) return;
     
-    if (state.queue.isEmpty) {
-      debugPrint('🎵 SKIP_NEXT: Queue is empty, cannot skip');
-      return;
-    }
-    
-    debugPrint('🎵 SKIP_NEXT: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Repeat mode: ${state.repeatMode}');
-    
-    // Handle repeat modes
-    if (state.repeatMode == RepeatMode.one) {
-      // Repeat current song
-      debugPrint('🎵 SKIP_NEXT: Repeat mode ONE - restarting current song');
-      await seekTo(Duration.zero);
-      return;
-    }
-    
-    int nextIndex;
-    
-    if (state.currentIndex >= state.queue.length - 1) {
-      // We're at the last song
-      if (state.repeatMode == RepeatMode.all) {
-        // Go back to first song
-        nextIndex = 0;
-        debugPrint('🎵 SKIP_NEXT: Repeat mode ALL - going to first song');
-      } else {
-        // No repeat, stop playback
-        debugPrint('🎵 SKIP_NEXT: At last song with no repeat - stopping playback');
-        await pause();
+    try {
+      if (state.queue.isEmpty) {
+        debugPrint('🎵 SKIP_NEXT: Queue is empty, cannot skip');
         return;
       }
-    } else {
-      // Normal next song
-      nextIndex = state.currentIndex + 1;
-      debugPrint('🎵 SKIP_NEXT: Going to next song at index $nextIndex');
+      
+      debugPrint('🎵 SKIP_NEXT: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Repeat mode: ${state.repeatMode}');
+      
+      // Handle repeat modes
+      if (state.repeatMode == RepeatMode.one) {
+        // Repeat current song
+        debugPrint('🎵 SKIP_NEXT: Repeat mode ONE - restarting current song');
+        await seekTo(Duration.zero);
+        return;
+      }
+      
+      int nextIndex;
+      
+      if (state.currentIndex >= state.queue.length - 1) {
+        // We're at the last song
+        if (state.repeatMode == RepeatMode.all) {
+          // Go back to first song
+          nextIndex = 0;
+          debugPrint('🎵 SKIP_NEXT: Repeat mode ALL - going to first song');
+        } else {
+          // No repeat, stop playback
+          debugPrint('🎵 SKIP_NEXT: At last song with no repeat - stopping playback');
+          await pause();
+          return;
+        }
+      } else {
+        // Normal next song
+        nextIndex = state.currentIndex + 1;
+        debugPrint('🎵 SKIP_NEXT: Going to next song at index $nextIndex');
+      }
+      
+      final nextSong = state.queue[nextIndex];
+      
+      state = state.copyWith(
+        currentIndex: nextIndex,
+      );
+      
+      debugPrint('🎵 SKIP_NEXT: Playing "${nextSong.title}" at index $nextIndex');
+      await playSong(nextSong);
+    } catch (e) {
+      debugPrint('❌ Error in skipNext: $e');
+      // Reset buffering state on error
+      if (!_isDisposed) {
+        state = state.copyWith(isBuffering: false);
+      }
     }
-    
-    final nextSong = state.queue[nextIndex];
-    
-    state = state.copyWith(
-      currentIndex: nextIndex,
-    );
-    
-    debugPrint('🎵 SKIP_NEXT: Playing "${nextSong.title}" at index $nextIndex');
-    await playSong(nextSong);
   }
   
   /// Skip to previous song
   Future<void> skipPrevious() async {
     if (_isDisposed) return;
     
-    if (state.queue.isEmpty) {
-      debugPrint('🎵 SKIP_PREV: Queue is empty, cannot skip');
-      return;
-    }
-    
-    debugPrint('🎵 SKIP_PREV: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Position: ${state.currentPosition.inSeconds}s');
-    
-    // If we're more than 3 seconds into the song, restart it instead
-    if (state.currentPosition.inSeconds > 3) {
-      debugPrint('🎵 SKIP_PREV: More than 3s into song - restarting current song');
-      await seekTo(Duration.zero);
-      return;
-    }
-    
-    int prevIndex;
-    
-    if (state.currentIndex <= 0) {
-      // We're at the first song
-      if (state.repeatMode == RepeatMode.all) {
-        // Go to last song
-        prevIndex = state.queue.length - 1;
-        debugPrint('🎵 SKIP_PREV: At first song with repeat ALL - going to last song');
-      } else {
-        // No repeat, restart current song
-        debugPrint('🎵 SKIP_PREV: At first song with no repeat - restarting current song');
+    try {
+      if (state.queue.isEmpty) {
+        debugPrint('🎵 SKIP_PREV: Queue is empty, cannot skip');
+        return;
+      }
+      
+      debugPrint('🎵 SKIP_PREV: Current index: ${state.currentIndex}, Queue length: ${state.queue.length}, Position: ${state.currentPosition.inSeconds}s');
+      
+      // If we're more than 3 seconds into the song, restart it instead
+      if (state.currentPosition.inSeconds > 3) {
+        debugPrint('🎵 SKIP_PREV: More than 3s into song - restarting current song');
         await seekTo(Duration.zero);
         return;
       }
-    } else {
-      // Normal previous song
-      prevIndex = state.currentIndex - 1;
-      debugPrint('🎵 SKIP_PREV: Going to previous song at index $prevIndex');
+      
+      int prevIndex;
+      
+      if (state.currentIndex <= 0) {
+        // We're at the first song
+        if (state.repeatMode == RepeatMode.all) {
+          // Go to last song
+          prevIndex = state.queue.length - 1;
+          debugPrint('🎵 SKIP_PREV: At first song with repeat ALL - going to last song');
+        } else {
+          // No repeat, restart current song
+          debugPrint('🎵 SKIP_PREV: At first song with no repeat - restarting current song');
+          await seekTo(Duration.zero);
+          return;
+        }
+      } else {
+        // Normal previous song
+        prevIndex = state.currentIndex - 1;
+        debugPrint('🎵 SKIP_PREV: Going to previous song at index $prevIndex');
+      }
+      
+      final prevSong = state.queue[prevIndex];
+      
+      state = state.copyWith(
+        currentIndex: prevIndex,
+      );
+      
+      debugPrint('🎵 SKIP_PREV: Playing "${prevSong.title}" at index $prevIndex');
+      await playSong(prevSong);
+    } catch (e) {
+      debugPrint('❌ Error in skipPrevious: $e');
+      // Reset buffering state on error
+      if (!_isDisposed) {
+        state = state.copyWith(isBuffering: false);
+      }
     }
-    
-    final prevSong = state.queue[prevIndex];
-    
-    state = state.copyWith(
-      currentIndex: prevIndex,
-    );
-    
-    debugPrint('🎵 SKIP_PREV: Playing "${prevSong.title}" at index $prevIndex');
-    await playSong(prevSong);
   }
   
   /// Seek to a position
@@ -679,6 +780,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
     
     debugPrint('🎵 Playing song WITHOUT playlist context: ${song.title}');
+    debugPrint('🎵 STACK TRACE: ${StackTrace.current}');
     
     // Clear any existing playlist context and reset shuffle mode
     state = state.copyWith(
