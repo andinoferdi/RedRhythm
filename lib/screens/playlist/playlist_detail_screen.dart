@@ -774,15 +774,37 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               final playerState = ref.watch(playerControllerProvider);
               final currentPlaylistId = playerState.currentPlaylistId;
               
-              // Enhanced logic: Only show as "playing" if song is current AND was started from this playlist
-              final isCurrentSong = playerState.currentSong?.id == song.id;
-              final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
+              // STRICT CHECKING: Only show as "playing" if:
+              // 1. Song is currently playing
+              // 2. CurrentPlaylistId matches THIS playlist (not null)
+              // 3. Song is in current queue at correct position
               
-              // Additional check: Make sure the song is actually in the current queue position
-              // This prevents race condition when playlist context changes mid-song
+              final isCurrentSong = playerState.currentSong?.id == song.id;
+              final isPlayingFromThisPlaylist = currentPlaylistId != null && 
+                                               currentPlaylistId == _currentPlaylist.id;
+              
+              // DEBUG: Log the current state for troubleshooting
+              if (isCurrentSong) {
+                debugPrint('🔍 PLAYLIST_DETAIL DEBUG: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}');
+              }
+              
+              // CRITICAL: If currentPlaylistId is null, song is playing without playlist context
+              // In this case, NEVER show as playing in any playlist screen
+              if (isCurrentSong && currentPlaylistId == null) {
+                debugPrint('🚫 PLAYLIST_DETAIL: Song "${song.title}" playing without playlist context - forcing isPlaying = false');
+                // Song is playing from search/individual playback - don't show as playing in playlist
+                return SongItemWidget(
+                  song: song,
+                  isCurrentSong: false, // Explicitly set to false
+                  isPlaying: false,     // Explicitly set to false
+                  onTap: () => _playSong(song),
+                  index: index + 1,
+                );
+              }
+              
+              // Additional validation: Check queue position to prevent race conditions
               bool isActuallyPlayingFromQueue = false;
               if (isCurrentSong && isPlayingFromThisPlaylist && playerState.queue.isNotEmpty) {
-                // Check if current song matches the song at current queue index
                 final currentIndex = playerState.currentIndex;
                 if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
                   final queueSong = playerState.queue[currentIndex];
@@ -790,9 +812,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 }
               }
               
-              final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying && isActuallyPlayingFromQueue;
+              // FINAL CHECK: All conditions must be true
+              final isPlaying = isCurrentSong && 
+                               isPlayingFromThisPlaylist && 
+                               playerState.isPlaying && 
+                               isActuallyPlayingFromQueue;
               
-              // Reduced debug logging for better performance
+              // Note: Race condition fix is working correctly - song playing without playlist context is properly handled
               
               return SongItemWidget(
                 song: song,
