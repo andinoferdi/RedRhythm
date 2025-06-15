@@ -183,7 +183,7 @@ class __$$PlaylistImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$PlaylistImpl implements _Playlist {
+class _$PlaylistImpl with DiagnosticableTreeMixin implements _Playlist {
   const _$PlaylistImpl(
       {required this.id,
       required this.name,
@@ -219,8 +219,22 @@ class _$PlaylistImpl implements _Playlist {
   final DateTime updatedAt;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'Playlist(id: $id, name: $name, userId: $userId, songs: $songs, imageUrl: $imageUrl, createdAt: $createdAt, updatedAt: $updatedAt)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'Playlist'))
+      ..add(DiagnosticsProperty('id', id))
+      ..add(DiagnosticsProperty('name', name))
+      ..add(DiagnosticsProperty('userId', userId))
+      ..add(DiagnosticsProperty('songs', songs))
+      ..add(DiagnosticsProperty('imageUrl', imageUrl))
+      ..add(DiagnosticsProperty('createdAt', createdAt))
+      ..add(DiagnosticsProperty('updatedAt', updatedAt));
   }
 
   @override

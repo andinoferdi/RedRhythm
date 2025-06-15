@@ -99,12 +99,29 @@ class PlayerController extends StateNotifier<PlayerState> {
   
   /// Update song with actual audio duration
   Song _updateSongWithRealDuration(Song song, Duration realDuration) {
-    // Only update if the real duration is significantly different
-    if ((song.duration - realDuration).inSeconds.abs() > 5) {
+    // Only update if the real duration is significantly different or if duration is 0
+    if ((song.duration - realDuration).inSeconds.abs() > 5 || song.durationInSeconds == 0) {
       debugPrint('Memperbarui durasi lagu dari ${song.durationInSeconds}s menjadi ${realDuration.inSeconds}s');
+      
+      // Update the song duration in database if it's 0 or significantly different
+      _updateDurationInDatabase(song.id, realDuration.inSeconds);
+      
       return song.copyWith(durationInSeconds: realDuration.inSeconds);
     }
     return song;
+  }
+
+  /// Update song duration in PocketBase database
+  Future<void> _updateDurationInDatabase(String songId, int durationInSeconds) async {
+    try {
+      final pbService = PocketBaseService();
+      await pbService.pb.collection('songs').update(songId, body: {
+        'duration': durationInSeconds,
+      });
+      debugPrint('✅ Song duration updated in database: $songId -> ${durationInSeconds}s');
+    } catch (e) {
+      debugPrint('❌ Error updating song duration in database: $e');
+    }
   }
   
   /// Handle song completion based on repeat mode

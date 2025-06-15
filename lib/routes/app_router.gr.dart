@@ -27,6 +27,12 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthWrapper(),
       );
     },
+    DurationUpdateRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const DurationUpdateScreen(),
+      );
+    },
     EditPlaylistRoute.name: (routeData) {
       final args = routeData.argsAs<EditPlaylistRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -146,6 +152,20 @@ class AuthWrapperRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'AuthWrapperRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [DurationUpdateScreen]
+class DurationUpdateRoute extends PageRouteInfo<void> {
+  const DurationUpdateRoute({List<PageRouteInfo>? children})
+      : super(
+          DurationUpdateRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'DurationUpdateRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }

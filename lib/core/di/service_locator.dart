@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../../services/pocketbase_service.dart';
+import '../../services/audio_duration_service.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../repositories/genre_repository.dart';
@@ -11,6 +12,7 @@ Future<void> setupServiceLocator() async {
   
   // Services - Singleton
   getIt.registerLazySingleton<PocketBaseService>(() => PocketBaseService());
+  getIt.registerLazySingleton<AudioDurationService>(() => AudioDurationService());
   
   // Repositories - Singleton
   getIt.registerLazySingleton<SongRepository>(() => SongRepository(

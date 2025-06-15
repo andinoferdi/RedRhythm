@@ -12,6 +12,7 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
+import '../../routes/app_router.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,60 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   VoidCallback? _refreshPlaylists;
+
+  void _showAdminOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 50,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[600],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Admin Options',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.timer, color: Colors.orange),
+                title: const Text(
+                  'Update Song Durations',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Auto-detect durations from MP3 files',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.router.push(const DurationUpdateRoute());
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
@@ -94,16 +149,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 145, // Constrain width
-                  child: const Text(
-                    'Library',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 25, // Match size with other screens
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                  child: GestureDetector(
+                    onLongPress: () {
+                      // Admin access through long press
+                      _showAdminOptions(context);
+                    },
+                    child: const Text(
+                      'Library',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 25, // Match size with other screens
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Poppins',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

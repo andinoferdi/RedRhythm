@@ -24,6 +24,9 @@ void main() async {
   // Initialize PocketBase connection (this will also restore saved auth)
   await GetIt.I<PocketBaseService>().initialize();
   
+  // Auto-update song durations on app startup (optional)
+  // _autoUpdateDurationsOnStartup();
+  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
