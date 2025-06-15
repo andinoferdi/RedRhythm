@@ -265,7 +265,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   /// Play song (show in mini player, don't navigate)
-  void _playSong(Song song, int index) {
+  void _playSong(Song song) {
     debugPrint('🎧 PLAYLIST_DETAIL: Playing song "${song.title}" from playlist "${_currentPlaylist.data['name']}" - using playQueueFromPlaylist');
     
     final playerState = ref.read(playerControllerProvider);
@@ -284,7 +284,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     } else {
       // Use original order
       playQueue = List.from(_songs);
-      startIndex = index;
+      startIndex = _songs.indexOf(song);
     }
 
     ref.read(playerControllerProvider.notifier).playQueueFromPlaylist(playQueue, startIndex, _currentPlaylist.id);
@@ -466,8 +466,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-
-
   Widget _buildCreatorAvatar() {
     if (_isLoadingCreator) {
       return CircleAvatar(
@@ -605,73 +603,74 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   Widget _buildPlayButton() {
-    final playerState = ref.watch(playerControllerProvider);
-    final currentPlaylistId = playerState.currentPlaylistId;
-    
-    // Only consider as "playlist playing" if currently playing from THIS playlist
-    final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
-    final isPlaylistPlaying = isPlayingFromThisPlaylist && 
-                             _songs.any((song) => song.id == playerState.currentSong?.id);
-    
-    // Debug for tracking button state
-    if (playerState.currentSong != null) {
-      debugPrint('🎛️ PLAY_BUTTON: currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist, isPlaylistPlaying: $isPlaylistPlaying');
-    }
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          Flexible(
-            child: ElevatedButton.icon(
-              onPressed: _songs.isNotEmpty ? _playAllSongs : null,
-              icon: Icon(
-                isPlaylistPlaying && playerState.isPlaying 
-                    ? Icons.pause 
-                    : Icons.play_arrow, 
-                color: Colors.white,
-              ),
-              label: Text(
-                isPlaylistPlaying && playerState.isPlaying ? 'Jeda' : 'Putar',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+    return Consumer(
+      builder: (context, ref, child) {
+        final playerState = ref.watch(playerControllerProvider);
+        final currentPlaylistId = playerState.currentPlaylistId;
+        
+        // Only consider as "playlist playing" if currently playing from THIS playlist
+        final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
+        final isPlaylistPlaying = isPlayingFromThisPlaylist && 
+                                 _songs.any((song) => song.id == playerState.currentSong?.id);
+        
+        // Reduced debug logging for better performance
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              Flexible(
+                child: ElevatedButton.icon(
+                  onPressed: _songs.isNotEmpty ? _playAllSongs : null,
+                  icon: Icon(
+                    isPlaylistPlaying && playerState.isPlaying 
+                        ? Icons.pause 
+                        : Icons.play_arrow, 
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    isPlaylistPlaying && playerState.isPlaying ? 'Jeda' : 'Putar',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    disabledBackgroundColor: Colors.grey[700],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                disabledBackgroundColor: Colors.grey[700],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+              const SizedBox(width: 16),
+              IconButton(
+                onPressed: _toggleShuffle,
+                icon: Icon(
+                  Icons.shuffle, 
+                  color: playerState.shuffleMode ? Colors.red : Colors.white,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                style: IconButton.styleFrom(
+                  backgroundColor: playerState.shuffleMode ? Colors.red.withOpacity(0.2) : Colors.grey[800],
+                  padding: const EdgeInsets.all(12),
+                ),
               ),
-            ),
+              const Spacer(),
+              IconButton(
+                onPressed: _navigateToAddSongs,
+                icon: const Icon(Icons.add, color: Colors.white),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.grey[800],
+                  padding: const EdgeInsets.all(12),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          IconButton(
-            onPressed: _toggleShuffle,
-            icon: Icon(
-              Icons.shuffle, 
-              color: playerState.shuffleMode ? Colors.red : Colors.white,
-            ),
-            style: IconButton.styleFrom(
-              backgroundColor: playerState.shuffleMode ? Colors.red.withOpacity(0.2) : Colors.grey[800],
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: _navigateToAddSongs,
-            icon: const Icon(Icons.add, color: Colors.white),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.grey[800],
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -769,42 +768,38 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       delegate: SliverChildBuilderDelegate(
         (context, index) {
           final song = _songs[index];
-          final playerState = ref.watch(playerControllerProvider);
-          final currentPlaylistId = playerState.currentPlaylistId;
           
-          // Enhanced logic: Only show as "playing" if song is current AND was started from this playlist
-          final isCurrentSong = playerState.currentSong?.id == song.id;
-          final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
-          
-          // Additional check: Make sure the song is actually in the current queue position
-          // This prevents race condition when playlist context changes mid-song
-          bool isActuallyPlayingFromQueue = false;
-          if (isCurrentSong && isPlayingFromThisPlaylist && playerState.queue.isNotEmpty) {
-            // Check if current song matches the song at current queue index
-            final currentIndex = playerState.currentIndex;
-            if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
-              final queueSong = playerState.queue[currentIndex];
-              isActuallyPlayingFromQueue = queueSong.id == song.id;
-            }
-          }
-          
-          final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying && isActuallyPlayingFromQueue;
-          
-          // Debug for tracking
-          if (isCurrentSong) {
-            debugPrint('🎧 PLAYLIST_DETAIL: Song "${song.title}" - currentPlaylistId: $currentPlaylistId, thisPlaylistId: ${_currentPlaylist.id}, isPlayingFromThisPlaylist: $isPlayingFromThisPlaylist, isActuallyPlayingFromQueue: $isActuallyPlayingFromQueue');
-          }
-          
-          return SongItemWidget(
-            song: song,
-            subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-            // Override the default playing state logic with enhanced queue checking
-            isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist && isActuallyPlayingFromQueue,
-            isPlaying: isPlaying,
-            onTap: () {
-              // Always allow playing songs from playlist
-              _playSong(song, index);
+          return Consumer(
+            builder: (context, ref, child) {
+              final playerState = ref.watch(playerControllerProvider);
+              final currentPlaylistId = playerState.currentPlaylistId;
+              
+              // Enhanced logic: Only show as "playing" if song is current AND was started from this playlist
+              final isCurrentSong = playerState.currentSong?.id == song.id;
+              final isPlayingFromThisPlaylist = currentPlaylistId == _currentPlaylist.id;
+              
+              // Additional check: Make sure the song is actually in the current queue position
+              // This prevents race condition when playlist context changes mid-song
+              bool isActuallyPlayingFromQueue = false;
+              if (isCurrentSong && isPlayingFromThisPlaylist && playerState.queue.isNotEmpty) {
+                // Check if current song matches the song at current queue index
+                final currentIndex = playerState.currentIndex;
+                if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
+                  final queueSong = playerState.queue[currentIndex];
+                  isActuallyPlayingFromQueue = queueSong.id == song.id;
+                }
+              }
+              
+              final isPlaying = isCurrentSong && isPlayingFromThisPlaylist && playerState.isPlaying && isActuallyPlayingFromQueue;
+              
+              // Reduced debug logging for better performance
+              
+              return SongItemWidget(
+                song: song,
+                isPlaying: isPlaying,
+                onTap: () => _playSong(song),
+                index: index + 1,
+              );
             },
           );
         },

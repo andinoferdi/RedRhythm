@@ -71,25 +71,15 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
   Future<void> _checkIfSongInPlaylist() async {
     final currentSong = ref.read(playerControllerProvider).currentSong;
-    if (currentSong == null) {
-      debugPrint('🎵 MINI_PLAYER: No current song, skipping playlist check');
-      if (mounted) {
-        setState(() {
-          _isInPlaylist = false;
-          _lastCheckedSongId = null;
-        });
-      }
-      return;
-    }
-
-    // Skip if we already checked this song recently
-    if (_lastCheckedSongId == currentSong.id && !_isLoadingPlaylists) {
-      debugPrint('🎵 MINI_PLAYER: Song ${currentSong.title} already checked, skipping');
+    if (currentSong == null) return;
+    
+    // Avoid duplicate checks for the same song
+    if (_lastCheckedSongId == currentSong.id && !_hasOptimisticState) {
       return;
     }
 
     try {
-      debugPrint('🎵 MINI_PLAYER: Checking if song "${currentSong.title}" (ID: ${currentSong.id}) is in any playlist');
+      // Reduced debug logging for better performance
       
       // Set loading state immediately for better UX
       if (mounted) {
@@ -105,10 +95,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
       if (_cachedPlaylists != null && 
           _cacheTimestamp != null && 
           now.difference(_cacheTimestamp!).compareTo(_cacheValidDuration) < 0) {
-        debugPrint('🎵 MINI_PLAYER: Using cached playlist data');
         allPlaylists = _cachedPlaylists!;
       } else {
-        debugPrint('🎵 MINI_PLAYER: Fetching fresh playlist data');
         final pbService = PocketBaseService();
         await pbService.initialize();
         final repository = SongPlaylistRepository(pbService);
@@ -119,20 +107,15 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
         _cacheTimestamp = now;
       }
       
-      debugPrint('🎵 MINI_PLAYER: Total playlists available: ${allPlaylists.length}');
-      
       bool foundInAnyPlaylist = false;
       
       for (final playlist in allPlaylists) {
         final containsSong = playlist.songs.contains(currentSong.id);
         if (containsSong) {
           foundInAnyPlaylist = true;
-          debugPrint('🎵 MINI_PLAYER: ✅ Song found in playlist "${playlist.name}"');
           break; // Early exit for better performance
         }
       }
-      
-      debugPrint('🎵 MINI_PLAYER: Final result - song found in any playlist: $foundInAnyPlaylist');
       
       if (mounted) {
         setState(() {
@@ -140,14 +123,12 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           _lastCheckedSongId = currentSong.id;
           _isLoadingPlaylists = false;
         });
-        debugPrint('🎵 MINI_PLAYER: Updated button state - isInPlaylist: $_isInPlaylist');
         
         // Clear optimistic state now that we have real state
         _clearOptimisticState();
       }
     } catch (e) {
-      debugPrint('🎵 MINI_PLAYER: Error checking playlists: $e');
-      debugPrint('🎵 MINI_PLAYER: Error type: ${e.runtimeType}');
+      // Reduced debug logging for better performance
       // Don't show error to user for this background check
       if (mounted) {
         setState(() {
@@ -166,11 +147,11 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   static void _clearPlaylistCache() {
     _cachedPlaylists = null;
     _cacheTimestamp = null;
-    debugPrint('🎵 MINI_PLAYER: Playlist cache cleared');
+    // Reduced debug logging for better performance
   }
 
   Future<void> _showPlaylistModal(BuildContext context, Song song) async {
-    debugPrint('🎵 MINI_PLAYER: Opening playlist modal for song: ${song.title}');
+    // Reduced debug logging for better performance
     
     await showPlaylistSelectionModal(
       context,
@@ -192,16 +173,24 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
       _optimisticState = state;
       _hasOptimisticState = true;
     });
-    debugPrint('🎵 MINI_PLAYER: Set optimistic state to $state');
+    // Reduced debug logging for better performance
   }
 
-  // Clear optimistic state when real state is confirmed
   void _clearOptimisticState() {
     if (_hasOptimisticState) {
       setState(() {
         _hasOptimisticState = false;
+        _optimisticState = false;
       });
-      debugPrint('🎵 MINI_PLAYER: Cleared optimistic state');
+      // Reduced debug logging for better performance
+    }
+  }
+
+  void _onSongChanged(Song? oldSong, Song? newSong) {
+    if (oldSong?.id != newSong?.id) {
+      // Reduced debug logging for better performance
+      _lastCheckedSongId = null; // Reset cache for new song
+      _checkIfSongInPlaylist();
     }
   }
 
@@ -210,17 +199,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     final playerState = ref.watch(playerControllerProvider);
     final currentSong = playerState.currentSong;
     
-    // Watch for playlist updates to refresh button state
-    ref.listen(playlistUpdateNotifierProvider, (previous, next) {
-      _checkIfSongInPlaylist();
-    });
-    
-    // Watch for song changes to refresh button state
+    // Watch for song changes to refresh button state with debouncing
     ref.listen(playerControllerProvider.select((state) => state.currentSong), (previous, next) {
-      if (next != null && (previous?.id != next.id)) {
-        debugPrint('🎵 MINI_PLAYER: Song changed from ${previous?.title} to ${next.title}, checking playlist status');
-        _checkIfSongInPlaylist();
-      }
+      _onSongChanged(previous, next);
     });
     
     // Don't show mini player if no song is playing

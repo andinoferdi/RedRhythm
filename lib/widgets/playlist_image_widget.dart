@@ -23,15 +23,19 @@ class PlaylistImageWidget extends StatefulWidget {
 
   // Cache for playlist songs to avoid repeated API calls
   static final Map<String, List<Song>> _playlistSongsCache = {};
+  // Cache for built mosaic widgets to prevent unnecessary rebuilds
+  static final Map<String, Widget> _mosaicWidgetCache = {};
 
   /// Clear the cache for a specific playlist (useful when playlist is updated)
   static void clearCache(String playlistId) {
     _playlistSongsCache.remove(playlistId);
+    _mosaicWidgetCache.remove(playlistId);
   }
 
   /// Clear all cached playlist data
   static void clearAllCache() {
     _playlistSongsCache.clear();
+    _mosaicWidgetCache.clear();
   }
 
   @override
@@ -42,6 +46,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   List<Song>? _songs;
   bool _isLoading = false;
   String? _currentPlaylistId;
+  String? _lastBuiltCacheKey;
   
   @override
   void initState() {
@@ -56,8 +61,13 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     // Only reload if playlist ID changed
     if (oldWidget.playlist.id != widget.playlist.id) {
       _currentPlaylistId = widget.playlist.id;
+      _lastBuiltCacheKey = null; // Reset cache key
       _loadPlaylistSongs();
     }
+  }
+
+  String _getCacheKey() {
+    return '${widget.playlist.id}_${widget.size}_${widget.showMosaicForEmptyPlaylists}';
   }
 
   void _loadPlaylistSongs() {
@@ -66,16 +76,17 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     // Check cache first
     if (PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
       final cachedSongs = PlaylistImageWidget._playlistSongsCache[playlistId]!;
-      debugPrint('🎵 PLAYLIST_IMAGE: Found ${cachedSongs.length} cached songs for playlist $playlistId');
-      setState(() {
-        _songs = cachedSongs;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _songs = cachedSongs;
+          _isLoading = false;
+        });
+      }
       return;
     }
 
     // Only set loading if we don't have cached data
-    if (_songs == null) {
+    if (_songs == null && mounted) {
       setState(() {
         _isLoading = true;
       });
@@ -125,7 +136,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         }
       }
     } catch (e) {
-      debugPrint('🎵 PLAYLIST_IMAGE: Error getting cover image URL: $e');
+      // Reduced debug logging for better performance
     }
 
     if (customImageUrl.isNotEmpty) {
@@ -169,12 +180,18 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
 
   Widget _buildMosaicArtwork(List<Song> songs) {
     if (songs.isEmpty) {
-      debugPrint('🎵 PLAYLIST_IMAGE: No songs found, showing placeholder');
       return _buildPlaceholderImage();
     }
 
-    debugPrint('🎵 PLAYLIST_IMAGE: Building mosaic from ${songs.length} songs');
+    // Use cache for built widgets to prevent unnecessary rebuilds
+    final cacheKey = _getCacheKey();
+    if (_lastBuiltCacheKey == cacheKey && 
+        PlaylistImageWidget._mosaicWidgetCache.containsKey(cacheKey)) {
+      return PlaylistImageWidget._mosaicWidgetCache[cacheKey]!;
+    }
 
+    // Reduced debug logging for better performance
+    
     // Get unique album covers (max 4)
     final Set<String> uniqueCovers = {};
     final List<String> albumCovers = [];
@@ -187,23 +204,25 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       }
     }
 
-    debugPrint('🎵 PLAYLIST_IMAGE: Found ${albumCovers.length} unique album covers');
-
     if (albumCovers.isEmpty) {
-      debugPrint('🎵 PLAYLIST_IMAGE: No album covers found, showing placeholder');
       return _buildPlaceholderImage();
     }
 
+    Widget builtWidget;
     // Logic for displaying artwork:
     // - If only 1 unique album OR playlist has 3 or fewer songs: show single cover
     // - If 2-4 unique albums AND more than 3 songs: show grid
     if (albumCovers.length == 1 || songs.length <= 3) {
-      debugPrint('🎵 PLAYLIST_IMAGE: Showing single cover');
-      return _buildSingleCover(albumCovers[0]);
+      builtWidget = _buildSingleCover(albumCovers[0]);
+    } else {
+      builtWidget = _buildGridCover(albumCovers);
     }
 
-    debugPrint('🎵 PLAYLIST_IMAGE: Showing grid cover with ${albumCovers.length} images');
-    return _buildGridCover(albumCovers);
+    // Cache the built widget
+    PlaylistImageWidget._mosaicWidgetCache[cacheKey] = builtWidget;
+    _lastBuiltCacheKey = cacheKey;
+    
+    return builtWidget;
   }
 
   Widget _buildSingleCover(String imageUrl) {
@@ -325,12 +344,9 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   }
 
   Future<List<Song>> _getPlaylistSongs(String playlistId) async {
-    debugPrint('🎵 PLAYLIST_IMAGE: Getting songs for playlist $playlistId');
-    
     // Check cache first
     if (PlaylistImageWidget._playlistSongsCache.containsKey(playlistId)) {
       final cachedSongs = PlaylistImageWidget._playlistSongsCache[playlistId]!;
-      debugPrint('🎵 PLAYLIST_IMAGE: Found ${cachedSongs.length} cached songs for playlist $playlistId');
       return cachedSongs;
     }
 
@@ -340,15 +356,12 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       final repository = SongPlaylistRepository(pbService);
       
       final songs = await repository.getPlaylistSongs(playlistId);
-      debugPrint('🎵 PLAYLIST_IMAGE: Loaded ${songs.length} songs for playlist $playlistId');
       
       // Cache the result
       PlaylistImageWidget._playlistSongsCache[playlistId] = songs;
       
       return songs;
     } catch (e) {
-      debugPrint('🎵 PLAYLIST_IMAGE: Error getting songs for playlist $playlistId: $e');
-      PlaylistImageWidget._playlistSongsCache[playlistId] = [];
       return [];
     }
   }
