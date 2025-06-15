@@ -10,8 +10,7 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../widgets/song_item_widget.dart';
-import '../../controllers/player_controller.dart';
-import '../../widgets/mini_player.dart';
+// Removed player controller and mini player imports for edit playlist screen
 import '../../widgets/playlist_image_widget.dart';
 import 'add_songs_screen.dart';
 
@@ -336,8 +335,6 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final playerState = ref.watch(playerControllerProvider);
-    
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -349,48 +346,40 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  _buildPlaylistInfo(),
+                  // Move description section up too
+                  Transform.translate(
+                    offset: const Offset(0, -30),
                     child: Column(
                       children: [
-                        _buildPlaylistInfo(),
-                        // Move description section up too
-                        Transform.translate(
-                          offset: const Offset(0, -30),
-                          child: Column(
-                            children: [
-                              _buildDescriptionButton(),
-                              const SizedBox(height: 2),
-                              // Description text like Spotify
-                              Text(
-                                'Beri playlist kamu deskripsi yang menarik',
-                                style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                        _buildDescriptionButton(),
+                        const SizedBox(height: 2),
+                        // Description text like Spotify
+                        Text(
+                          'Beri playlist kamu deskripsi yang menarik',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
                           ),
+                          textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 4),
-                        _buildSongsSection(),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  _buildSongsSection(),
+                ],
+              ),
             ),
           ),
-          if (playerState.currentSong != null)
-            const MiniPlayer(),
         ],
       ),
     );
@@ -738,10 +727,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             child: SongItemWidget(
               song: song,
               subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
-              onTap: () {
-                final playerController = ref.read(playerControllerProvider.notifier);
-                playerController.playSongById(song.id);
-              },
+              onTap: null, // Disabled tap functionality in edit mode
             ),
           ),
           // Drag handle with proper listener

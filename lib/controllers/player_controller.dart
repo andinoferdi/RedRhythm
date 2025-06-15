@@ -175,7 +175,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         currentSong: song,
         isPlaying: false,
         isBuffering: false,
-        currentPlaylistId: null, // Clear playlist context when playing individual song
+        // Don't modify currentPlaylistId here - preserve existing context
       );
       return;
     }
@@ -204,7 +204,7 @@ class PlayerController extends StateNotifier<PlayerState> {
         isBuffering: true,
         currentPosition: Duration.zero,
         isPlaying: false,
-        currentPlaylistId: null, // Clear playlist context when playing individual song
+        // Don't modify currentPlaylistId here - preserve existing context
       );
       
       // Set the audio source with timeout
@@ -582,6 +582,23 @@ class PlayerController extends StateNotifier<PlayerState> {
     );
     
     debugPrint('🎵 Cleared playlist context - currentPlaylistId: ${state.currentPlaylistId}');
+    
+    // Then play the song (this will now preserve the null playlist ID)
+    await playSong(song);
+  }
+  
+  /// Play a song and explicitly clear playlist context
+  Future<void> playSongWithoutPlaylistContext(Song song) async {
+    if (_isDisposed) return;
+    
+    debugPrint('🎵 Playing individual song: ${song.title}');
+    
+    // First clear playlist context
+    state = state.copyWith(
+      currentPlaylistId: null,
+      queue: [song],
+      currentIndex: 0,
+    );
     
     // Then play the song
     await playSong(song);
