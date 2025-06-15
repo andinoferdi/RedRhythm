@@ -11,7 +11,6 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/play_history_controller.dart';
 import '../../controllers/genre_controller.dart';
 import '../../controllers/player_controller.dart';
-import '../../states/player_state.dart';
 import '../../utils/image_helpers.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
@@ -130,33 +129,60 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  @override
+  bool get wantKeepAlive => true; // Keep state alive when switching tabs
+  
+  bool _hasLoadedInitialData = false;
+  
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     
     // Load data on init rather than during build to avoid blinking
     Future.microtask(() {
       ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
       ref.read(genreControllerProvider.notifier).loadGenres();
+      _hasLoadedInitialData = true;
     });
+  }
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    // Refresh data when app comes back to foreground (user returns from other apps)
+    if (state == AppLifecycleState.resumed && _hasLoadedInitialData && mounted) {
+      Future.microtask(() {
+        ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
+      });
+    }
+  }
+  
+  Future<void> _refreshData() async {
+    // Manual refresh via pull-to-refresh
+    await Future.wait([
+      ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed(),
+      ref.read(genreControllerProvider.notifier).loadGenres(),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen to player state changes to refresh recently played
-    ref.listen<PlayerState>(playerControllerProvider, (previous, current) {
-      // If a new song started playing, refresh recently played
-      if (previous?.currentSong?.id != current.currentSong?.id && 
-          current.currentSong != null && 
-          current.isPlaying) {
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            ref.read(playHistoryControllerProvider.notifier).loadRecentlyPlayed();
-          }
-        });
-      }
-    });
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Removed auto-refresh listener to prevent Recently Played list from reordering
+    // while user is interacting with the home screen. Data will only refresh when:
+    // 1. User first opens the app
+    // 2. User navigates back to home screen from other screens
+    // 3. User manually pulls to refresh (if implemented)
     
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
@@ -168,28 +194,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: SafeArea(
         // We'll handle bottom padding ourselves
         bottom: false,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-                    _buildHeader(context),
-                    const SizedBox(height: 16),
-                    _buildContinueListening(context),
-                    const SizedBox(height: 30),
-                    _buildYourTopMixes(context),
-                    const SizedBox(height: 30),
-                    _buildRecentListening(context),
-                    // Add a bottom spacing to account for the navigation bar and mini player
-                    SizedBox(height: 70 + bottomPadding + 64), // Added 64 for mini player
-                  ],
+                  child: Column(
+            children: [
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.surface,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildHeader(context),
+                        const SizedBox(height: 16),
+                        _buildContinueListening(context),
+                        const SizedBox(height: 30),
+                        _buildYourTopMixes(context),
+                        const SizedBox(height: 30),
+                        _buildRecentListening(context),
+                        // Add a bottom spacing to account for the navigation bar and mini player
+                        SizedBox(height: 70 + bottomPadding + 64), // Added 64 for mini player
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
             // Mini Player
             const MiniPlayer(),
           ],

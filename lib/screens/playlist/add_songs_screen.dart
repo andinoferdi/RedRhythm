@@ -101,9 +101,9 @@ class _AddSongsScreenState extends State<AddSongsScreen> {
       // Use the new batch method for better performance and proper ordering
       final songIdsList = _selectedSongIds.toList();
       await songPlaylistRepository.addMultipleSongsToPlaylist(
-        widget.playlist.id,
+            widget.playlist.id,
         songIdsList,
-      );
+          );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

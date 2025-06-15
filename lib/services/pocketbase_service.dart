@@ -135,10 +135,10 @@ class PocketBaseService {
             );
           } else if (model is Map<String, dynamic>) {
             // Handle case where model is a Map instead of RecordModel
-            await _storage.write(
-              key: 'pb_auth_model',
+          await _storage.write(
+            key: 'pb_auth_model',
               value: jsonEncode(model),
-            );
+          );
           } else {
             debugPrint('PocketBase: Unknown auth model type: ${model.runtimeType}');
           }

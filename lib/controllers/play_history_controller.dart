@@ -105,13 +105,19 @@ class PlayHistoryController extends StateNotifier<PlayHistoryState> {
         completed: completed,
       );
       
-      // Reload data after adding new history
-      await loadRecentlyPlayed();
+      // Don't auto-reload to prevent jarring UX in home screen
+      // Data will be refreshed when user navigates back to home or manually refreshes
     } catch (e) {
       state = state.copyWith(
         error: 'Failed to add play history: $e',
       );
     }
+  }
+
+  /// Add new play history entry and refresh data (for cases where immediate refresh is needed)
+  Future<void> addPlayHistoryAndRefresh(String songId, {int? durationSeconds, bool completed = false}) async {
+    await addPlayHistory(songId, durationSeconds: durationSeconds, completed: completed);
+    await loadRecentlyPlayed();
   }
 
   /// Clear error state

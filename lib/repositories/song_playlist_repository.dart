@@ -259,7 +259,7 @@ class SongPlaylistRepository {
       throw Exception('Failed to add multiple songs to playlist: $e');
     }
   }
-
+  
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
