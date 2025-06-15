@@ -5,6 +5,8 @@ import '../../controllers/player_controller.dart';
 import '../../models/song.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/image_helpers.dart';
+import '../../utils/color_extractor.dart';
+import '../../providers/dynamic_color_provider.dart';
 
 @RoutePage()
 class LyricsScreen extends ConsumerStatefulWidget {
@@ -31,38 +33,47 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    final dynamicColorState = ref.watch(dynamicColorProvider);
     final currentSong = playerState.currentSong ?? widget.song;
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+    
+    // Extract colors from current song if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (currentSong != null) {
+        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
+      }
+    });
     
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: colors.backgroundStart,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          // Custom App Bar with gradient
+          // Custom App Bar with solid color
           SliverAppBar(
             expandedHeight: 200,
             floating: false,
             pinned: true,
-            backgroundColor: AppColors.background,
+            backgroundColor: Colors.transparent,
             leading: IconButton(
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 28),
+              icon: Icon(Icons.keyboard_arrow_down, color: colors.textPrimary, size: 28),
               onPressed: () => context.router.maybePop(),
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.share, color: Colors.white),
+                icon: Icon(Icons.share, color: colors.textPrimary),
                 onPressed: () {
                   // TODO: Implement share lyrics functionality
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Share lyrics feature coming soon!'),
-                      backgroundColor: AppColors.primary,
+                    SnackBar(
+                      content: const Text('Share lyrics feature coming soon!'),
+                      backgroundColor: colors.accent,
                     ),
                   );
                 },
               ),
               IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white),
+                icon: Icon(Icons.more_vert, color: colors.textPrimary),
                 onPressed: () {
                   // TODO: Implement more options
                 },
@@ -70,17 +81,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.8),
-                      AppColors.background.withValues(alpha: 0.9),
-                      AppColors.background,
-                    ],
-                  ),
-                ),
+                color: colors.primary.withValues(alpha: 0.8),
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
@@ -113,9 +114,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                   fit: BoxFit.cover,
                                   fallbackWidget: Container(
                                     color: AppColors.greyDark,
-                                    child: const Icon(
+                                    child: Icon(
                                       Icons.music_note,
-                                      color: AppColors.primary,
+                                      color: colors.accent,
                                       size: 30,
                                     ),
                                   ),
@@ -130,8 +131,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                 children: [
                                   Text(
                                     currentSong.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: colors.textPrimary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                       fontFamily: 'Poppins',
@@ -142,8 +143,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     currentSong.artist,
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: colors.textSecondary,
                                       fontSize: 14,
                                       fontFamily: 'Poppins',
                                     ),
@@ -176,6 +177,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
   }
   
   Widget _buildLyricsContent(Song song) {
+    final dynamicColorState = ref.watch(dynamicColorProvider);
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+    
     if (song.lyrics == null || song.lyrics!.trim().isEmpty) {
       return _buildNoLyricsState(song);
     }
@@ -189,16 +193,16 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
         // Lyrics header
         Row(
           children: [
-            const Icon(
+            Icon(
               Icons.lyrics,
-              color: AppColors.primary,
+              color: colors.accent,
               size: 24,
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Lyrics',
               style: TextStyle(
-                color: AppColors.primary,
+                color: colors.accent,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Poppins',
@@ -207,13 +211,13 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             const Spacer(),
             // Font size controls
             IconButton(
-              icon: const Icon(Icons.text_decrease, color: AppColors.greyLight),
+              icon: Icon(Icons.text_decrease, color: colors.textSecondary),
               onPressed: () {
                 // TODO: Implement font size decrease
               },
             ),
             IconButton(
-              icon: const Icon(Icons.text_increase, color: AppColors.greyLight),
+              icon: Icon(Icons.text_increase, color: colors.textSecondary),
               onPressed: () {
                 // TODO: Implement font size increase
               },
@@ -223,24 +227,16 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
         
         const SizedBox(height: 20),
         
-        // Lyrics text with solid gradient background
+        // Lyrics text with solid background
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFFE53E3E), // Red primary
-                const Color(0xFFD53F8C), // Red-pink
-                const Color(0xFFC53030), // Darker red
-              ],
-            ),
+            color: colors.primary,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFE53E3E).withValues(alpha: 0.3),
+                color: colors.primary.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -312,6 +308,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
   }
   
   Widget _buildNoLyricsState(Song song) {
+    final dynamicColorState = ref.watch(dynamicColorProvider);
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -324,28 +323,21 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.2),
-                  AppColors.greyDark.withValues(alpha: 0.3),
-                ],
-              ),
+              color: colors.backgroundEnd.withValues(alpha: 0.3),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lyrics_outlined,
               size: 60,
-              color: AppColors.greyLight,
+              color: colors.textSecondary,
             ),
           ),
           
           const SizedBox(height: 24),
           
-          const Text(
+          Text(
             'No lyrics available',
             style: TextStyle(
-              color: AppColors.text,
+              color: colors.textPrimary,
               fontSize: 24,
               fontWeight: FontWeight.bold,
               fontFamily: 'Poppins',
@@ -356,8 +348,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           
           Text(
             'Lyrics for "${song.title}" are not available yet.',
-            style: const TextStyle(
-              color: AppColors.greyLight,
+            style: TextStyle(
+              color: colors.textSecondary,
               fontSize: 16,
               fontFamily: 'Poppins',
             ),
@@ -366,10 +358,10 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           
           const SizedBox(height: 8),
           
-          const Text(
+          Text(
             'Check back later or try another song.',
             style: TextStyle(
-              color: AppColors.greyLight,
+              color: colors.textSecondary,
               fontSize: 14,
               fontFamily: 'Poppins',
             ),
@@ -383,9 +375,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             onPressed: () {
               // TODO: Implement suggest lyrics or report missing lyrics
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Suggest lyrics feature coming soon!'),
-                  backgroundColor: AppColors.primary,
+                SnackBar(
+                  content: const Text('Suggest lyrics feature coming soon!'),
+                  backgroundColor: colors.accent,
                 ),
               );
             },
@@ -399,7 +391,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
               ),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: colors.accent,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(25),
