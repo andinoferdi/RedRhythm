@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
 import '../../states/player_state.dart';
 import '../../models/song.dart';
+import '../../models/artist.dart';
+import '../../repositories/artist_repository.dart';
+import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/image_helpers.dart';
 import '../../routes/app_router.dart';
@@ -19,6 +22,40 @@ class MusicPlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
+  Artist? _currentArtist;
+  bool _isLoadingArtist = false;
+  late ArtistRepository _artistRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _artistRepository = ArtistRepository(PocketBaseService());
+  }
+
+  Future<void> _loadArtistInfo(String artistName) async {
+    if (_isLoadingArtist) return;
+    
+    setState(() {
+      _isLoadingArtist = true;
+    });
+
+    try {
+      final artist = await _artistRepository.getArtistByName(artistName);
+      if (mounted) {
+        setState(() {
+          _currentArtist = artist;
+          _isLoadingArtist = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingArtist = false;
+        });
+      }
+      debugPrint('Error loading artist info: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +76,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
 
     // Note: Removed automatic playback initiation to prevent interference with existing playback
     // The music player screen should only display current state, not start new playback
+
+    // Load artist info when song changes
+    if (_currentArtist?.name != currentSong.artist) {
+      _loadArtistInfo(currentSong.artist);
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -275,6 +317,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               
               const SizedBox(height: 40),
               
+              // About Artist Section (Spotify-style) - Above lyrics
+              _buildAboutArtistSection(currentSong),
+              
               // Lyrics Preview Section (Spotify-style)
               _buildLyricsPreviewSection(currentSong),
             ],
@@ -368,25 +413,43 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Preview text with bold styling
-          Text(
-            previewText,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              height: 1.6,
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  color: Colors.black26,
-                  offset: Offset(1, 1),
-                  blurRadius: 2,
-                ),
-              ],
+          // Preview text with smooth Spotify-style fade-out
+          ShaderMask(
+            shaderCallback: (Rect bounds) {
+              return LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: const [
+                  Colors.white,
+                  Colors.white,
+                  Colors.white,
+                  Color(0x88FFFFFF), // Semi-transparent
+                  Color(0x44FFFFFF), // More transparent
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 0.4, 0.65, 0.8, 0.9, 1.0],
+              ).createShader(bounds);
+            },
+            blendMode: BlendMode.dstIn,
+            child: Text(
+              previewText,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                height: 1.6,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                    color: Colors.black26,
+                    offset: Offset(1, 1),
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.clip,
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
           ),
           
           const SizedBox(height: 16),
@@ -494,6 +557,291 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildAboutArtistSection(Song currentSong) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with artist icon
+        Row(
+          children: [
+            const Icon(
+              Icons.person_outline,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Tentang artis',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 12),
+        
+        // Artist info container
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2A2A), // Solid grey background
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: _isLoadingArtist
+              ? _buildLoadingArtistState()
+              : _currentArtist != null
+                  ? _buildArtistContent(_currentArtist!, currentSong)
+                  : _buildFallbackArtistContent(currentSong),
+        ),
+        
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+  
+  Widget _buildLoadingArtistState() {
+    return const Column(
+      children: [
+        SizedBox(height: 20),
+        CircularProgressIndicator(
+          color: AppColors.primary,
+          strokeWidth: 2,
+        ),
+        SizedBox(height: 16),
+        Text(
+          'Loading artist info...',
+          style: TextStyle(
+            color: AppColors.greyLight,
+            fontSize: 14,
+            fontFamily: 'Poppins',
+          ),
+        ),
+        SizedBox(height: 20),
+      ],
+    );
+  }
+  
+  Widget _buildArtistContent(Artist artist, Song currentSong) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Artist header with image and name
+        Row(
+          children: [
+            // Artist avatar (circular) - using real artist image
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.greyDark,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: artist.imageUrl,
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    color: AppColors.greyDark,
+                    child: const Icon(
+                      Icons.person,
+                      color: AppColors.primary,
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(width: 16),
+            
+            // Artist info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artist.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '9,3 jt pendengar bulanan', // Static for now
+                    style: const TextStyle(
+                      color: AppColors.greyLight,
+                      fontSize: 14,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Follow button
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.greyLight,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Ikuti',
+                style: TextStyle(
+                  color: AppColors.greyLight,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Poppins',
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Artist bio from PocketBase
+        Text(
+          artist.bio.isNotEmpty ? artist.bio : 'No biography available for this artist.',
+          style: const TextStyle(
+            color: AppColors.greyLight,
+            fontSize: 14,
+            height: 1.5,
+            fontFamily: 'Poppins',
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+        ),
+        
+        const SizedBox(height: 4),
+        
+        // "lihat semua" text
+        GestureDetector(
+          onTap: () {
+            // TODO: Navigate to artist detail page
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Artist detail page coming soon!'),
+                backgroundColor: AppColors.primary,
+              ),
+            );
+          },
+          child: const Text(
+            'lihat semua',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildFallbackArtistContent(Song currentSong) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Artist header with fallback content
+        Row(
+          children: [
+            // Fallback artist avatar
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.greyDark,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.person,
+                color: AppColors.primary,
+                size: 30,
+              ),
+            ),
+            
+            const SizedBox(width: 16),
+            
+            // Artist info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    currentSong.artist,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Poppins',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Artist information not available',
+                    style: TextStyle(
+                      color: AppColors.greyLight,
+                      fontSize: 14,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Fallback message
+        const Text(
+          'Artist information is not available in the database yet. Check back later for more details about this artist.',
+          style: TextStyle(
+            color: AppColors.greyLight,
+            fontSize: 14,
+            height: 1.5,
+            fontFamily: 'Poppins',
+          ),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
