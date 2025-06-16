@@ -53,8 +53,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
         oldWidget.song?.id != widget.song?.id && 
         _originalSong?.id != widget.song?.id) {
       
-
-      
       _originalSong = widget.song;
       _originalArtistName = widget.song?.artist;
       
@@ -143,18 +141,26 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     // Note: Removed automatic playback initiation to prevent interference with existing playback
     // The music player screen should only display current state, not start new playbook
 
-    // Initialize original song on first load
+    // Initialize or update original song based on current song
     if (_originalSong == null) {
-      // Prioritize widget.song if available, otherwise use currentSong
+      // First load - prioritize widget.song if available, otherwise use currentSong
       _originalSong = widget.song ?? currentSong;
       _originalArtistName = _originalSong?.artist;
-      
-
       
       // Load artist info and songs based on original song
       if (_originalArtistName != null) {
         _loadArtistInfo(_originalArtistName!);
         _loadArtistSongs(_originalArtistName!, _originalSong!.id);
+      }
+    } else if (_originalSong?.id != currentSong.id) {
+      // Song changed via next/previous - update original song reference
+      _originalSong = currentSong;
+      _originalArtistName = currentSong.artist;
+      
+      // Reload artist info and songs for new song
+      if (_originalArtistName != null) {
+        _loadArtistInfo(_originalArtistName!);
+        _loadArtistSongs(_originalArtistName!, currentSong.id);
       }
     }
     
