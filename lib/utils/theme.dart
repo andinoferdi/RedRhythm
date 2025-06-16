@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'constants.dart';
+import 'custom_page_transitions.dart';
 
 class AppTheme {
   // Private constructor to prevent instantiation
@@ -25,8 +26,8 @@ class AppTheme {
           onSurface: Colors.white,
         ),
 
-        // Typography
-        fontFamily: 'Poppins',
+        // Typography - menggunakan font DM Sans
+        fontFamily: 'DM Sans',
         textTheme: _textTheme,
 
         // Component themes
@@ -41,57 +42,107 @@ class AppTheme {
         // Material 3
         useMaterial3: true,
 
-        // Transitions
-        pageTransitionsTheme: const PageTransitionsTheme(
+        // Transitions - Use consistent fade+scale transition across all platforms
+        pageTransitionsTheme: PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.android: const FadeScalePageTransitionsBuilder(),
+            TargetPlatform.iOS: const FadeScalePageTransitionsBuilder(),
+            TargetPlatform.windows: const FadeScalePageTransitionsBuilder(),
+            TargetPlatform.macOS: const FadeScalePageTransitionsBuilder(),
+            TargetPlatform.linux: const FadeScalePageTransitionsBuilder(),
           },
         ),
       );
 
-  // Text theme
+  // Text theme - Semua menggunakan font Gotham
   static TextTheme get _textTheme => const TextTheme(
         displayLarge: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 32,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
         displayMedium: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 28,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
         displaySmall: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 24,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        headlineLarge: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         headlineMedium: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        headlineSmall: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
         titleLarge: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
         titleMedium: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
+        titleSmall: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
         bodyLarge: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 16,
+          fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
         bodyMedium: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: Colors.white,
+        ),
+        bodySmall: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
         labelLarge: TextStyle(
+          fontFamily: 'DM Sans',
           fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        labelMedium: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+        labelSmall: TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.white,
         ),
@@ -103,9 +154,9 @@ class AppTheme {
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(
-          fontFamily: 'Poppins',
+          fontFamily: 'DM Sans',
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
       );
@@ -121,9 +172,9 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
           ),
           textStyle: const TextStyle(
-            fontFamily: 'Poppins',
+            fontFamily: 'DM Sans',
             fontSize: AppConstants.largeFontSize,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
@@ -135,9 +186,9 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
           textStyle: const TextStyle(
-            fontFamily: 'Poppins',
+            fontFamily: 'DM Sans',
             fontSize: AppConstants.mediumFontSize,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
           ),
         ),
       );
@@ -167,8 +218,8 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         hintStyle: const TextStyle(
+          fontFamily: 'DM Sans',
           color: AppColors.textDisabled,
-          fontFamily: 'Poppins',
         ),
         prefixIconColor: AppColors.textDisabled,
         suffixIconColor: AppColors.textDisabled,
@@ -190,9 +241,9 @@ class AppTheme {
         size: AppConstants.mediumIconSize,
       );
 
-  // Bottom navigation bar theme
+  // Bottom navigation bar theme - dengan font Poppins
   static BottomNavigationBarThemeData get _bottomNavBarTheme =>
-      const BottomNavigationBarThemeData(
+      BottomNavigationBarThemeData(
         backgroundColor: AppColors.navBackground,
         selectedItemColor: AppColors.navSelected,
         unselectedItemColor: AppColors.navUnselected, 
@@ -200,6 +251,16 @@ class AppTheme {
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
+        selectedLabelStyle: const TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontFamily: 'DM Sans',
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+        ),
       );
 
   // Custom button styles
@@ -211,9 +272,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'Poppins',
+          fontFamily: 'DM Sans',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       );
 
@@ -225,9 +286,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'Poppins',
+          fontFamily: 'DM Sans',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       );
 
@@ -239,43 +300,47 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'Poppins',
+          fontFamily: 'DM Sans',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       );
 
   // Custom text styles
   static TextStyle get headingStyle => const TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'DM Sans',
         fontSize: AppConstants.titleFontSize,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: AppColors.text,
       );
 
   static TextStyle get subheadingStyle => const TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'DM Sans',
         fontSize: AppConstants.extraLargeFontSize,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         color: AppColors.text,
       );
 
   static TextStyle get bodyStyle => const TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'DM Sans',
         fontSize: AppConstants.mediumFontSize,
+        fontWeight: FontWeight.w400,
         color: AppColors.text,
       );
 
   static TextStyle get captionStyle => const TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'DM Sans',
         fontSize: AppConstants.smallFontSize,
+        fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
       );
 
   static TextStyle get linkStyle => const TextStyle(
-        fontFamily: 'Poppins',
+        fontFamily: 'DM Sans',
         fontSize: AppConstants.mediumFontSize,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         color: AppColors.primary,
       );
 }
+
+

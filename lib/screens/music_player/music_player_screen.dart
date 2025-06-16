@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
@@ -10,6 +11,8 @@ import '../../repositories/song_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/image_helpers.dart';
+import '../../utils/color_extractor.dart';
+import '../../providers/dynamic_color_provider.dart';
 import '../../routes/app_router.dart';
 
 @RoutePage()
@@ -123,6 +126,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    final dynamicColorState = ref.watch(dynamicColorProvider);
     final currentSong = playerState.currentSong ?? widget.song;
     
     if (currentSong == null) {
@@ -154,260 +158,359 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
         _loadArtistSongs(_originalArtistName!, _originalSong!.id);
       }
     }
+    
+    // Extract dynamic colors from current song's album art
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (currentSong != null) {
+        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
+      }
+    });
+    
     // Update artist info for "Tentang artis" section based on current song
     // but keep Jelajahi Artist section based on original song
-    else if (_currentArtist?.name != currentSong.artist) {
-
+    if (_currentArtist?.name != currentSong.artist) {
       _loadArtistInfo(currentSong.artist);
       // Don't reload artist songs - keep them based on original song
     }
 
+    // Get dynamic colors
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+    
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down, color: AppColors.text),
-          onPressed: () => context.router.maybePop(),
-        ),
-        title: const Text(
-          'Now Playing',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.text,
+      backgroundColor: const Color(0xFF000000), // Background hitam asli aplikasi
+      body: Container(
+        height: double.infinity, // Pastikan container memenuhi seluruh tinggi layar
+        width: double.infinity,  // Pastikan container memenuhi seluruh lebar layar
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colors.backgroundStart, // Warna dari album art di atas
+              colors.backgroundStart.withValues(alpha: 0.8),
+              colors.backgroundStart.withValues(alpha: 0.4),
+              const Color(0xFF1A1A1A).withValues(alpha: 0.6),
+              const Color(0xFF000000), // Fade ke hitam sempurna (background asli app)
+            ],
+            stops: const [0.0, 0.25, 0.5, 0.8, 1.0], // Distribusi gradient yang lebih smooth
           ),
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.text),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // Album Art
-              Container(
-                height: 280,
-                width: 280,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  color: AppColors.greyDark, // Background color for fallback
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Stack(
-                    children: [
-                      // Album art image with enhanced error handling
-                      ImageHelpers.buildSafeNetworkImage(
-                        imageUrl: currentSong.albumArtUrl,
-                        width: 280,
-                        height: 280,
-                        fit: BoxFit.cover,
+        child: Stack(
+          children: [
+            // Scrollable Content - Full height dengan padding atas untuk header
+            SingleChildScrollView(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 60, // Space for fixed header
+                left: 20.0,
+                right: 20.0,
+                bottom: 20.0,
+              ),
+              child: Column(
+                children: [
+                    // Album Art
+                    Container(
+                      height: 280,
+                      width: 280,
+                      decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
-                        showLoadingIndicator: true,
-                        fallbackWidget: _buildFallbackAlbumArt(),
+                        color: AppColors.greyDark, // Background color for fallback
                       ),
-                      
-                      // Show loading indicator when buffering
-                      if (playerState.isBuffering)
-                        Container(
-                          height: 280,
-                          width: 280,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Center(
-                            child: CircularProgressIndicator(
-                              color: AppColors.primary,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Stack(
+                          children: [
+                            // Album art image with enhanced error handling
+                            ImageHelpers.buildSafeNetworkImage(
+                              imageUrl: currentSong.albumArtUrl,
+                              width: 280,
+                              height: 280,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(20),
+                              showLoadingIndicator: true,
+                              fallbackWidget: _buildFallbackAlbumArt(),
                             ),
-                          ),
+                            
+                            // Show loading indicator when buffering
+                            if (playerState.isBuffering)
+                              Container(
+                                height: 280,
+                                width: 280,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // Song info
-              Column(
-                children: [
-                  Text(
-                    currentSong.title,
-                    style: const TextStyle(
-                      color: AppColors.text,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentSong.artist,
-                    style: const TextStyle(
-                      color: AppColors.greyLight,
-                      fontSize: 18,
-                      fontFamily: 'Poppins',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 30),
-              
-              // Playback controls
-              Column(
-                children: [
-                  // Slider
-                  Slider(
-                    value: playerState.currentPosition.inSeconds.toDouble(),
-                    max: currentSong.duration.inSeconds.toDouble(),
-                    activeColor: AppColors.primary,
-                    inactiveColor: AppColors.greyDark,
-                    onChanged: (value) {
-                      ref.read(playerControllerProvider.notifier).seekTo(
-                        Duration(seconds: value.toInt()),
-                      );
-                    },
-                  ),
-                  
-                  // Time indicators
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Song info
+                    Column(
                       children: [
                         Text(
-                          _formatDuration(playerState.currentPosition),
-                          style: const TextStyle(color: AppColors.greyLight),
+                          currentSong.title,
+                          style: TextStyle(
+                            color: colors.textPrimary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'DM Sans',
+                          ),
+                          textAlign: TextAlign.center,
                         ),
+                        const SizedBox(height: 8),
                         Text(
-                          _formatDuration(currentSong.duration),
-                          style: const TextStyle(color: AppColors.greyLight),
+                          currentSong.artist,
+                          style: TextStyle(
+                            color: colors.textSecondary,
+                            fontSize: 18,
+                            fontFamily: 'DM Sans',
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
-                  ),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // Control buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Always show shuffle button - supports both playlist and general shuffle
-                      IconButton(
-                        icon: Icon(
-                          Icons.shuffle,
-                          color: playerState.shuffleMode ? AppColors.primary : AppColors.text,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          ref.read(playerControllerProvider.notifier).toggleShuffle();
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.skip_previous,
-                          color: AppColors.text,
-                          size: 36,
-                        ),
-                        onPressed: () async {
-                          try {
-                            await ref.read(playerControllerProvider.notifier).skipPrevious();
-                          } catch (e) {
                     
-                          }
-                        },
-                      ),
-                      Container(
-                        width: 70,
-                        height: 70,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            playerState.isBuffering
-                                ? Icons.hourglass_empty
-                                : playerState.isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: AppColors.textOnPrimary,
-                            size: 36,
-                          ),
-                          onPressed: () {
-                            if (playerState.isBuffering) {
-                              // Do nothing while buffering
-                              return;
-                            }
-                            
-                            if (playerState.isPlaying) {
-                              ref.read(playerControllerProvider.notifier).pause();
-                            } else {
-                              ref.read(playerControllerProvider.notifier).resume();
-                            }
+                    const SizedBox(height: 30),
+                    
+                    // Playback controls
+                    Column(
+                      children: [
+                        // Slider
+                        Slider(
+                          value: playerState.currentPosition.inSeconds.toDouble(),
+                          max: currentSong.duration.inSeconds.toDouble(),
+                          activeColor: Colors.white,
+                          inactiveColor: colors.textSecondary.withValues(alpha: 0.3),
+                          onChanged: (value) {
+                            ref.read(playerControllerProvider.notifier).seekTo(
+                              Duration(seconds: value.toInt()),
+                            );
                           },
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.skip_next,
-                          color: AppColors.text,
-                          size: 36,
+                        
+                        // Time indicators
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                _formatDuration(playerState.currentPosition),
+                                style: TextStyle(color: colors.textSecondary),
+                              ),
+                              Text(
+                                _formatDuration(currentSong.duration),
+                                style: TextStyle(color: colors.textSecondary),
+                              ),
+                            ],
+                          ),
                         ),
-                        onPressed: () async {
-                          try {
-                            await ref.read(playerControllerProvider.notifier).skipNext();
-                          } catch (e) {
+                        
+                        const SizedBox(height: 20),
+                        
+                        // Control buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // Shuffle button - disabled when not playing from playlist
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final playerState = ref.watch(playerControllerProvider);
+                                final isPlayingFromPlaylist = playerState.currentPlaylistId != null;
+                                
+                                return IconButton(
+                                  icon: Icon(
+                                    Icons.shuffle,
+                                    color: isPlayingFromPlaylist 
+                                        ? (playerState.shuffleMode ? AppColors.primary : Colors.white)
+                                        : Colors.grey,
+                                    size: 24,
+                                  ),
+                                  onPressed: isPlayingFromPlaylist ? () {
+                                    ref.read(playerControllerProvider.notifier).toggleShuffle();
+                                  } : null,
+                                );
+                              },
+                            ),
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final playerState = ref.watch(playerControllerProvider);
+                                final hasQueue = playerState.queue.isNotEmpty;
+                                final currentIndex = playerState.currentIndex;
+                                final queueLength = playerState.queue.length;
+                                
+
+                                
+                                // Previous button should be enabled if we have queue and not at beginning
+                                final canGoPrevious = hasQueue && currentIndex > 0;
+                                
+                                return IconButton(
+                              icon: Icon(
+                                Icons.skip_previous,
+                                    color: canGoPrevious ? Colors.white : Colors.grey,
+                                size: 36,
+                              ),
+                                  onPressed: canGoPrevious ? () async {
+                                    try {
+                                      // Use built-in skip previous logic
+                                    await ref.read(playerControllerProvider.notifier).skipPrevious();
+                                } catch (e) {
+                                  debugPrint('Error in skip previous: $e');
+                                }
+                                  } : null,
+                                );
+                              },
+                            ),
+                            Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  playerState.isBuffering
+                                      ? Icons.hourglass_empty
+                                      : playerState.isPlaying ? Icons.pause : Icons.play_arrow,
+                                  color: Colors.black,
+                                  size: 36,
+                                ),
+                                onPressed: () {
+                                  if (playerState.isBuffering) {
+                                    // Do nothing while buffering
+                                    return;
+                                  }
+                                  
+                                  if (playerState.isPlaying) {
+                                    ref.read(playerControllerProvider.notifier).pause();
+                                  } else {
+                                    ref.read(playerControllerProvider.notifier).resume();
+                                  }
+                                },
+                              ),
+                            ),
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final playerState = ref.watch(playerControllerProvider);
+                                final hasQueue = playerState.queue.isNotEmpty;
+                                final currentIndex = playerState.currentIndex;
+                                final queueLength = playerState.queue.length;
+                                
+
+                                
+                                // Next button should be enabled if we have queue and not at end
+                                final canGoNext = hasQueue && currentIndex < queueLength - 1;
+                                
+                                return IconButton(
+                              icon: Icon(
+                                Icons.skip_next,
+                                    color: canGoNext ? Colors.white : Colors.grey,
+                                size: 36,
+                              ),
+                                  onPressed: canGoNext ? () async {
+                                    try {
+                                      // Use built-in skip next logic
+                                    await ref.read(playerControllerProvider.notifier).skipNext();
+                                } catch (e) {
+                                  debugPrint('Error in skip next: $e');
+                                }
+                                  } : null,
+                                );
+                              },
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                playerState.repeatMode == RepeatMode.off
+                                    ? Icons.repeat
+                                    : playerState.repeatMode == RepeatMode.one
+                                        ? Icons.repeat_one
+                                        : Icons.repeat,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              onPressed: () {
+                                ref.read(playerControllerProvider.notifier).toggleRepeatMode();
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                     
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          playerState.repeatMode == RepeatMode.off
-                              ? Icons.repeat
-                              : playerState.repeatMode == RepeatMode.one
-                                  ? Icons.repeat_one
-                                  : Icons.repeat,
-                          color: playerState.repeatMode == RepeatMode.off
-                              ? AppColors.text
-                              : AppColors.primary,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          ref.read(playerControllerProvider.notifier).toggleRepeatMode();
-                        },
-                      ),
-                    ],
-                  ),
+                    const SizedBox(height: 40),
+                    
+                    // About Artist Section (Spotify-style) - Above lyrics
+                    _buildAboutArtistSection(currentSong),
+                    
+                    // Lyrics Preview Section (Spotify-style)
+                    _buildLyricsPreviewSection(currentSong),
+                    
+                    // Jelajahi Artist Section (Spotify Shorts-style) - based on original song
+                    if (_originalSong != null && _originalArtistName != null)
+                      _buildJelajahiArtistSection(_originalSong!),
                 ],
               ),
-              
-              const SizedBox(height: 40),
-              
-              // About Artist Section (Spotify-style) - Above lyrics
-              _buildAboutArtistSection(currentSong),
-              
-              // Lyrics Preview Section (Spotify-style)
-              _buildLyricsPreviewSection(currentSong),
-              
-              // Jelajahi Artist Section (Spotify Shorts-style) - based on original song
-              if (_originalSong != null && _originalArtistName != null)
-                _buildJelajahiArtistSection(_originalSong!),
-            ],
-          ),
+            ),
+            
+            // Fixed Header - Positioned overlay yang benar-benar fixed
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 8, // Status bar padding
+                  left: 16,
+                  right: 16,
+                  bottom: 8,
+                ),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      colors.backgroundStart,
+                      colors.backgroundStart.withValues(alpha: 0.9),
+                      colors.backgroundStart.withValues(alpha: 0.7),
+                      colors.backgroundStart.withValues(alpha: 0.0),
+                    ],
+                    stops: const [0.0, 0.6, 0.8, 1.0],
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                      onPressed: () => context.router.maybePop(),
+                    ),
+                    const Text(
+                      'Now Playing',
+                      style: TextStyle(
+                        fontFamily: 'DM Sans',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -444,6 +547,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
   }
   
   Widget _buildLyricsPreview(Song song) {
+    final dynamicColorState = ref.watch(dynamicColorProvider);
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+    
     // Get first few lines of lyrics for preview
     final lyricsLines = song.lyrics!.split('\n');
     final previewLines = lyricsLines.take(3).where((line) => line.trim().isNotEmpty).toList();
@@ -452,19 +558,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFE53E3E), // Red primary
-            const Color(0xFFD53F8C), // Red-pink
-            const Color(0xFFC53030), // Darker red
-          ],
-        ),
+        color: colors.primary, // Keep solid color for lyrics readability
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFE53E3E).withValues(alpha: 0.3),
+            color: colors.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -482,7 +580,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
                 shadows: [
                   Shadow(
                     color: Colors.black26,
@@ -524,7 +622,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       color: Colors.white,
                       fontSize: 16,
                       height: 1.6,
-                      fontFamily: 'Poppins',
+                      fontFamily: 'DM Sans',
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
@@ -558,22 +656,22 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           ),
                         ],
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             'Tampilkan Lirik',
                             style: TextStyle(
-                              color: Color(0xFFE53E3E),
+                              color: colors.primary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              fontFamily: 'Poppins',
+                              fontFamily: 'DM Sans',
                             ),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Icon(
                             Icons.arrow_forward_ios,
-                            color: Color(0xFFE53E3E),
+                            color: colors.primary,
                             size: 14,
                           ),
                         ],
@@ -606,7 +704,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 style: TextStyle(
                   color: AppColors.greyLight,
                   fontSize: 14,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
               ),
             ),
@@ -634,7 +732,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       color: AppColors.greyLight,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
+                      fontFamily: 'DM Sans',
                     ),
                   ),
                   SizedBox(width: 4),
@@ -692,7 +790,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           style: TextStyle(
             color: AppColors.greyLight,
             fontSize: 14,
-            fontFamily: 'Poppins',
+            fontFamily: 'DM Sans',
           ),
         ),
         SizedBox(height: 20),
@@ -717,17 +815,21 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           ),
           child: Stack(
             children: [
-              // Artist image filling entire container
+              // Artist image filling container without cropping
               ClipRRect(
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(16),
                   topRight: Radius.circular(16),
                 ),
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  color: AppColors.greyDark,
                 child: ImageHelpers.buildSafeNetworkImage(
                   imageUrl: artist.imageUrl,
                   width: double.infinity,
                   height: 160,
-                  fit: BoxFit.cover,
+                    fit: BoxFit.fitWidth, // Fit width untuk mengisi lebar penuh tanpa crop berlebihan
                   fallbackWidget: Container(
                     color: AppColors.greyDark,
                     child: const Column(
@@ -744,10 +846,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           style: TextStyle(
                             color: AppColors.greyLight,
                             fontSize: 14,
-                            fontFamily: 'Poppins',
+                            fontFamily: 'DM Sans',
                           ),
                         ),
                       ],
+                      ),
                     ),
                   ),
                 ),
@@ -782,7 +885,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
+                    fontFamily: 'DM Sans',
                     shadows: [
                       Shadow(
                         color: Colors.black54,
@@ -815,7 +918,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
+                            fontFamily: 'DM Sans',
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -826,7 +929,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           style: const TextStyle(
                             color: AppColors.greyLight,
                             fontSize: 14,
-                            fontFamily: 'Poppins',
+                            fontFamily: 'DM Sans',
                           ),
                         ),
                       ],
@@ -849,7 +952,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                         color: AppColors.greyLight,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        fontFamily: 'Poppins',
+                        fontFamily: 'DM Sans',
                       ),
                     ),
                   ),
@@ -865,7 +968,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: AppColors.greyLight,
                   fontSize: 14,
                   height: 1.5,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -890,7 +993,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
+                    fontFamily: 'DM Sans',
                   ),
                 ),
               ),
@@ -933,7 +1036,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     style: TextStyle(
                       color: AppColors.greyLight,
                       fontSize: 14,
-                      fontFamily: 'Poppins',
+                      fontFamily: 'DM Sans',
                     ),
                   ),
                 ],
@@ -949,7 +1052,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Poppins',
+                    fontFamily: 'DM Sans',
                     shadows: [
                       Shadow(
                         color: Colors.black54,
@@ -982,7 +1085,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
+                            fontFamily: 'DM Sans',
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -993,7 +1096,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                           style: TextStyle(
                             color: AppColors.greyLight,
                             fontSize: 14,
-                            fontFamily: 'Poppins',
+                            fontFamily: 'DM Sans',
                           ),
                         ),
                       ],
@@ -1011,7 +1114,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: AppColors.greyLight,
                   fontSize: 14,
                   height: 1.5,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -1041,7 +1144,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
               ),
               Text(
@@ -1050,7 +1153,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   color: AppColors.primary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
               ),
             ],
@@ -1168,7 +1271,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               style: const TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 14,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1179,7 +1282,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1189,7 +1292,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               style: TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 12,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1330,7 +1433,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 color: isCurrentSong ? AppColors.primary : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1344,7 +1447,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               style: const TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 12,
-                fontFamily: 'Poppins',
+                fontFamily: 'DM Sans',
               ),
             ),
           ],
@@ -1384,7 +1487,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             style: TextStyle(
               color: AppColors.greyLight,
               fontSize: 16,
-              fontFamily: 'Poppins',
+              fontFamily: 'DM Sans',
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1400,3 +1503,4 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     return '$twoDigitMinutes:$twoDigitSeconds';
   }
 }
+

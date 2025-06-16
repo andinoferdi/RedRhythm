@@ -7,6 +7,7 @@ import '../../repositories/playlist_repository.dart';
 import '../screens/playlist/playlist_detail_screen.dart';
 import 'playlist_image_widget.dart';
 import '../providers/playlist_provider.dart';
+import '../routes/app_router.dart';
 
 class PlaylistTab extends ConsumerStatefulWidget {
   const PlaylistTab({
@@ -34,8 +35,8 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
   void _navigateToPlaylistDetail(RecordModel playlist) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => PlaylistDetailScreen(
+      AppRouter.createConsistentRoute(
+        PlaylistDetailScreen(
           playlist: playlist,
         ),
       ),
@@ -204,7 +205,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -216,7 +217,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                 style: TextStyle(
                   color: Colors.grey[300],
                   fontSize: 16,
-                  fontFamily: 'Poppins',
+                  fontFamily: 'DM Sans',
                   fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
@@ -244,7 +245,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                         color: Colors.white, // Spotify green
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        fontFamily: 'Poppins',
+                        fontFamily: 'DM Sans',
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -271,7 +272,7 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
                         color: Colors.red,
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        fontFamily: 'Poppins',
+                        fontFamily: 'DM Sans',
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -477,3 +478,5 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
 
 
 }
+
+

@@ -22,6 +22,11 @@ class PlayerController extends StateNotifier<PlayerState> {
   String? _currentAudioUrl;
   bool _isDisposed = false;
   
+  // Debouncing for skip operations
+  Timer? _skipDebounceTimer;
+  bool _isSkipping = false;
+  static const Duration _skipDebounceDelay = Duration(milliseconds: 500);
+  
   PlayerController(this.ref) : super(PlayerState.initial()) {
     _initializeAudioPlayer();
   }
@@ -77,6 +82,7 @@ class PlayerController extends StateNotifier<PlayerState> {
   void dispose() {
     _isDisposed = true;
     _positionTimer?.cancel();
+    _skipDebounceTimer?.cancel();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -275,12 +281,14 @@ class PlayerController extends StateNotifier<PlayerState> {
       
       // Try to handle specific errors
       if (e.toString().contains('AudioPlayer has already been disposed') ||
-          e.toString().contains('Player instance')) {
+          e.toString().contains('Player instance') ||
+          e.toString().contains('Platform player') && e.toString().contains('already exists')) {
         try {
+          debugPrint('Recreating AudioPlayer due to instance conflict...');
           await _recreateAudioPlayer();
           
           // Wait a bit for the new player to initialize
-          await Future.delayed(const Duration(milliseconds: 300));
+          await Future.delayed(const Duration(milliseconds: 500));
           
           // Check if song is still the same before retrying
           if (state.currentSong?.id == song.id) {
@@ -319,6 +327,22 @@ class PlayerController extends StateNotifier<PlayerState> {
       
     } catch (fallbackError) {
       debugPrint('Fallback audio also failed: $fallbackError');
+      
+      // Handle platform player conflicts in fallback too
+      if (fallbackError.toString().contains('Platform player') && 
+          fallbackError.toString().contains('already exists')) {
+        try {
+          debugPrint('Recreating AudioPlayer in fallback...');
+          await _recreateAudioPlayer();
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Don't retry fallback to avoid infinite loop
+          debugPrint('AudioPlayer recreated, but not retrying fallback to avoid loop');
+        } catch (recreateError) {
+          debugPrint('Failed to recreate player in fallback: $recreateError');
+        }
+      }
+      
       // Reset buffering state on complete failure
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
@@ -380,9 +404,15 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
   
-  /// Skip to next song
+  /// Skip to next song with debouncing
   Future<void> skipNext() async {
-    if (_isDisposed) return;
+    if (_isDisposed || _isSkipping) return;
+    
+    // Set skipping flag to prevent multiple calls
+    _isSkipping = true;
+    
+    // Cancel any existing debounce timer
+    _skipDebounceTimer?.cancel();
     
     try {
       final currentIndex = state.currentIndex;
@@ -414,16 +444,28 @@ class PlayerController extends StateNotifier<PlayerState> {
       
       await playSong(nextSong);
     } catch (e) {
+      debugPrint('Error in skipNext: $e');
       // Reset buffering state on error
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
       }
+    } finally {
+      // Reset skipping flag after delay to prevent spam
+      _skipDebounceTimer = Timer(_skipDebounceDelay, () {
+        _isSkipping = false;
+      });
     }
   }
   
-  /// Skip to previous song
+  /// Skip to previous song with debouncing
   Future<void> skipPrevious() async {
-    if (_isDisposed) return;
+    if (_isDisposed || _isSkipping) return;
+    
+    // Set skipping flag to prevent multiple calls
+    _isSkipping = true;
+    
+    // Cancel any existing debounce timer
+    _skipDebounceTimer?.cancel();
     
     try {
       final currentIndex = state.currentIndex;
@@ -455,10 +497,16 @@ class PlayerController extends StateNotifier<PlayerState> {
       
       await playSong(prevSong);
     } catch (e) {
+      debugPrint('Error in skipPrevious: $e');
       // Reset buffering state on error
       if (!_isDisposed) {
         state = state.copyWith(isBuffering: false);
       }
+    } finally {
+      // Reset skipping flag after delay to prevent spam
+      _skipDebounceTimer = Timer(_skipDebounceDelay, () {
+        _isSkipping = false;
+      });
     }
   }
   
@@ -568,17 +616,21 @@ class PlayerController extends StateNotifier<PlayerState> {
       // Shuffle all songs
       final List<Song> shuffledSongs = List.from(allSongs)..shuffle();
       
-      // Keep current song as first if it exists in the list
+      // For manual shuffle, keep current song at beginning for better UX
       final currentSong = state.currentSong;
+      int currentIndex = 0;
+      
       if (currentSong != null) {
-        shuffledSongs.remove(currentSong);
+        // Remove current song from shuffled list and put it at the beginning
+        shuffledSongs.removeWhere((song) => song.id == currentSong.id);
         shuffledSongs.insert(0, currentSong);
+        currentIndex = 0; // Current song is now at index 0
       }
       
       // Update state with shuffled queue
       state = state.copyWith(
         queue: shuffledSongs,
-        currentIndex: 0,
+        currentIndex: currentIndex,
         currentPlaylistId: null, // Clear playlist context for general shuffle
       );
       
@@ -738,35 +790,37 @@ class PlayerController extends StateNotifier<PlayerState> {
     // OR if explicitly requested
     final shouldForceRestart = forceRestart || isCurrentSong || (isCurrentSong && isDifferentContext);
     
-    // Only reset shuffle mode if not in general shuffle mode
-    // General shuffle should persist when playing individual songs
-    final shouldResetShuffle = state.shuffleMode && state.currentPlaylistId != null;
-    
-    if (shouldResetShuffle) {
-      state = state.copyWith(shuffleMode: false);
-    }
-    
-    // If shuffle is active and no playlist context, keep the shuffled queue
-    // Otherwise, set single song queue
-    if (state.shuffleMode && state.currentPlaylistId == null) {
-      // Keep current shuffled queue, just update current song if needed
-      final songIndex = state.queue.indexWhere((s) => s.id == song.id);
-      if (songIndex != -1) {
+    try {
+      // Load all songs for navigation
+      final songRepository = GetIt.instance<SongRepository>();
+      final allSongs = await songRepository.getAllSongs();
+      
+      if (allSongs.isEmpty) {
+        // Fallback to single song if no songs available
         state = state.copyWith(
-          currentIndex: songIndex,
-          currentPlaylistId: null,
-        );
-      } else {
-        // Song not in current queue, add it and play
-        final newQueue = [song, ...state.queue];
-        state = state.copyWith(
-          queue: newQueue,
+          queue: [song],
           currentIndex: 0,
           currentPlaylistId: null,
         );
+      } else {
+        // Create shuffled queue with selected song at index 0
+        final List<Song> shuffledSongs = List.from(allSongs)..shuffle();
+        
+        // Remove selected song from shuffled list and put it at the beginning
+        shuffledSongs.removeWhere((s) => s.id == song.id);
+        shuffledSongs.insert(0, song);
+        
+        // Update state with full queue
+        state = state.copyWith(
+          queue: shuffledSongs,
+          currentIndex: 0,
+          currentPlaylistId: null, // Clear playlist context
+          shuffleMode: true, // Enable shuffle mode for navigation
+        );
       }
-    } else {
-      // Clear playlist context and set single song queue
+    } catch (e) {
+      debugPrint('Error loading all songs for individual playback: $e');
+      // Fallback to single song
       state = state.copyWith(
         queue: [song],
         currentIndex: 0,
@@ -831,4 +885,43 @@ class PlayerController extends StateNotifier<PlayerState> {
       currentSong: newCurrentSong,
     );
   }
+  
+  /// Load all songs from database and shuffle them (for previous/next when no playlist context)
+  Future<void> loadAllSongsAndShuffle() async {
+    if (_isDisposed) return;
+    
+    try {
+      final songRepository = GetIt.instance<SongRepository>();
+      final allSongs = await songRepository.getAllSongs();
+      
+      if (allSongs.isEmpty) return;
+      
+      // Shuffle all songs
+      final List<Song> shuffledSongs = List.from(allSongs)..shuffle();
+      
+      // For individual song playback, current song should be first in queue
+      final currentSong = state.currentSong;
+      int currentIndex = 0;
+      
+      if (currentSong != null) {
+        // Remove current song from shuffled list and put it at the beginning
+        shuffledSongs.removeWhere((song) => song.id == currentSong.id);
+        shuffledSongs.insert(0, currentSong);
+        currentIndex = 0; // Current song is now at index 0
+      }
+      
+      // Update state with shuffled queue and clear playlist context
+      state = state.copyWith(
+        queue: shuffledSongs,
+        currentIndex: currentIndex,
+        currentPlaylistId: null, // Clear playlist context for general shuffle
+        shuffleMode: true, // Enable shuffle mode
+      );
+      
+    } catch (e) {
+      debugPrint('Error loading and shuffling all songs: $e');
+    }
+  }
 }
+
+

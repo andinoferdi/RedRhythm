@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 
@@ -15,6 +14,7 @@ import '../../providers/genre_provider.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
+
 
 
 import '../../utils/app_colors.dart';
@@ -256,10 +256,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   child: const Text(
                     'Home',
                     style: TextStyle(
+                      fontFamily: 'DM Sans',
                       color: Colors.white,
                       fontSize: 25, // Match size with other screens
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -549,8 +549,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 onTap: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const AlbumSyncDebugScreen(),
+                    AppRouter.createConsistentRoute(
+                      const AlbumSyncDebugScreen(),
                     ),
                   );
                 },
@@ -717,6 +717,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                       onTap: () {
                         // Use playSongById to load complete song data without playlist context
                         ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
+                        
+                        // Color extraction will be handled automatically by mini_player when song changes
                       },
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)
@@ -782,3 +784,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
 }
+
+
