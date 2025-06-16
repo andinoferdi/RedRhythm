@@ -90,6 +90,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       final authController = ref.read(authControllerProvider.notifier);
       await authController.reinitializeAuth();
     } catch (e) {
+      // Silently handle auth reinitialization errors
     }
   }
 

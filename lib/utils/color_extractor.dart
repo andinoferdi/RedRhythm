@@ -497,17 +497,7 @@ class ColorExtractor {
     }
   }
   
-  /// Generate consistent colors based on song name hash (fallback method)
-  static DominantColors _generateConsistentColors(String songName) {
-    final hash = songName.hashCode.abs();
-    final paletteKeys = _elegantPalettes.keys.toList();
-    
-    // Exclude monochrome from random selection (only for explicit detection)
-    final availablePalettes = paletteKeys.where((key) => key != 'monochrome').toList();
-    final selectedPalette = availablePalettes[hash % availablePalettes.length];
-    
-    return _elegantPalettes[selectedPalette]!;
-  }
+
 }
 
 /// Data class to hold extracted dominant colors

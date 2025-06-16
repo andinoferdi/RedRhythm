@@ -236,7 +236,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         final miniPlayerCache = ref.read(playlistUpdateNotifierProvider.notifier);
         miniPlayerCache.notifyPlaylistUpdated();
       } catch (e) {
-
+        // Silently handle playlist update notification errors
       }
 
       final pbService = PocketBaseService();
@@ -1074,7 +1074,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       child: Consumer(
         builder: (context, ref, child) {
           final playerState = ref.watch(playerControllerProvider);
-          final currentPlaylistId = playerState.currentPlaylistId;
           
           // For recommended songs, only show as playing if:
           // 1. Song is currently playing
@@ -1092,7 +1091,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           
           // DEBUG: Log the state for troubleshooting animated bars
           if (isCurrentSong) {
-            print('🎵 RECOMMENDED BARS: Song ${song.title} - isCurrentSong: $isCurrentSong, isLastRecommended: $isLastRecommendedSong, playerIsPlaying: ${playerState.isPlaying}, finalIsPlaying: $isPlaying');
+            debugPrint('🎵 RECOMMENDED BARS: Song ${song.title} - isCurrentSong: $isCurrentSong, isLastRecommended: $isLastRecommendedSong, playerIsPlaying: ${playerState.isPlaying}, finalIsPlaying: $isPlaying');
           }
           
           return SongItemWidget(

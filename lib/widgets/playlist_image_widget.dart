@@ -30,26 +30,19 @@ class PlaylistImageWidget extends StatefulWidget {
 
   /// Clear the cache for a specific playlist (useful when playlist is updated)
   static void clearCache(String playlistId) {
-    final songsRemoved = _playlistSongsCache.remove(playlistId) != null;
+    _playlistSongsCache.remove(playlistId);
     
     // Clear all mosaic cache that contains this playlist ID
     final keysToRemove = _mosaicWidgetCache.keys.where((key) => key.contains(playlistId)).toList();
     for (final key in keysToRemove) {
       _mosaicWidgetCache.remove(key);
     }
-    
-
   }
 
   /// Clear all cached playlist data
   static void clearAllCache() {
-    final songsCount = _playlistSongsCache.length;
-    final mosaicCount = _mosaicWidgetCache.length;
-    
     _playlistSongsCache.clear();
     _mosaicWidgetCache.clear();
-    
-
   }
 
   @override
@@ -188,7 +181,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         }
       }
     } catch (e) {
-      
+      // Silently handle image URL generation errors and fallback to placeholder
     }
 
     if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {

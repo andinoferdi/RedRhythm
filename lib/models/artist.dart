@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 
 class Artist {

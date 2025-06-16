@@ -54,6 +54,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
   late Animation<double> _fadeAnimation;
   bool _hasShownBefore = false;
 
+  // For smooth progress bar transitions
+  double _currentProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +74,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
+
+    // Initialize progress value
+    _currentProgress = 0.0;
     
     // Check playlist status after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -221,10 +227,17 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
       _lastCheckedSongId = null; // Reset cache for new song
       _checkIfSongInPlaylist();
       
+      // Reset progress when song changes
+      if (newSong != null) {
+        _currentProgress = 0.0;
+      }
+      
       // Remove the fade transition that makes mini player disappear
       // Keep only the individual element animations
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -250,6 +263,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
       // Reset the fade state when no song is playing
       _hasShownBefore = false;
       _fadeController.reset();
+      _currentProgress = 0.0;
       return const SizedBox.shrink();
     }
 
@@ -289,14 +303,31 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
           ),
         child: Column(
           children: [
-            // Progress Bar
+            // Progress Bar with smooth animation
             SizedBox(
               height: 2,
-              child: LinearProgressIndicator(
-                value: playerState.currentPosition.inMilliseconds /
-                    (currentSong.duration.inMilliseconds == 0 ? 1 : currentSong.duration.inMilliseconds),
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                backgroundColor: colors.textSecondary.withValues(alpha: 0.3),
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.linear,
+                tween: Tween<double>(
+                  begin: _currentProgress,
+                  end: playerState.currentPosition.inMilliseconds /
+                      (currentSong.duration.inMilliseconds == 0 ? 1 : currentSong.duration.inMilliseconds),
+                ),
+                builder: (context, value, child) {
+                  // Update current progress for next animation
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      _currentProgress = value;
+                    }
+                  });
+                  
+                  return LinearProgressIndicator(
+                    value: value,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    backgroundColor: colors.textSecondary.withValues(alpha: 0.3),
+                  );
+                },
               ),
             ),
             // Content

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../services/pocketbase_service.dart';
 
@@ -253,6 +252,7 @@ class UserRepository {
           return {'success': true, 'method': 'exact_match_update'};
         }
               } catch (e) {
+        // Silently handle exact match update errors and try next approach
       }
       
       // Pendekatan 2: Menggunakan API sendiri untuk pengubahan password langsung
@@ -283,6 +283,7 @@ class UserRepository {
           }
         }
               } catch (e) {
+        // Silently handle admin reset errors and try next approach
       }
       
       // Pendekatan 3: Menggunakan collection API langsung
@@ -308,6 +309,7 @@ class UserRepository {
           return {'success': true, 'method': 'direct_collection_api'};
         }
               } catch (e) {
+        // Silently handle direct collection API errors
       }
       
       // Jika sampai di sini, berarti tidak berhasil mengubah password

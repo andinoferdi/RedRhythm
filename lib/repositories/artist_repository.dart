@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import '../models/artist.dart';
 import '../services/pocketbase_service.dart';
 

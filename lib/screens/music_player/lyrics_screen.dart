@@ -3,8 +3,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
 import '../../models/song.dart';
-import '../../utils/app_colors.dart';
-import '../../utils/image_helpers.dart';
 import '../../utils/color_extractor.dart';
 import '../../providers/dynamic_color_provider.dart';
 
@@ -46,9 +44,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
     
     // Extract colors from current song if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentSong != null) {
-        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
-      }
+      ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
     });
     
     return Scaffold(

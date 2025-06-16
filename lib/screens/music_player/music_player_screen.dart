@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
@@ -161,9 +160,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     
     // Extract dynamic colors from current song's album art
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentSong != null) {
-        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
-      }
+      ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
     });
     
     // Update artist info for "Tentang artis" section based on current song
@@ -345,10 +342,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                                 final playerState = ref.watch(playerControllerProvider);
                                 final hasQueue = playerState.queue.isNotEmpty;
                                 final currentIndex = playerState.currentIndex;
-                                final queueLength = playerState.queue.length;
-                                
-
-                                
                                 // Previous button should be enabled if we have queue and not at beginning
                                 final canGoPrevious = hasQueue && currentIndex > 0;
                                 
