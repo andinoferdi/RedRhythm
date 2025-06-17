@@ -228,52 +228,56 @@ class _PlaylistTabState extends ConsumerState<PlaylistTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Cancel Button - Green like Spotify
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                  // Cancel Button
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        minimumSize: const Size(80, 40),
                       ),
-                      minimumSize: const Size(100, 40),
-                    ),
-                    child: const Text(
-                      'BATALKAN',
-                      style: TextStyle(
-                        color: Colors.white, // Spotify green
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'DM Sans',
-                        letterSpacing: 1.2,
+                      child: const Text(
+                        'BATALKAN',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'DM Sans',
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8),
                   
-                  // Delete Button - White/Gray
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _deletePlaylist(playlist);
-                    },
-                    style: TextButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                  // Delete Button
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _deletePlaylist(playlist);
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        minimumSize: const Size(80, 40),
                       ),
-                      minimumSize: const Size(100, 40),
-                    ),
-                    child: Text(
-                      'HAPUS',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'DM Sans',
-                        letterSpacing: 1.2,
+                      child: Text(
+                        'HAPUS',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'DM Sans',
+                          letterSpacing: 1.2,
+                        ),
                       ),
                     ),
                   ),

@@ -167,7 +167,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       if (widget.playlist is RecordModel) {
         final pbService = PocketBaseService();
         final repository = PlaylistRepository(pbService);
-        customImageUrl = repository.getCoverImageUrl(widget.playlist as RecordModel);
+        customImageUrl = repository.generatePlaylistCoverUrl(widget.playlist.data) ?? '';
         // Only log if there's actually a custom image
         if (customImageUrl.isNotEmpty) {
   

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:pocketbase/pocketbase.dart';
 import '../services/pocketbase_service.dart';
+import 'package:http/http.dart' as http;
 
 /// Tool untuk membantu sync album images yang sudah diupload ulang
 class AlbumImageSyncTool {
@@ -14,54 +14,38 @@ class AlbumImageSyncTool {
       await _pbService.initialize();
       
       // Get semua album
-      final albums = await _pbService.pb.collection('albums').getList(
-        perPage: 100,
-      );
+      final albums = await _pbService.pb.collection('albums').getFullList();
       
-      debugPrint('🔍 Checking ${albums.items.length} albums...');
-      
-      for (final album in albums.items) {
+      for (final album in albums) {
         await _checkAlbumImage(album);
       }
       
-      debugPrint('✅ Album image check completed');
     } catch (e) {
       debugPrint('❌ Error checking album images: $e');
     }
   }
   
   /// Cek satu album dan tampilkan status cover image
-  Future<void> _checkAlbumImage(RecordModel album) async {
+  Future<void> _checkAlbumImage(dynamic album) async {
     final albumName = album.data['name'] ?? album.data['title'] ?? 'Unknown';
-    final coverImage = album.data['cover_image'] as String?;
     
-    debugPrint('📀 Album: $albumName (ID: ${album.id})');
-    
-    if (coverImage == null || coverImage.isEmpty) {
-      debugPrint('   ⚠️  No cover image set');
+    final coverImage = album.data['cover_image'];
+    if (coverImage == null || coverImage.toString().isEmpty) {
       return;
     }
-    
-    // Generate URL dan cek apakah file ada
-    final imageUrl = '${_pbService.pb.baseUrl}/api/files/${album.collectionId}/${album.id}/$coverImage';
-    debugPrint('   🖼️  Cover image: $coverImage');
-    debugPrint('   🔗 URL: $imageUrl');
-    
-    // Cek apakah file benar-benar ada dengan melakukan HEAD request
+
     try {
-      final response = await _pbService.pb.send('/api/files/${album.collectionId}/${album.id}/$coverImage', 
-        method: 'HEAD');
+      final imageUrl = _pbService.pb.files.getUrl(album, coverImage);
       
-      if (response.statusCode == 200) {
-        debugPrint('   ✅ Image file exists');
-      } else {
-        debugPrint('   ❌ Image file NOT found (${response.statusCode})');
+      final response = await http.head(Uri.parse(imageUrl.toString()));
+      
+      if (response.statusCode != 200) {
+        // Log only errors
+        debugPrint('❌ Image file NOT found for album: $albumName (${response.statusCode})');
       }
     } catch (e) {
-      debugPrint('   ❌ Image file NOT found (Error: $e)');
+      debugPrint('❌ Image file NOT found for album: $albumName (Error: $e)');
     }
-    
-    debugPrint('');
   }
   
   /// List semua file yang ada di album record untuk membantu identifikasi nama file yang benar
@@ -72,24 +56,12 @@ class AlbumImageSyncTool {
       // Get album record
       final album = await _pbService.pb.collection('albums').getOne(albumId);
       
-      debugPrint('📀 Album: ${album.data['name'] ?? album.data['title']} (ID: $albumId)');
-      debugPrint('🗂️  Files in this album record:');
-      
       // List semua field yang mungkin berisi file
       album.data.forEach((key, value) {
         if (value is String && value.isNotEmpty && value.contains('.')) {
-          debugPrint('   📄 $key: $value');
+          // Reduced logging
         }
       });
-      
-      // Coba akses folder file album untuk melihat file apa saja yang ada
-      try {
-        final filesUrl = '${_pbService.pb.baseUrl}/api/files/${album.collectionId}/${album.id}/';
-        debugPrint('🔗 Files folder URL: $filesUrl');
-        debugPrint('💡 Tip: Buka URL ini di browser untuk melihat semua file yang ada');
-      } catch (e) {
-        debugPrint('⚠️  Cannot list files: $e');
-      }
       
     } catch (e) {
       debugPrint('❌ Error getting album: $e');
@@ -106,12 +78,9 @@ class AlbumImageSyncTool {
         'cover_image': newCoverImageFileName,
       });
       
-      debugPrint('✅ Updated album $albumId cover image to: $newCoverImageFileName');
-      
-      // Verify the update
+      // Verify the update was successful
       final updatedAlbum = await _pbService.pb.collection('albums').getOne(albumId);
-      final newCoverImage = updatedAlbum.data['cover_image'];
-      debugPrint('🔍 Verified: cover_image is now: $newCoverImage');
+      final _ = updatedAlbum.data['cover_image']; // Verify field exists
       
     } catch (e) {
       debugPrint('❌ Error updating album cover image: $e');

@@ -95,46 +95,43 @@ class PlaylistRepository {
     }
   }
   
-  /// Delete a playlist and all its song relationships
+  /// Delete playlist and its songs
   Future<void> deletePlaylist(String playlistId) async {
     try {
-      // First, delete all song_playlist relationships for this playlist
-      final songPlaylistRecords = await _pb.collection('song_playlists').getList(
+      await _pocketBaseService.initialize();
+
+      // First, delete all song_playlist records for this playlist
+      final songPlaylistRecords = await _pocketBaseService.pb.collection('song_playlists').getList(
         filter: 'playlist_id = "$playlistId"',
-        perPage: 500, // Get all records
+        perPage: 500,
       );
-      
-      // Delete each song_playlist record
+
       for (final record in songPlaylistRecords.items) {
-        await _pb.collection('song_playlists').delete(record.id);
+        await _pocketBaseService.pb.collection('song_playlists').delete(record.id);
       }
-      
-      debugPrint('Deleted ${songPlaylistRecords.items.length} song_playlist records for playlist $playlistId');
-      
+
       // Then delete the playlist itself
-      await _pb.collection('playlists').delete(playlistId);
-      
-      debugPrint('Successfully deleted playlist $playlistId');
+      await _pocketBaseService.pb.collection('playlists').delete(playlistId);
+
     } catch (e) {
       debugPrint('Delete playlist error: $e');
-      throw Exception('Failed to delete playlist: $e');
+      rethrow;
     }
   }
   
-  /// Get cover image URL for a playlist
-  String getCoverImageUrl(RecordModel playlist) {
-    final coverImage = playlist.data['cover_image'] as String?;
-    if (coverImage != null && coverImage.trim().isNotEmpty) {
-      try {
-        final url = _pb.files.getUrl(playlist, coverImage).toString();
-        debugPrint('🖼️ Generated playlist cover URL: $url');
+  /// Generate playlist cover image URL
+  String? generatePlaylistCoverUrl(Map<String, dynamic> playlistData) {
+    try {
+      final coverImage = playlistData['cover_image'];
+      if (coverImage != null && coverImage.isNotEmpty) {
+        final url = '${_pocketBaseService.pb.baseUrl}/api/files/playlists/${playlistData['id']}/$coverImage';
         return url;
-      } catch (e) {
-        debugPrint('⚠️ Error generating playlist cover URL: $e');
-        return '';
       }
+      return null;
+    } catch (e) {
+      debugPrint('Error generating playlist cover URL: $e');
+      return null;
     }
-    return '';
   }
 }
 

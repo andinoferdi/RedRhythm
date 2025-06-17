@@ -37,6 +37,12 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
   }
 
   Future<void> _loadPlaylists() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final pbService = PocketBaseService();
       await pbService.initialize();
@@ -58,17 +64,11 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
         });
       }
     } catch (e) {
-      debugPrint('🎵 PLAYLIST_MODAL: Error loading playlists: $e');
+      debugPrint('Error loading playlists: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load playlists: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     }
   }
@@ -170,7 +170,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
         Navigator.of(context).pop();
       }
     } catch (e) {
-      debugPrint('🎵 PLAYLIST_MODAL: Error applying changes: $e');
+      debugPrint('Error applying changes: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
