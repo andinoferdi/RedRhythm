@@ -159,20 +159,17 @@ class ColorExtractor {
     
     // Special logic: Check if this is a monochrome album (black/white/gray dominant)
     if (_isMonochromeAlbum(colors)) {
-      debugPrint('🎨 DETECTED: Monochrome album - using gray palette');
       return const Color(0xFF4A4A4A); // Return medium gray for monochrome albums
     }
     
     // Special logic: Check if this is a sky/cloud album
     if (_isSkyCloudAlbum(colors)) {
-      debugPrint('🎨 DETECTED: Sky/Cloud album - using muted dominant color');
       return _selectMutedDominantColor(colors);
     }
     
     // Special logic: Check if there's a strong purple presence in the image
     Color? strongPurple = _findStrongPurple(colors);
     if (strongPurple != null) {
-      debugPrint('🎨 DETECTED: Strong purple presence');
       return strongPurple;
     }
     
@@ -204,7 +201,6 @@ class ColorExtractor {
       }
     }
     
-    debugPrint('🎨 SELECTED: Best color with score $bestScore');
     return bestColor;
   }
   

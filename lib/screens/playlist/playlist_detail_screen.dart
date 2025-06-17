@@ -1089,11 +1089,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           
           final isPlaying = isPlayingFromRecommended;
           
-          // DEBUG: Log the state for troubleshooting animated bars
-          if (isCurrentSong) {
-            debugPrint('🎵 RECOMMENDED BARS: Song ${song.title} - isCurrentSong: $isCurrentSong, isLastRecommended: $isLastRecommendedSong, playerIsPlaying: ${playerState.isPlaying}, finalIsPlaying: $isPlaying');
-          }
-          
           return SongItemWidget(
             song: song,
             subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',

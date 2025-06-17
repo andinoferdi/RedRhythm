@@ -168,22 +168,10 @@ class DynamicColorNotifier extends StateNotifier<DynamicColorState> {
   
   /// Extract colors with debug information
   Future<DominantColors> extractColorsWithDebug(Song song) async {
-    debugPrint('\n=== DEBUG COLOR EXTRACTION ===');
-    debugPrint('Song: ${song.title}');
-    debugPrint('Artist: ${song.artist}');
-    debugPrint('Album Art URL: ${song.albumArtUrl}');
-    
     // Clear cache first to ensure fresh extraction
     ColorExtractor.clearCache();
     
     final colors = await ColorExtractor.extractColorsFromUrl(song.albumArtUrl);
-    
-    debugPrint('Primary Color: ${colors.primary}');
-    debugPrint('Secondary Color: ${colors.secondary}');
-    debugPrint('Background Start: ${colors.backgroundStart}');
-    debugPrint('Background End: ${colors.backgroundEnd}');
-    debugPrint('Accent Color: ${colors.accent}');
-    debugPrint('==============================\n');
     
     return colors;
   }

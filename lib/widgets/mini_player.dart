@@ -16,7 +16,8 @@ import '../services/pocketbase_service.dart';
 import 'playlist_selection_modal.dart';
 
 // Provider for playlist update notifications
-final playlistUpdateNotifierProvider = StateNotifierProvider<PlaylistUpdateNotifier, int>((ref) {
+final playlistUpdateNotifierProvider =
+    StateNotifierProvider<PlaylistUpdateNotifier, int>((ref) {
   return PlaylistUpdateNotifier();
 });
 
@@ -35,7 +36,8 @@ class MiniPlayer extends ConsumerStatefulWidget {
   ConsumerState<MiniPlayer> createState() => _MiniPlayerState();
 }
 
-class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStateMixin {
+class _MiniPlayerState extends ConsumerState<MiniPlayer>
+    with TickerProviderStateMixin {
   bool _isLoadingPlaylists = false;
   bool _isInPlaylist = false;
   String? _lastCheckedSongId; // Cache to avoid unnecessary checks
@@ -53,6 +55,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   bool _hasShownBefore = false;
+  // Static flag to track if mini player has ever been shown in this app session
+  static bool _hasEverBeenShown = false;
 
   // For smooth progress bar transitions
   double _currentProgress = 0.0;
@@ -60,13 +64,13 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize fade animation controller
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -77,7 +81,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
 
     // Initialize progress value
     _currentProgress = 0.0;
-    
+
     // Check playlist status after the widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfSongInPlaylist();
@@ -107,7 +111,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
   Future<void> _checkIfSongInPlaylist() async {
     final currentSong = ref.read(playerControllerProvider).currentSong;
     if (currentSong == null) return;
-    
+
     // Avoid duplicate checks for the same song
     if (_lastCheckedSongId == currentSong.id && !_hasOptimisticState) {
       return;
@@ -115,20 +119,20 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
 
     try {
       // Reduced debug logging for better performance
-      
+
       // Set loading state immediately for better UX
       if (mounted) {
         setState(() {
           _isLoadingPlaylists = true;
         });
       }
-      
+
       List<Playlist> allPlaylists;
-      
+
       // Use cache if available and valid
       final now = DateTime.now();
-      if (_cachedPlaylists != null && 
-          _cacheTimestamp != null && 
+      if (_cachedPlaylists != null &&
+          _cacheTimestamp != null &&
           now.difference(_cacheTimestamp!).compareTo(_cacheValidDuration) < 0) {
         allPlaylists = _cachedPlaylists!;
       } else {
@@ -136,14 +140,14 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
         await pbService.initialize();
         final repository = SongPlaylistRepository(pbService);
         allPlaylists = await repository.getAllPlaylists();
-        
+
         // Update cache
         _cachedPlaylists = allPlaylists;
         _cacheTimestamp = now;
       }
-      
+
       bool foundInAnyPlaylist = false;
-      
+
       for (final playlist in allPlaylists) {
         final containsSong = playlist.songs.contains(currentSong.id);
         if (containsSong) {
@@ -151,14 +155,14 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
           break; // Early exit for better performance
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _isInPlaylist = foundInAnyPlaylist;
           _lastCheckedSongId = currentSong.id;
           _isLoadingPlaylists = false;
         });
-        
+
         // Clear optimistic state now that we have real state
         _clearOptimisticState();
       }
@@ -171,7 +175,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
           _lastCheckedSongId = currentSong.id;
           _isLoadingPlaylists = false;
         });
-        
+
         // Clear optimistic state on error too
         _clearOptimisticState();
       }
@@ -187,14 +191,14 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
 
   Future<void> _showPlaylistModal(BuildContext context, Song song) async {
     // Reduced debug logging for better performance
-    
+
     await showPlaylistSelectionModal(
       context,
       song,
       onPlaylistsChanged: () {
         // Clear cache to force refresh
         _clearPlaylistCache();
-        
+
         // Force immediate refresh of button state
         _lastCheckedSongId = null; // Reset cache
         _checkIfSongInPlaylist();
@@ -226,30 +230,30 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
       // Reduced debug logging for better performance
       _lastCheckedSongId = null; // Reset cache for new song
       _checkIfSongInPlaylist();
-      
+
       // Reset progress when song changes
       if (newSong != null) {
         _currentProgress = 0.0;
       }
-      
+
       // Remove the fade transition that makes mini player disappear
       // Keep only the individual element animations
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
     final dynamicColorState = ref.watch(dynamicColorProvider);
     final currentSong = playerState.currentSong;
-    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
-    
+    final colors =
+        dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+
     // Watch for song changes to refresh button state with debouncing
-    ref.listen(playerControllerProvider.select((state) => state.currentSong), (previous, next) {
+    ref.listen(playerControllerProvider.select((state) => state.currentSong),
+        (previous, next) {
       _onSongChanged(previous, next);
-      
+
       // Auto-extract colors for new song
       if (next != null && previous?.id != next.id) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -257,7 +261,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
         });
       }
     });
-    
+
     // Don't show mini player if no song is playing
     if (currentSong == null) {
       // Reset the fade state when no song is playing
@@ -267,19 +271,20 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
       return const SizedBox.shrink();
     }
 
-    // Trigger fade in animation when mini player first appears
+    // Trigger fade in animation only when mini player first appears after app launch
     if (!_hasShownBefore) {
       _hasShownBefore = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _fadeController.forward();
-      });
-    }
 
-    // Auto-extract colors if not already extracted for current song
-    if (dynamicColorState.currentSongId != currentSong.id) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
-      });
+      // Only animate if this is the first time in the app session
+      if (!_hasEverBeenShown) {
+        _hasEverBeenShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _fadeController.forward();
+        });
+      } else {
+        // If navigating between pages, set opacity to 1.0 immediately
+        _fadeController.value = 1.0;
+      }
     }
 
     return FadeTransition(
@@ -301,188 +306,216 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> with TickerProviderStat
               ),
             ),
           ),
-        child: Column(
-          children: [
-            // Progress Bar with smooth animation
-            SizedBox(
-              height: 2,
-              child: TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.linear,
-                tween: Tween<double>(
-                  begin: _currentProgress,
-                  end: playerState.currentPosition.inMilliseconds /
-                      (currentSong.duration.inMilliseconds == 0 ? 1 : currentSong.duration.inMilliseconds),
+          child: Column(
+            children: [
+              // Progress Bar with smooth animation
+              SizedBox(
+                height: 2,
+                child: TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.linear,
+                  tween: Tween<double>(
+                    begin: _currentProgress,
+                    end: playerState.currentPosition.inMilliseconds /
+                        (currentSong.duration.inMilliseconds == 0
+                            ? 1
+                            : currentSong.duration.inMilliseconds),
+                  ),
+                  builder: (context, value, child) {
+                    // Update current progress for next animation
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        _currentProgress = value;
+                      }
+                    });
+
+                    return LinearProgressIndicator(
+                      value: value,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      backgroundColor:
+                          colors.textSecondary.withValues(alpha: 0.3),
+                    );
+                  },
                 ),
-                builder: (context, value, child) {
-                  // Update current progress for next animation
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) {
-                      _currentProgress = value;
-                    }
-                  });
-                  
-                  return LinearProgressIndicator(
-                    value: value,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    backgroundColor: colors.textSecondary.withValues(alpha: 0.3),
-                  );
-                },
               ),
-            ),
-            // Content
-            Expanded(
-              child: Row(
-                children: [
-                  // Album Art
-                  Container(
-                    width: 48,
-                    height: 48,
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: AppColors.greyDark,
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Container(
-                        key: ValueKey(currentSong.albumArtUrl), // Key for AnimatedSwitcher
-                        child: ImageHelpers.buildSafeNetworkImage(
-                          imageUrl: currentSong.albumArtUrl,
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.cover,
-                          borderRadius: BorderRadius.circular(4),
-                          fallbackWidget: Container(
+              // Content
+              Expanded(
+                child: Row(
+                  children: [
+                    // Album Art
+                    Container(
+                      width: 48,
+                      height: 48,
+                      margin: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: AppColors.greyDark,
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        child: Container(
+                          key: ValueKey(currentSong
+                              .albumArtUrl), // Key for AnimatedSwitcher
+                          child: ImageHelpers.buildSafeNetworkImage(
+                            imageUrl: currentSong.albumArtUrl,
                             width: 48,
                             height: 48,
-                            color: AppColors.greyDark,
-                            child: const Icon(
-                              Icons.music_note,
-                              color: AppColors.primary,
-                              size: 20,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(4),
+                            fallbackWidget: Container(
+                              width: 48,
+                              height: 48,
+                              color: AppColors.greyDark,
+                              child: const Icon(
+                                Icons.music_note,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  // Song Info
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
-                      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-                        return Stack(
-                          alignment: Alignment.centerLeft, // Force left alignment
-                          children: <Widget>[
-                            ...previousChildren,
-                            if (currentChild != null) currentChild,
-                          ],
-                        );
-                      },
-                      child: Column(
-                        key: ValueKey('${currentSong.id}_${currentSong.title}'), // Key for AnimatedSwitcher
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            currentSong.title,
-                            style: TextStyle(
-                              color: colors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentSong.artist,
-                            style: TextStyle(
-                              color: colors.textSecondary,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Control Buttons
-                  Row(
-                    children: [
-                      // Add to Playlist Button
-                      Consumer(
-                        builder: (context, ref, child) {
-                          // Use optimistic state if available, otherwise use real state
-                          final displayState = _hasOptimisticState ? _optimisticState : _isInPlaylist;
-                          
-                          return IconButton(
-                            onPressed: _isLoadingPlaylists ? null : () async {
-                              final currentSong = ref.read(playerControllerProvider).currentSong;
-                              if (currentSong != null) {
-                                // Set optimistic state based on current state
-                                // If currently in playlist, optimistically show it will be removed
-                                // If not in playlist, optimistically show it will be added
-                                final hasPlaylists = _cachedPlaylists?.isNotEmpty ?? true;
-                                if (hasPlaylists) {
-                                  _setOptimisticState(!displayState);
-                                }
-                                
-                                await _showPlaylistModal(context, currentSong);
-                                
-                                // Clear optimistic state and refresh real state
-                                _clearOptimisticState();
-                                await _checkIfSongInPlaylist();
-                              }
-                            },
-                            icon: _isLoadingPlaylists 
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      Theme.of(context).iconTheme.color ?? Colors.white,
-                                    ),
-                                  ),
-                                )
-                              : Icon(
-                                  displayState ? Icons.check_circle : Icons.add_circle_outline,
-                                  color: displayState ? Colors.red : Colors.white,
-                                ),
-                            tooltip: _isLoadingPlaylists 
-                              ? 'Checking playlists...'
-                              : (displayState ? 'In playlist' : 'Add to playlist'),
+                    // Song Info
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        layoutBuilder: (Widget? currentChild,
+                            List<Widget> previousChildren) {
+                          return Stack(
+                            alignment:
+                                Alignment.centerLeft, // Force left alignment
+                            children: <Widget>[
+                              ...previousChildren,
+                              if (currentChild != null) currentChild,
+                            ],
                           );
                         },
-                      ),
-                      // Play/Pause Button
-                      IconButton(
-                        icon: Icon(
-                          playerState.isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.white,
+                        child: Column(
+                          key: ValueKey(
+                              '${currentSong.id}_${currentSong.title}'), // Key for AnimatedSwitcher
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currentSong.title,
+                              style: TextStyle(
+                                color: colors.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              currentSong.artist,
+                              style: TextStyle(
+                                color: colors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        onPressed: () {
-                          if (playerState.isPlaying) {
-                            ref.read(playerControllerProvider.notifier).pause();
-                          } else {
-                            ref.read(playerControllerProvider.notifier).resume();
-                          }
-                        },
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                    // Control Buttons
+                    Row(
+                      children: [
+                        // Add to Playlist Button
+                        Consumer(
+                          builder: (context, ref, child) {
+                            // Use optimistic state if available, otherwise use real state
+                            final displayState = _hasOptimisticState
+                                ? _optimisticState
+                                : _isInPlaylist;
+
+                            return IconButton(
+                              onPressed: _isLoadingPlaylists
+                                  ? null
+                                  : () async {
+                                      final currentSong = ref
+                                          .read(playerControllerProvider)
+                                          .currentSong;
+                                      if (currentSong != null) {
+                                        // Set optimistic state based on current state
+                                        // If currently in playlist, optimistically show it will be removed
+                                        // If not in playlist, optimistically show it will be added
+                                        final hasPlaylists =
+                                            _cachedPlaylists?.isNotEmpty ??
+                                                true;
+                                        if (hasPlaylists) {
+                                          _setOptimisticState(!displayState);
+                                        }
+
+                                        await _showPlaylistModal(
+                                            context, currentSong);
+
+                                        // Clear optimistic state and refresh real state
+                                        _clearOptimisticState();
+                                        await _checkIfSongInPlaylist();
+                                      }
+                                    },
+                              icon: _isLoadingPlaylists
+                                  ? SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Theme.of(context).iconTheme.color ??
+                                              Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      displayState
+                                          ? Icons.check_circle
+                                          : Icons.add_circle_outline,
+                                      color: displayState
+                                          ? Colors.red
+                                          : Colors.white,
+                                    ),
+                              tooltip: _isLoadingPlaylists
+                                  ? 'Checking playlists...'
+                                  : (displayState
+                                      ? 'In playlist'
+                                      : 'Add to playlist'),
+                            );
+                          },
+                        ),
+                        // Play/Pause Button
+                        IconButton(
+                          icon: Icon(
+                            playerState.isPlaying
+                                ? Icons.pause
+                                : Icons.play_arrow,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            if (playerState.isPlaying) {
+                              ref
+                                  .read(playerControllerProvider.notifier)
+                                  .pause();
+                            } else {
+                              ref
+                                  .read(playerControllerProvider.notifier)
+                                  .resume();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
-
-
