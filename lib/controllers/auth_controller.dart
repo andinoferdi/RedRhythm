@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:pocketbase/pocketbase.dart';
 import '../repositories/user_repository.dart';
 import '../services/pocketbase_service.dart';
 import '../states/auth_state.dart';
+import '../utils/search_history_utils.dart';
 import 'player_controller.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
@@ -130,6 +132,12 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     try {
+      // Get current user ID before logout to clear their search history
+      String? currentUserId;
+      if (_userRepository.isAuthenticated && _userRepository.currentUser != null) {
+        currentUserId = _userRepository.currentUser!.id;
+      }
+
       try {
         final playerController = _ref.read(playerControllerProvider.notifier);
         await playerController.stopAndReset();
@@ -139,6 +147,15 @@ class AuthController extends StateNotifier<AuthState> {
 
       await _userRepository.logout();
       await _pocketBaseService.setRememberMe(false);
+
+      // Clear search history for the logged out user
+      if (currentUserId != null) {
+        try {
+          await SearchHistoryUtils.clearUserSearchHistory(currentUserId);
+        } catch (e) {
+          debugPrint('Error clearing search history: $e');
+        }
+      }
 
       state = AuthState.unauthenticated();
     } catch (e) {

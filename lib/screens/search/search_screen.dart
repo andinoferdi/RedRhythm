@@ -4,9 +4,11 @@ import 'package:auto_route/auto_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../utils/app_colors.dart';
+import '../../utils/search_history_utils.dart';
 import '../../models/song.dart';
 
 import '../../controllers/player_controller.dart';
+import '../../controllers/auth_controller.dart';
 import '../../providers/song_provider.dart';
 
 import '../../widgets/mini_player.dart';
@@ -32,6 +34,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _isLoading = false;
   bool _hasSearched = false;
   String? _errorMessage;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -46,23 +49,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Check if user has changed and reload search history if needed
+    final authState = ref.read(authControllerProvider);
+    final newUserId = authState.isAuthenticated && authState.user != null ? authState.user!.id : null;
+    
+    if (_currentUserId != newUserId) {
+      _currentUserId = newUserId;
+      _loadRecentSearchedSongs();
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
+  /// Get user-specific key for storing search history
+  String _getUserSpecificKey() {
+    final authState = ref.read(authControllerProvider);
+    if (authState.isAuthenticated && authState.user != null) {
+      return 'recent_searched_songs_${authState.user!.id}';
+    }
+    // Fallback for guest users
+    return 'recent_searched_songs_guest';
+  }
+
   Future<void> _loadRecentSearchedSongs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final songsJson = prefs.getStringList('recent_searched_songs') ?? [];
-    final songs = songsJson.map((jsonStr) {
-      try {
-        final Map<String, dynamic> songMap = Map<String, dynamic>.from(jsonDecode(jsonStr));
-        return Song.fromJson(songMap);
-      } catch (e) {
-        return null;
-      }
-    }).where((song) => song != null).cast<Song>().toList();
+    final authState = ref.read(authControllerProvider);
+    List<Song> songs = [];
+    
+    if (authState.isAuthenticated && authState.user != null) {
+      songs = await SearchHistoryUtils.getUserSearchHistory(authState.user!.id);
+    }
     
     setState(() {
       _recentSearchedSongs = songs;
@@ -70,37 +93,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _saveRecentSearchedSongs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final songsJson = _recentSearchedSongs.map((song) => jsonEncode(song.toJson())).toList();
-    await prefs.setStringList('recent_searched_songs', songsJson);
+    final authState = ref.read(authControllerProvider);
+    if (authState.isAuthenticated && authState.user != null) {
+      await SearchHistoryUtils.saveUserSearchHistory(authState.user!.id, _recentSearchedSongs);
+    }
   }
 
   Future<void> _addToRecentSearchedSongs(Song song) async {
-    // Remove if already exists to avoid duplicates
-    _recentSearchedSongs.removeWhere((s) => s.id == song.id);
-    
-    // Add to beginning of list
-    _recentSearchedSongs.insert(0, song);
-    
-    // Keep only last 20 songs
-    if (_recentSearchedSongs.length > 20) {
-      _recentSearchedSongs = _recentSearchedSongs.take(20).toList();
+    final authState = ref.read(authControllerProvider);
+    if (authState.isAuthenticated && authState.user != null) {
+      await SearchHistoryUtils.addSongToUserHistory(authState.user!.id, song);
+      await _loadRecentSearchedSongs();
     }
-    
-    await _saveRecentSearchedSongs();
-    setState(() {});
   }
 
   Future<void> _removeFromRecentSearchedSongs(Song song) async {
-    _recentSearchedSongs.removeWhere((s) => s.id == song.id);
-    await _saveRecentSearchedSongs();
-    setState(() {});
+    final authState = ref.read(authControllerProvider);
+    if (authState.isAuthenticated && authState.user != null) {
+      await SearchHistoryUtils.removeSongFromUserHistory(authState.user!.id, song);
+      await _loadRecentSearchedSongs();
+    }
   }
 
   Future<void> _clearAllRecentSearchedSongs() async {
-    _recentSearchedSongs.clear();
-    await _saveRecentSearchedSongs();
-    setState(() {});
+    final authState = ref.read(authControllerProvider);
+    if (authState.isAuthenticated && authState.user != null) {
+      await SearchHistoryUtils.clearUserSearchHistory(authState.user!.id);
+    } else {
+      await SearchHistoryUtils.clearGuestSearchHistory();
+    }
+    await _loadRecentSearchedSongs();
   }
 
   Future<void> _performSearch(String query) async {
