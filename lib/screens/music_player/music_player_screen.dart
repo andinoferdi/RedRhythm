@@ -13,6 +13,7 @@ import '../../utils/image_helpers.dart';
 import '../../utils/color_extractor.dart';
 import '../../providers/dynamic_color_provider.dart';
 import '../../routes/app_router.dart';
+import '../../providers/artist_select_provider.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -159,6 +160,83 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         setState(() {
           _isLoadingArtistSongs = false;
         });
+      }
+    }
+  }
+
+  Future<void> _toggleFollowArtist(Artist artist, bool isCurrentlyFollowing) async {
+    try {
+      if (isCurrentlyFollowing) {
+        // Unfollow artist
+        final success = await ref.read(artistSelectProvider.notifier).removeArtistSelection(artist.id);
+        
+        if (mounted && success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Telah berhenti mengikuti "${artist.name}"',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        // Follow artist
+        final success = await ref.read(artistSelectProvider.notifier).addArtistSelection(artist.id);
+        
+        if (mounted && success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kini mengikuti "${artist.name}"',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isCurrentlyFollowing 
+                  ? 'Gagal berhenti mengikuti artis: $e'
+                  : 'Gagal mengikuti artis: $e'
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
       }
     }
   }
@@ -1064,26 +1142,40 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     ),
                   ),
 
-                  // Follow button
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppColors.greyLight,
-                        width: 1,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'Ikuti',
-                      style: TextStyle(
-                        color: AppColors.greyLight,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'DM Sans',
-                      ),
-                    ),
+                  // Follow/Unfollow button
+                  Consumer(
+                    builder: (context, ref, child) {
+                      final selectedArtists = ref.watch(artistSelectProvider);
+                      final isFollowing = selectedArtists.any((artistSelect) => 
+                          artistSelect.artistName == artist.name);
+                      
+                      return GestureDetector(
+                        onTap: () => _toggleFollowArtist(artist, isFollowing),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            isFollowing ? 'Mengikuti' : 'Ikuti',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'DM Sans',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -1231,6 +1323,24 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           ),
                         ),
                       ],
+                    ),
+                  ),
+
+                  // Follow button (disabled for fallback content)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Ikuti',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'DM Sans',
+                      ),
                     ),
                   ),
                 ],

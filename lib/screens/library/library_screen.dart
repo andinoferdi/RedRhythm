@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pocketbase/pocketbase.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/user_avatar.dart';
 import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
-import '../../widgets/playlist_tab.dart';
 import '../../widgets/spotify_style_button.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
@@ -14,6 +14,11 @@ import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
 import '../../routes/app_router.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/playlist_image_widget.dart';
+import '../playlist/playlist_detail_screen.dart';
+import '../../providers/artist_select_provider.dart';
+import '../../models/artist_select.dart';
+import '../../utils/image_helpers.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -28,9 +33,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize playlist loading
+    // Initialize playlist and artist loading
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playlistProvider.notifier).loadPlaylists();
+      ref.read(artistSelectProvider.notifier).loadSelectedArtists();
     });
   }
 
@@ -87,6 +93,717 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       },
     );
   }
+
+  void _navigateToPlaylistDetail(RecordModel playlist) {
+    Navigator.push(
+      context,
+      AppRouter.createConsistentRoute(
+        PlaylistDetailScreen(
+          playlist: playlist,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteBottomSheet(RecordModel playlist) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                PlaylistImageWidget(
+                  playlist: playlist,
+                  size: 60,
+                  borderRadius: 8,
+                  showMosaicForEmptyPlaylists: true,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'Playlist',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildBottomSheetOption(
+              icon: Icons.delete_outline,
+              title: 'Hapus playlist',
+              subtitle: 'Playlist akan dihapus secara permanen',
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmDialog(playlist);
+              },
+              isDestructive: true,
+            ),
+            const SizedBox(height: 8),
+            _buildBottomSheetOption(
+              icon: Icons.share_outlined,
+              title: 'Bagikan playlist',
+              subtitle: 'Bagikan ke teman-teman',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement share functionality
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDestructive ? Colors.red : Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmDialog(RecordModel playlist) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.8),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF282828), // Spotify dark gray
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Title
+              const Text(
+                'Hapus playlist',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'DM Sans',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              
+              // Subtitle/Question
+              Text(
+                'Yakin ingin menghapus ${playlist.data['name']}?',
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 16,
+                  fontFamily: 'DM Sans',
+                  fontWeight: FontWeight.w400,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              
+              // Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Cancel Button
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        minimumSize: const Size(80, 40),
+                      ),
+                      child: const Text(
+                        'BATALKAN',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'DM Sans',
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Delete Button
+                  Flexible(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _deletePlaylist(playlist);
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        minimumSize: const Size(80, 40),
+                      ),
+                      child: Text(
+                        'HAPUS',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'DM Sans',
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deletePlaylist(RecordModel playlist) async {
+    try {
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      final repository = PlaylistRepository(pbService);
+      await repository.deletePlaylist(playlist.id);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.black),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Playlist "${playlist.data['name']}" berhasil dihapus',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        
+        // Notify global playlist provider about deletion
+        ref.read(playlistProvider.notifier).notifyPlaylistUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus playlist: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildPlaylistItem(RecordModel playlist) {
+    return GestureDetector(
+      onTap: () => _navigateToPlaylistDetail(playlist),
+      onLongPress: () => _showDeleteBottomSheet(playlist),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            PlaylistImageWidget(
+              playlist: playlist,
+              size: 64,
+              borderRadius: 8,
+              showMosaicForEmptyPlaylists: true,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    playlist.data['description']?.isNotEmpty == true
+                        ? playlist.data['description']
+                        : 'Playlist',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistItem(ArtistSelect artistSelect) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Navigate to artist detail or implement artist functionality
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Artist ${artistSelect.artistName ?? 'Unknown'} tapped'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      },
+      onLongPress: () => _showArtistOptionsBottomSheet(artistSelect),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            // Artist Image - Using ImageHelpers like in artist_selection_screen
+            ClipOval(
+              child: Container(
+                width: 64,
+                height: 64,
+                color: Colors.grey[800],
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: artistSelect.artistImageUrl,
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  fallbackWidget: _buildArtistPlaceholder(artistSelect.artistName ?? 'Unknown'),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artistSelect.artistName ?? 'Unknown Artist',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Artis',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistPlaceholder(String artistName) {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'DM Sans',
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showArtistOptionsBottomSheet(ArtistSelect artistSelect) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                ClipOval(
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    color: Colors.grey[800],
+                    child: ImageHelpers.buildSafeNetworkImage(
+                      imageUrl: artistSelect.artistImageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      fallbackWidget: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            (artistSelect.artistName?.isNotEmpty == true) 
+                                ? artistSelect.artistName![0].toUpperCase() 
+                                : 'A',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'DM Sans',
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        artistSelect.artistName ?? 'Unknown Artist',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        'Artis',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildBottomSheetOption(
+              icon: Icons.person_remove_outlined,
+              title: 'Berhenti mengikuti',
+              subtitle: 'Berhenti mengikuti artis ini',
+              onTap: () {
+                Navigator.pop(context);
+                _removeArtistFromCollection(artistSelect);
+              },
+              isDestructive: true,
+            ),
+            const SizedBox(height: 8),
+            _buildBottomSheetOption(
+              icon: Icons.share_outlined,
+              title: 'Bagikan artis',
+              subtitle: 'Bagikan ke teman-teman',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement share functionality
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeArtistFromCollection(ArtistSelect artistSelect) async {
+    try {
+      final success = await ref.read(artistSelectProvider.notifier).removeArtistSelection(artistSelect.artistId);
+      
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.black),
+                const SizedBox(width: 8),
+                Expanded(
+                  child:                   Text(
+                    'Telah berhenti mengikuti "${artistSelect.artistName}"',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal berhenti mengikuti artis: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildLibraryContent() {
+    // Watch both playlist and artist providers
+    final playlistState = ref.watch(autoRefreshPlaylistProvider);
+    final selectedArtists = ref.watch(autoRefreshArtistSelectProvider);
+    
+    final isLoadingPlaylists = playlistState.isLoading;
+    final playlists = playlistState.playlists;
+    final playlistError = playlistState.error;
+    
+    // Combine playlists and artists into a single list for display
+    final allItems = <dynamic>[];
+    
+    if (!isLoadingPlaylists && playlistError == null) {
+      allItems.addAll(playlists);
+    }
+    
+    allItems.addAll(selectedArtists);
+    
+    if (isLoadingPlaylists) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+        ),
+      );
+    }
+
+    if (playlistError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              playlistError,
+              style: const TextStyle(color: Colors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(playlistProvider.notifier).refreshPlaylists();
+                ref.read(artistSelectProvider.notifier).refreshSelectedArtists();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (allItems.isEmpty) {
+      return Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.library_music,
+                  size: 64,
+                  color: Colors.grey[600],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Koleksi masih kosong',
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tambahkan playlist atau artis untuk\nmulai membangun koleksi musik kamu',
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: allItems.length,
+      itemBuilder: (context, index) {
+        final item = allItems[index];
+        
+        if (item is RecordModel) {
+          // This is a playlist
+          return _buildPlaylistItem(item);
+        } else if (item is ArtistSelect) {
+          // This is an artist
+          return _buildArtistItem(item);
+        }
+        
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
@@ -113,7 +830,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       height:
                           16), // Spacing yang lebih kecil antara tombol dan content
                   Expanded(
-                    child: PlaylistTab(),
+                    child: _buildLibraryContent(),
                   ),
                   // Minimal spacing only
                   SizedBox(height: 8),
@@ -202,13 +919,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           SpotifyStyleButton(
             title: 'Tambahkan artis',
             onTap: () {
-              // TODO: Implement add artist functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Fitur Tambah Artist akan segera hadir!'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              context.router.push(const ArtistSelectionRoute());
             },
           ),
           const SizedBox(height: 4), // Spacing yang ketat seperti sebelumnya
@@ -223,8 +934,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ),
     );
   }
-
-
 
   void _showCreatePlaylistFlow() {
     _showCreatePlaylistDialog();
@@ -531,5 +1240,3 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 }
-
-

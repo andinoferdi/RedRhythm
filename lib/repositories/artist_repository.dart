@@ -1,10 +1,42 @@
 import '../models/artist.dart';
 import '../services/pocketbase_service.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
 
 class ArtistRepository {
   final PocketBaseService _pocketBaseService;
 
   ArtistRepository(this._pocketBaseService);
+
+  /// Create a new artist
+  Future<Artist?> createArtist({
+    required String name,
+    required String bio,
+    File? imageFile,
+  }) async {
+    try {
+      final pb = _pocketBaseService.pb;
+      
+      // Prepare data for creation
+      final data = <String, dynamic>{
+        'name': name,
+        'bio': bio,
+      };
+
+      // Add image file if provided
+      if (imageFile != null) {
+        data['image'] = await http.MultipartFile.fromPath('image', imageFile.path);
+      }
+
+      // Create the artist record
+      final record = await pb.collection('artists').create(body: data);
+      
+      return Artist.fromRecord(record, pb);
+    } catch (e) {
+      print('Error creating artist: $e');
+      return null;
+    }
+  }
 
   /// Get artist by name
   Future<Artist?> getArtistByName(String artistName) async {
@@ -24,7 +56,7 @@ class ArtistRepository {
       
       return null;
     } catch (e) {
-
+      print('Error getting artist by name: $e');
       return null;
     }
   }
@@ -36,7 +68,7 @@ class ArtistRepository {
       final record = await pb.collection('artists').getOne(artistId);
       return Artist.fromRecord(record, pb);
     } catch (e) {
-
+      print('Error getting artist by ID: $e');
       return null;
     }
   }
@@ -45,11 +77,13 @@ class ArtistRepository {
   Future<List<Artist>> getAllArtists() async {
     try {
       final pb = _pocketBaseService.pb;
-      final records = await pb.collection('artists').getFullList();
+      final records = await pb.collection('artists').getFullList(
+        sort: 'name',
+      );
       
       return records.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-
+      print('Error getting all artists: $e');
       return [];
     }
   }
@@ -67,9 +101,46 @@ class ArtistRepository {
       
       return records.items.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-
+      print('Error searching artists: $e');
       return [];
     }
   }
-} 
 
+  /// Update artist
+  Future<Artist?> updateArtist({
+    required String artistId,
+    String? name,
+    String? bio,
+    File? imageFile,
+  }) async {
+    try {
+      final pb = _pocketBaseService.pb;
+      
+      final data = <String, dynamic>{};
+      
+      if (name != null) data['name'] = name;
+      if (bio != null) data['bio'] = bio;
+      if (imageFile != null) {
+        data['image'] = await http.MultipartFile.fromPath('image', imageFile.path);
+      }
+
+      final record = await pb.collection('artists').update(artistId, body: data);
+      return Artist.fromRecord(record, pb);
+    } catch (e) {
+      print('Error updating artist: $e');
+      return null;
+    }
+  }
+
+  /// Delete artist
+  Future<bool> deleteArtist(String artistId) async {
+    try {
+      final pb = _pocketBaseService.pb;
+      await pb.collection('artists').delete(artistId);
+      return true;
+    } catch (e) {
+      print('Error deleting artist: $e');
+      return false;
+    }
+  }
+}

@@ -15,6 +15,12 @@ abstract class _$AppRouter extends RootStackRouter {
 
   @override
   final Map<String, PageFactory> pagesMap = {
+    ArtistSelectionRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const ArtistSelectionScreen(),
+      );
+    },
     AuthOptionsRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -136,6 +142,20 @@ abstract class _$AppRouter extends RootStackRouter {
       );
     },
   };
+}
+
+/// generated route for
+/// [ArtistSelectionScreen]
+class ArtistSelectionRoute extends PageRouteInfo<void> {
+  const ArtistSelectionRoute({List<PageRouteInfo>? children})
+      : super(
+          ArtistSelectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'ArtistSelectionRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
 }
 
 /// generated route for
