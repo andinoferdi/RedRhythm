@@ -23,21 +23,21 @@ import '../../providers/dynamic_color_provider.dart';
 import '../../utils/color_extractor.dart';
 
 @RoutePage()
-class PlaylistDetailScreen extends ConsumerStatefulWidget {
+class PlaylistScreen extends ConsumerStatefulWidget {
   final RecordModel playlist;
   final VoidCallback? onPlaylistUpdated;
 
-  const PlaylistDetailScreen({
+  const PlaylistScreen({
     super.key,
     required this.playlist,
     this.onPlaylistUpdated,
   });
 
   @override
-  ConsumerState<PlaylistDetailScreen> createState() => _PlaylistDetailScreenState();
+  ConsumerState<PlaylistScreen> createState() => _PlaylistScreenState();
 }
 
-class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
+class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
   bool _isLoading = true;
   List<Song> _songs = [];
   String? _errorMessage;
@@ -1250,4 +1250,4 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       ),
     );
   }
-}
+} 

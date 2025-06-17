@@ -15,7 +15,7 @@ import '../../controllers/player_controller.dart';
 import '../../routes/app_router.dart';
 import '../../providers/playlist_provider.dart';
 import '../../widgets/playlist_image_widget.dart';
-import '../playlist/playlist_detail_screen.dart';
+import '../playlist/playlist_screen.dart';
 import '../../providers/artist_select_provider.dart';
 import '../../models/artist_select.dart';
 import '../../utils/image_helpers.dart';
@@ -98,7 +98,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     Navigator.push(
       context,
       AppRouter.createConsistentRoute(
-        PlaylistDetailScreen(
+        PlaylistScreen(
           playlist: playlist,
         ),
       ),

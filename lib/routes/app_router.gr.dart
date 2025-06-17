@@ -106,11 +106,11 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const OnboardingScreen(),
       );
     },
-    PlaylistDetailRoute.name: (routeData) {
-      final args = routeData.argsAs<PlaylistDetailRouteArgs>();
+    PlaylistRoute.name: (routeData) {
+      final args = routeData.argsAs<PlaylistRouteArgs>();
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: PlaylistDetailScreen(
+        child: PlaylistScreen(
           key: args.key,
           playlist: args.playlist,
           onPlaylistUpdated: args.onPlaylistUpdated,
@@ -398,16 +398,16 @@ class OnboardingRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [PlaylistDetailScreen]
-class PlaylistDetailRoute extends PageRouteInfo<PlaylistDetailRouteArgs> {
-  PlaylistDetailRoute({
+/// [PlaylistScreen]
+class PlaylistRoute extends PageRouteInfo<PlaylistRouteArgs> {
+  PlaylistRoute({
     Key? key,
     required RecordModel playlist,
     void Function()? onPlaylistUpdated,
     List<PageRouteInfo>? children,
   }) : super(
-          PlaylistDetailRoute.name,
-          args: PlaylistDetailRouteArgs(
+          PlaylistRoute.name,
+          args: PlaylistRouteArgs(
             key: key,
             playlist: playlist,
             onPlaylistUpdated: onPlaylistUpdated,
@@ -415,14 +415,14 @@ class PlaylistDetailRoute extends PageRouteInfo<PlaylistDetailRouteArgs> {
           initialChildren: children,
         );
 
-  static const String name = 'PlaylistDetailRoute';
+  static const String name = 'PlaylistRoute';
 
-  static const PageInfo<PlaylistDetailRouteArgs> page =
-      PageInfo<PlaylistDetailRouteArgs>(name);
+  static const PageInfo<PlaylistRouteArgs> page =
+      PageInfo<PlaylistRouteArgs>(name);
 }
 
-class PlaylistDetailRouteArgs {
-  const PlaylistDetailRouteArgs({
+class PlaylistRouteArgs {
+  const PlaylistRouteArgs({
     this.key,
     required this.playlist,
     this.onPlaylistUpdated,
@@ -436,7 +436,7 @@ class PlaylistDetailRouteArgs {
 
   @override
   String toString() {
-    return 'PlaylistDetailRouteArgs{key: $key, playlist: $playlist, onPlaylistUpdated: $onPlaylistUpdated}';
+    return 'PlaylistRouteArgs{key: $key, playlist: $playlist, onPlaylistUpdated: $onPlaylistUpdated}';
   }
 }
 
