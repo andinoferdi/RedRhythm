@@ -19,6 +19,8 @@ import '../../utils/image_helpers.dart';
 import '../../providers/playlist_provider.dart';
 import '../../widgets/animated_sound_bars.dart';
 import '../../routes/app_router.dart';
+import '../../providers/dynamic_color_provider.dart';
+import '../../utils/color_extractor.dart';
 
 @RoutePage()
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
@@ -71,6 +73,57 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     });
   }
 
+  /// Extract colors from playlist cover image for dynamic background
+  Future<void> _extractPlaylistColors() async {
+    try {
+      // Get the playlist cover image URL
+      final coverImageUrl = _getPlaylistCoverImageUrl();
+      
+      if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
+        // Extract colors from the playlist cover image
+        final colors = await ColorExtractor.extractColorsFromUrl(coverImageUrl);
+        
+        // Update the dynamic color provider with extracted colors
+        if (mounted) {
+          ref.read(dynamicColorProvider.notifier).state = DynamicColorState(
+            colors: colors,
+            isLoading: false,
+            hasError: false,
+            currentSongId: _currentPlaylist.id, // Use playlist ID as identifier
+          );
+        }
+      } else {
+        // If no cover image, try to extract from first song's album art
+        if (_songs.isNotEmpty) {
+          final firstSong = _songs.first;
+          if (firstSong.albumArtUrl.isNotEmpty) {
+            await ref.read(dynamicColorProvider.notifier).extractColorsFromSong(firstSong);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error extracting playlist colors: $e');
+      // Use default colors on error
+      if (mounted) {
+        ref.read(dynamicColorProvider.notifier).state = DynamicColorState.initial();
+      }
+    }
+  }
+
+  /// Get playlist cover image URL
+  String? _getPlaylistCoverImageUrl() {
+    final coverImage = _currentPlaylist.data['cover_image'] as String?;
+    if (coverImage != null && coverImage.trim().isNotEmpty) {
+      final pbService = PocketBaseService();
+      try {
+        return pbService.pb.files.getUrl(_currentPlaylist, coverImage).toString();
+      } catch (e) {
+        debugPrint('Error getting playlist cover image URL: $e');
+      }
+    }
+    return null;
+  }
+
   Future<void> _initializeData() async {
     setState(() {
       _isLoading = true;
@@ -96,9 +149,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           _isLoadingRecommended = false;
           _isLoadingCreator = false;
         });
+        
+        // Extract colors after data is loaded
+        await _extractPlaylistColors();
       }
     } catch (e) {
-
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load data: ${e.toString()}';
@@ -218,17 +273,18 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   Future<void> _forceCompleteRefresh() async {
     // Prevent infinite recursion
     if (_isRefreshing) {
-
       return;
     }
     
     _isRefreshing = true;
     
-    
     try {
       // Clear all caches to force complete reload
       PlaylistImageWidget.clearCache(_currentPlaylist.id);
       PlaylistImageWidget.clearAllCache(); // Clear all cache to be sure
+      
+      // Clear color cache as well
+      ColorExtractor.clearCache();
       
       // Clear mini player cache if it exists (import required at top of file)
       // This ensures mini player also reflects updated playlist image
@@ -267,11 +323,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           _isLoadingCreator = false;
           _imageRebuildCounter++; // Only increment once
         });
+        
+        // Re-extract colors after refresh
+        await _extractPlaylistColors();
       }
-      
-      
-          } catch (e) {
-      
+    } catch (e) {
       // Reset loading states even on error
       setState(() {
         _isLoading = false;
@@ -484,6 +540,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    final dynamicColorState = ref.watch(dynamicColorProvider);
     
     // Watch auto-refresh playlist provider for automatic updates
     ref.watch(autoRefreshPlaylistProvider);
@@ -491,7 +548,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     // Auto-refresh when global playlist state changes
     ref.listen(playlistProvider, (previous, next) {
       if (previous?.lastUpdated != next.lastUpdated && !_isRefreshing) {
-
         _forceCompleteRefresh();
       }
     });
@@ -515,37 +571,65 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
     
+    // Get dynamic colors
+    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                _buildSliverAppBar(),
-                SliverToBoxAdapter(
-                  child: _buildPlaylistInfo(),
-                ),
-                SliverToBoxAdapter(
-                  child: _buildPlayButton(),
-                ),
-                _buildSongsList(),
-                // Recommended songs section
-                SliverToBoxAdapter(
-                  child: _buildRecommendedSongsSection(),
-                ),
-                // Add bottom spacing for navigation bar and mini player
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 70 + bottomPadding + (playerState.currentSong != null ? 64 : 0),
-                  ),
-                ),
-              ],
+          // Dynamic background gradient
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  colors.backgroundStart.withValues(alpha: 0.8),
+                  colors.backgroundStart.withValues(alpha: 0.6),
+                  colors.backgroundStart.withValues(alpha: 0.3),
+                  const Color(0xFF1A1A1A).withValues(alpha: 0.8),
+                  AppColors.background,
+                ],
+                stops: const [0.0, 0.2, 0.4, 0.7, 1.0],
+              ),
             ),
           ),
-          // Show mini player if there's a current song
-          if (playerState.currentSong != null)
-            const MiniPlayer(),
+          
+          // Main content
+          Column(
+            children: [
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    _buildSliverAppBar(colors),
+                    SliverToBoxAdapter(
+                      child: _buildPlaylistInfo(),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildPlayButton(),
+                    ),
+                    _buildSongsList(),
+                    // Recommended songs section
+                    SliverToBoxAdapter(
+                      child: _buildRecommendedSongsSection(),
+                    ),
+                    // Add bottom spacing for navigation bar and mini player
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 70 + bottomPadding + (playerState.currentSong != null ? 64 : 0),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Show mini player if there's a current song
+              if (playerState.currentSong != null)
+                const MiniPlayer(),
+            ],
+          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -555,11 +639,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(DominantColors colors) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
         onPressed: () => Navigator.pop(context),
@@ -571,29 +655,42 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.grey[900]!,
-                AppColors.background,
+                colors.backgroundStart.withValues(alpha: 0.9),
+                colors.backgroundStart.withValues(alpha: 0.7),
+                colors.backgroundStart.withValues(alpha: 0.4),
+                Colors.transparent,
+              ],
+              stops: const [0.0, 0.3, 0.7, 1.0],
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: 200,
+            height: 200,
+            margin: const EdgeInsets.only(top: 60),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.primary.withValues(alpha: 0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
               ],
             ),
-          ),
-          child: Center(
-            child: Container(
-              width: 200,
-              height: 200,
-              margin: const EdgeInsets.only(top: 60),
-              child: PlaylistImageWidget(
-                key: ValueKey('playlist_image_${_currentPlaylist.id}_${_currentPlaylist.updated}_$_imageRebuildCounter'),
-                playlist: _currentPlaylist,
-                size: 200,
-                borderRadius: 4,
-                showMosaicForEmptyPlaylists: true,
-              ),
+            child: PlaylistImageWidget(
+              key: ValueKey('playlist_image_${_currentPlaylist.id}_${_currentPlaylist.updated}_$_imageRebuildCounter'),
+              playlist: _currentPlaylist,
+              size: 200,
+              borderRadius: 4,
+              showMosaicForEmptyPlaylists: true,
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildCreatorAvatar() {
     if (_isLoadingCreator) {
@@ -1154,5 +1251,3 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 }
-
-
