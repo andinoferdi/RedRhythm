@@ -89,6 +89,11 @@ class PlaylistController extends StateNotifier<PlaylistState> {
       return null;
     }
   }
+
+  /// Clear all playlists (useful for logout)
+  void clearPlaylists() {
+    state = PlaylistState(lastUpdated: DateTime.now());
+  }
 }
 
 /// Provider for playlist repository

@@ -69,15 +69,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     super.dispose();
   }
 
-  /// Get user-specific key for storing search history
-  String _getUserSpecificKey() {
-    final authState = ref.read(authControllerProvider);
-    if (authState.isAuthenticated && authState.user != null) {
-      return 'recent_searched_songs_${authState.user!.id}';
-    }
-    // Fallback for guest users
-    return 'recent_searched_songs_guest';
-  }
+
 
   Future<void> _loadRecentSearchedSongs() async {
     final authState = ref.read(authControllerProvider);

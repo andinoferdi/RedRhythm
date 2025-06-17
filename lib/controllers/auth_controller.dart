@@ -6,6 +6,9 @@ import '../repositories/user_repository.dart';
 import '../services/pocketbase_service.dart';
 import '../states/auth_state.dart';
 import '../utils/search_history_utils.dart';
+import '../providers/user_provider.dart';
+import '../providers/playlist_provider.dart';
+import '../providers/play_history_provider.dart';
 import 'player_controller.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
@@ -155,6 +158,15 @@ class AuthController extends StateNotifier<AuthState> {
         } catch (e) {
           debugPrint('Error clearing search history: $e');
         }
+      }
+
+      // Clear user-related provider data
+      try {
+        _ref.read(userProvider.notifier).clearUserCache();
+        _ref.read(playlistProvider.notifier).clearPlaylists();
+        _ref.read(playHistoryProvider.notifier).clearRecentlyPlayed();
+      } catch (e) {
+        debugPrint('Error clearing provider cache: $e');
       }
 
       state = AuthState.unauthenticated();
