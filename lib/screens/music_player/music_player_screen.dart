@@ -17,45 +17,92 @@ import '../../routes/app_router.dart';
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
   final Song? song;
-  
+
   const MusicPlayerScreen({this.song, super.key});
 
   @override
   ConsumerState<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
 }
 
-class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
+class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
+    with TickerProviderStateMixin {
   Artist? _currentArtist;
   bool _isLoadingArtist = false;
   List<Song> _artistSongs = [];
   bool _isLoadingArtistSongs = false;
   late ArtistRepository _artistRepository;
   late SongRepository _songRepository;
-  
+
   // Store the original song to keep Jelajahi Artist consistent
   Song? _originalSong;
   String? _originalArtistName;
+
+  // Animation controllers for fade effects
+  late AnimationController _albumFadeController;
+  late AnimationController _backgroundFadeController;
+  late Animation<double> _albumFadeAnimation;
+  late Animation<double> _backgroundFadeAnimation;
+
+  // Track current song for animation triggers
+  String? _currentSongId;
 
   @override
   void initState() {
     super.initState();
     _artistRepository = ArtistRepository(PocketBaseService());
     _songRepository = SongRepository(PocketBaseService());
+
+    // Initialize animation controllers
+    _albumFadeController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _backgroundFadeController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+
+    // Initialize animations
+    _albumFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _albumFadeController,
+      curve: Curves.easeInOut,
+    ));
+
+    _backgroundFadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _backgroundFadeController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Start with animations at full opacity
+    _albumFadeController.value = 1.0;
+    _backgroundFadeController.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _albumFadeController.dispose();
+    _backgroundFadeController.dispose();
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(MusicPlayerScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // If widget.song changes (user navigated to music player with different song)
     // reset the original song reference
-    if (widget.song != null && 
-        oldWidget.song?.id != widget.song?.id && 
+    if (widget.song != null &&
+        oldWidget.song?.id != widget.song?.id &&
         _originalSong?.id != widget.song?.id) {
-      
       _originalSong = widget.song;
       _originalArtistName = widget.song?.artist;
-      
+
       // Reload artist info and songs for new original song
       if (_originalArtistName != null) {
         _loadArtistInfo(_originalArtistName!);
@@ -66,7 +113,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
 
   Future<void> _loadArtistInfo(String artistName) async {
     if (_isLoadingArtist) return;
-    
+
     setState(() {
       _isLoadingArtist = true;
     });
@@ -85,22 +132,20 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _isLoadingArtist = false;
         });
       }
-      
     }
   }
 
   Future<void> _loadArtistSongs(String artistName, String currentSongId) async {
     if (_isLoadingArtistSongs) return;
-    
+
     setState(() {
       _isLoadingArtistSongs = true;
       _artistSongs = []; // Clear previous songs
     });
 
     try {
-
       final songs = await _songRepository.getSongsByArtistName(
-        artistName, 
+        artistName,
         excludeSongId: currentSongId,
       );
       if (mounted) {
@@ -108,7 +153,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _artistSongs = songs;
           _isLoadingArtistSongs = false;
         });
-
       }
     } catch (e) {
       if (mounted) {
@@ -116,7 +160,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
           _isLoadingArtistSongs = false;
         });
       }
-
     }
   }
 
@@ -125,7 +168,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     final playerState = ref.watch(playerControllerProvider);
     final dynamicColorState = ref.watch(dynamicColorProvider);
     final currentSong = playerState.currentSong ?? widget.song;
-    
+
     if (currentSong == null) {
       return const Scaffold(
         backgroundColor: AppColors.background,
@@ -138,15 +181,23 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       );
     }
 
-    // Note: Removed automatic playback initiation to prevent interference with existing playback
-    // The music player screen should only display current state, not start new playbook
+    // Check if song changed and trigger fade animation
+    if (_currentSongId != null && _currentSongId != currentSong.id) {
+      _triggerSongChangeAnimation(currentSong);
+      _currentSongId = currentSong.id;
+    } else if (_currentSongId == null) {
+      // First time loading
+      _currentSongId = currentSong.id;
+      _albumFadeController.value = 1.0;
+      _backgroundFadeController.value = 1.0;
+    }
 
     // Initialize or update original song based on current song
     if (_originalSong == null) {
       // First load - prioritize widget.song if available, otherwise use currentSong
       _originalSong = widget.song ?? currentSong;
       _originalArtistName = _originalSong?.artist;
-      
+
       // Load artist info and songs based on original song
       if (_originalArtistName != null) {
         _loadArtistInfo(_originalArtistName!);
@@ -156,19 +207,21 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       // Song changed via next/previous - update original song reference
       _originalSong = currentSong;
       _originalArtistName = currentSong.artist;
-      
+
       // Reload artist info and songs for new song
       if (_originalArtistName != null) {
         _loadArtistInfo(_originalArtistName!);
         _loadArtistSongs(_originalArtistName!, currentSong.id);
       }
     }
-    
+
     // Extract dynamic colors from current song's album art
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
+      ref
+          .read(dynamicColorProvider.notifier)
+          .extractColorsFromSong(currentSong);
     });
-    
+
     // Update artist info for "Tentang artis" section based on current song
     // but keep Jelajahi Artist section based on original song
     if (_currentArtist?.name != currentSong.artist) {
@@ -177,347 +230,418 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     }
 
     // Get dynamic colors
-    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFF000000), // Background hitam asli aplikasi
-      body: Container(
-        height: double.infinity, // Pastikan container memenuhi seluruh tinggi layar
-        width: double.infinity,  // Pastikan container memenuhi seluruh lebar layar
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colors.backgroundStart, // Warna dari album art di atas
-              colors.backgroundStart.withValues(alpha: 0.8),
-              colors.backgroundStart.withValues(alpha: 0.4),
-              const Color(0xFF1A1A1A).withValues(alpha: 0.6),
-              const Color(0xFF000000), // Fade ke hitam sempurna (background asli app)
-            ],
-            stops: const [0.0, 0.25, 0.5, 0.8, 1.0], // Distribusi gradient yang lebih smooth
-          ),
-        ),
-        child: Stack(
-          children: [
-            // Scrollable Content - Full height dengan padding atas untuk header
-            SingleChildScrollView(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 60, // Space for fixed header
-                left: 20.0,
-                right: 20.0,
-                bottom: 20.0,
-              ),
-              child: Column(
-                children: [
-                    // Album Art
-                    Container(
-                      height: 280,
-                      width: 280,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        color: AppColors.greyDark, // Background color for fallback
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Stack(
-                          children: [
-                            // Album art image with enhanced error handling
-                            ImageHelpers.buildSafeNetworkImage(
-                              imageUrl: currentSong.albumArtUrl,
-                              width: 280,
-                              height: 280,
-                              fit: BoxFit.cover,
-                              borderRadius: BorderRadius.circular(20),
-                              showLoadingIndicator: true,
-                              fallbackWidget: _buildFallbackAlbumArt(),
-                            ),
-                            
-                            // Show loading indicator when buffering
-                            if (playerState.isBuffering)
-                              Container(
-                                height: 280,
-                                width: 280,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Song info
-                    Column(
-                      children: [
-                        Text(
-                          currentSong.title,
-                          style: TextStyle(
-                            color: colors.textPrimary,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'DM Sans',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          currentSong.artist,
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontSize: 18,
-                            fontFamily: 'DM Sans',
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Playback controls
-                    Column(
-                      children: [
-                        // Slider
-                        Slider(
-                          value: playerState.currentPosition.inSeconds.toDouble(),
-                          max: currentSong.duration.inSeconds.toDouble(),
-                          activeColor: Colors.white,
-                          inactiveColor: colors.textSecondary.withValues(alpha: 0.3),
-                          onChanged: (value) {
-                            ref.read(playerControllerProvider.notifier).seekTo(
-                              Duration(seconds: value.toInt()),
-                            );
-                          },
-                        ),
-                        
-                        // Time indicators
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _formatDuration(playerState.currentPosition),
-                                style: TextStyle(color: colors.textSecondary),
-                              ),
-                              Text(
-                                _formatDuration(currentSong.duration),
-                                style: TextStyle(color: colors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 20),
-                        
-                        // Control buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Shuffle button - disabled when not playing from playlist
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final playerState = ref.watch(playerControllerProvider);
-                                final isPlayingFromPlaylist = playerState.currentPlaylistId != null;
-                                
-                                return IconButton(
-                                  icon: Icon(
-                                    Icons.shuffle,
-                                    color: isPlayingFromPlaylist 
-                                        ? (playerState.shuffleMode ? AppColors.primary : Colors.white)
-                                        : Colors.grey,
-                                    size: 24,
-                                  ),
-                                  onPressed: isPlayingFromPlaylist ? () {
-                                    ref.read(playerControllerProvider.notifier).toggleShuffle();
-                                  } : null,
-                                );
-                              },
-                            ),
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final playerState = ref.watch(playerControllerProvider);
-                                final hasQueue = playerState.queue.isNotEmpty;
-                                final currentIndex = playerState.currentIndex;
-                                // Previous button should be enabled if we have queue and not at beginning
-                                final canGoPrevious = hasQueue && currentIndex > 0;
-                                
-                                return IconButton(
-                              icon: Icon(
-                                Icons.skip_previous,
-                                    color: canGoPrevious ? Colors.white : Colors.grey,
-                                size: 36,
-                              ),
-                                  onPressed: canGoPrevious ? () async {
-                                    try {
-                                      // Use built-in skip previous logic
-                                    await ref.read(playerControllerProvider.notifier).skipPrevious();
-                                } catch (e) {
-                                  debugPrint('Error in skip previous: $e');
-                                }
-                                  } : null,
-                                );
-                              },
-                            ),
-                            Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: Icon(
-                                  playerState.isBuffering
-                                      ? Icons.hourglass_empty
-                                      : playerState.isPlaying ? Icons.pause : Icons.play_arrow,
-                                  color: Colors.black,
-                                  size: 36,
-                                ),
-                                onPressed: () {
-                                  if (playerState.isBuffering) {
-                                    // Do nothing while buffering
-                                    return;
-                                  }
-                                  
-                                  if (playerState.isPlaying) {
-                                    ref.read(playerControllerProvider.notifier).pause();
-                                  } else {
-                                    ref.read(playerControllerProvider.notifier).resume();
-                                  }
-                                },
-                              ),
-                            ),
-                            Consumer(
-                              builder: (context, ref, child) {
-                                final playerState = ref.watch(playerControllerProvider);
-                                final hasQueue = playerState.queue.isNotEmpty;
-                                final currentIndex = playerState.currentIndex;
-                                final queueLength = playerState.queue.length;
-                                
+    final colors =
+        dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
 
-                                
-                                // Next button should be enabled if we have queue and not at end
-                                final canGoNext = hasQueue && currentIndex < queueLength - 1;
-                                
-                                return IconButton(
-                              icon: Icon(
-                                Icons.skip_next,
-                                    color: canGoNext ? Colors.white : Colors.grey,
-                                size: 36,
-                              ),
-                                  onPressed: canGoNext ? () async {
-                                    try {
-                                      // Use built-in skip next logic
-                                    await ref.read(playerControllerProvider.notifier).skipNext();
-                                } catch (e) {
-                                  debugPrint('Error in skip next: $e');
-                                }
-                                  } : null,
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                playerState.repeatMode == RepeatMode.off
-                                    ? Icons.repeat
-                                    : playerState.repeatMode == RepeatMode.one
-                                        ? Icons.repeat_one
-                                        : Icons.repeat,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                              onPressed: () {
-                                ref.read(playerControllerProvider.notifier).toggleRepeatMode();
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // About Artist Section (Spotify-style) - Above lyrics
-                    _buildAboutArtistSection(currentSong),
-                    
-                    // Lyrics Preview Section (Spotify-style)
-                    _buildLyricsPreviewSection(currentSong),
-                    
-                    // Jelajahi Artist Section (Spotify Shorts-style) - based on original song
-                    if (_originalSong != null && _originalArtistName != null)
-                      _buildJelajahiArtistSection(_originalSong!),
-                ],
-              ),
-            ),
-            
-            // Fixed Header - Positioned overlay yang benar-benar fixed
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 8, // Status bar padding
-                  left: 16,
-                  right: 16,
-                  bottom: 8,
-                ),
+    return Scaffold(
+      backgroundColor:
+          const Color(0xFF000000), // Background hitam asli aplikasi
+      body: Stack(
+        children: [
+          // Background with gradient
+          AnimatedBuilder(
+            animation: _backgroundFadeAnimation,
+            builder: (context, child) {
+              return Container(
+                height: double.infinity,
+                width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      colors.backgroundStart,
-                      colors.backgroundStart.withValues(alpha: 0.9),
-                      colors.backgroundStart.withValues(alpha: 0.7),
-                      colors.backgroundStart.withValues(alpha: 0.0),
+                      colors.backgroundStart
+                          .withValues(alpha: _backgroundFadeAnimation.value),
+                      colors.backgroundStart.withValues(
+                          alpha: _backgroundFadeAnimation.value * 0.8),
+                      colors.backgroundStart.withValues(
+                          alpha: _backgroundFadeAnimation.value * 0.4),
+                      const Color(0xFF1A1A1A).withValues(
+                          alpha: _backgroundFadeAnimation.value * 0.6),
+                      const Color(0xFF000000),
                     ],
-                    stops: const [0.0, 0.6, 0.8, 1.0],
+                    stops: const [0.0, 0.25, 0.5, 0.8, 1.0],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
-                      onPressed: () => context.router.maybePop(),
+              );
+            },
+          ),
+
+          // Scrollable Content with top padding for fixed header
+          SingleChildScrollView(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top +
+                  80, // Space for fixed header
+              left: 20.0,
+              right: 20.0,
+              bottom: 20.0,
+            ),
+            child: Column(
+              children: [
+                // Album Art
+                FadeTransition(
+                  opacity: _albumFadeAnimation,
+                  child: Container(
+                    height: 280,
+                    width: 280,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.greyDark,
                     ),
-                    const Text(
-                      'Now Playing',
-                      style: TextStyle(
-                        fontFamily: 'DM Sans',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Stack(
+                        children: [
+                          ImageHelpers.buildSafeNetworkImage(
+                            imageUrl: currentSong.albumArtUrl,
+                            width: 280,
+                            height: 280,
+                            fit: BoxFit.cover,
+                            borderRadius: BorderRadius.circular(20),
+                            showLoadingIndicator: true,
+                            fallbackWidget: _buildFallbackAlbumArt(),
+                          ),
+                          if (playerState.isBuffering)
+                            Container(
+                              height: 280,
+                              width: 280,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.white),
-                      onPressed: () {},
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                // Song info
+                Column(
+                  children: [
+                    Text(
+                      currentSong.title,
+                      style: TextStyle(
+                        color: colors.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'DM Sans',
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      currentSong.artist,
+                      style: TextStyle(
+                        color: colors.textSecondary,
+                        fontSize: 18,
+                        fontFamily: 'DM Sans',
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 30),
+
+                // Playback controls
+                Column(
+                  children: [
+                    // Slider
+                    Slider(
+                      value: playerState.currentPosition.inSeconds.toDouble(),
+                      max: currentSong.duration.inSeconds.toDouble(),
+                      activeColor: Colors.white,
+                      inactiveColor:
+                          colors.textSecondary.withValues(alpha: 0.3),
+                      onChanged: (value) {
+                        ref.read(playerControllerProvider.notifier).seekTo(
+                              Duration(seconds: value.toInt()),
+                            );
+                      },
+                    ),
+
+                    // Time indicators
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatDuration(playerState.currentPosition),
+                            style: TextStyle(color: colors.textSecondary),
+                          ),
+                          Text(
+                            _formatDuration(currentSong.duration),
+                            style: TextStyle(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Control buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final playerState =
+                                ref.watch(playerControllerProvider);
+                            final isPlayingFromPlaylist =
+                                playerState.currentPlaylistId != null;
+
+                            return IconButton(
+                              icon: Icon(
+                                Icons.shuffle,
+                                color: isPlayingFromPlaylist
+                                    ? (playerState.shuffleMode
+                                        ? AppColors.primary
+                                        : Colors.white)
+                                    : Colors.grey,
+                                size: 24,
+                              ),
+                              onPressed: isPlayingFromPlaylist
+                                  ? () {
+                                      ref
+                                          .read(
+                                              playerControllerProvider.notifier)
+                                          .toggleShuffle();
+                                    }
+                                  : null,
+                            );
+                          },
+                        ),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final playerState =
+                                ref.watch(playerControllerProvider);
+                            final hasQueue = playerState.queue.isNotEmpty;
+                            final currentIndex = playerState.currentIndex;
+                            final canGoPrevious = hasQueue && currentIndex > 0;
+
+                            return IconButton(
+                              icon: Icon(
+                                Icons.skip_previous,
+                                color:
+                                    canGoPrevious ? Colors.white : Colors.grey,
+                                size: 36,
+                              ),
+                              onPressed: canGoPrevious
+                                  ? () async {
+                                      try {
+                                        await ref
+                                            .read(playerControllerProvider
+                                                .notifier)
+                                            .skipPrevious();
+                                      } catch (e) {
+                                        debugPrint(
+                                            'Error in skip previous: $e');
+                                      }
+                                    }
+                                  : null,
+                            );
+                          },
+                        ),
+                        Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              playerState.isBuffering
+                                  ? Icons.hourglass_empty
+                                  : playerState.isPlaying
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                              color: Colors.black,
+                              size: 36,
+                            ),
+                            onPressed: () {
+                              if (playerState.isBuffering) {
+                                return;
+                              }
+
+                              if (playerState.isPlaying) {
+                                ref
+                                    .read(playerControllerProvider.notifier)
+                                    .pause();
+                              } else {
+                                ref
+                                    .read(playerControllerProvider.notifier)
+                                    .resume();
+                              }
+                            },
+                          ),
+                        ),
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final playerState =
+                                ref.watch(playerControllerProvider);
+                            final hasQueue = playerState.queue.isNotEmpty;
+                            final currentIndex = playerState.currentIndex;
+                            final queueLength = playerState.queue.length;
+                            final canGoNext =
+                                hasQueue && currentIndex < queueLength - 1;
+
+                            return IconButton(
+                              icon: Icon(
+                                Icons.skip_next,
+                                color: canGoNext ? Colors.white : Colors.grey,
+                                size: 36,
+                              ),
+                              onPressed: canGoNext
+                                  ? () async {
+                                      try {
+                                        await ref
+                                            .read(playerControllerProvider
+                                                .notifier)
+                                            .skipNext();
+                                      } catch (e) {
+                                        debugPrint('Error in skip next: $e');
+                                      }
+                                    }
+                                  : null,
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            playerState.repeatMode == RepeatMode.off
+                                ? Icons.repeat
+                                : playerState.repeatMode == RepeatMode.one
+                                    ? Icons.repeat_one
+                                    : Icons.repeat,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(playerControllerProvider.notifier)
+                                .toggleRepeatMode();
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 40),
+
+                // About Artist Section
+                _buildAboutArtistSection(currentSong),
+
+                // Lyrics Preview Section
+                _buildLyricsPreviewSection(currentSong),
+
+                // Jelajahi Artist Section
+                if (_originalSong != null && _originalArtistName != null)
+                  _buildJelajahiArtistSection(_originalSong!),
+              ],
+            ),
+          ),
+
+          // Fixed Header at the top
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: MediaQuery.of(context).padding.top + 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Back button
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: () => context.router.maybePop(),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+
+                      // Now Playing text
+                      const Text(
+                        'Now Playing',
+                        style: TextStyle(
+                          fontFamily: 'DM Sans',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+
+                      // Three-dot menu button
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.more_vert,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            // TODO: Show menu options
+                          },
+                          padding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-  
+
   Widget _buildLyricsPreviewSection(Song currentSong) {
-    final hasLyrics = currentSong.lyrics != null && currentSong.lyrics!.trim().isNotEmpty;
-    
+    final hasLyrics =
+        currentSong.lyrics != null && currentSong.lyrics!.trim().isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -527,7 +651,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             // Navigate to full-screen lyrics
             context.router.push(LyricsRoute(song: currentSong));
           },
-          child: hasLyrics 
+          child: hasLyrics
               ? _buildLyricsPreview(currentSong)
               : Container(
                   width: double.infinity,
@@ -539,21 +663,23 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   child: _buildNoLyricsPreview(),
                 ),
         ),
-        
+
         const SizedBox(height: 40),
       ],
     );
   }
-  
+
   Widget _buildLyricsPreview(Song song) {
     final dynamicColorState = ref.watch(dynamicColorProvider);
-    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
-    
+    final colors =
+        dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
+
     // Get first few lines of lyrics for preview
     final lyricsLines = song.lyrics!.split('\n');
-    final previewLines = lyricsLines.take(3).where((line) => line.trim().isNotEmpty).toList();
+    final previewLines =
+        lyricsLines.take(3).where((line) => line.trim().isNotEmpty).toList();
     final previewText = previewLines.join('\n');
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -590,10 +716,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               ),
             ),
           ),
-          
+
           // Content with padding
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 50, 20, 20), // Top padding for "Lyrics" text
+            padding: const EdgeInsets.fromLTRB(
+                20, 50, 20, 20), // Top padding for "Lyrics" text
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -635,15 +762,16 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     overflow: TextOverflow.clip,
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Show more button with white background
                 Row(
                   children: [
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -685,7 +813,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ),
     );
   }
-  
+
   Widget _buildNoLyricsPreview() {
     return Column(
       children: [
@@ -709,9 +837,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // View anyway button
         Row(
           children: [
@@ -748,7 +876,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ],
     );
   }
-  
+
   Widget _buildAboutArtistSection(Song currentSong) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,12 +897,12 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ? _buildArtistContent(_currentArtist!, currentSong)
                   : _buildFallbackArtistContent(currentSong),
         ),
-        
+
         const SizedBox(height: 20),
       ],
     );
   }
-  
+
   Widget _buildLoadingArtistState() {
     return const Column(
       children: [
@@ -796,7 +924,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ],
     );
   }
-  
+
   Widget _buildArtistContent(Artist artist, Song currentSong) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,37 +952,38 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   width: double.infinity,
                   height: 160,
                   color: AppColors.greyDark,
-                child: ImageHelpers.buildSafeNetworkImage(
-                  imageUrl: artist.imageUrl,
-                  width: double.infinity,
-                  height: 160,
-                    fit: BoxFit.fitWidth, // Fit width untuk mengisi lebar penuh tanpa crop berlebihan
-                  fallbackWidget: Container(
-                    color: AppColors.greyDark,
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.person,
-                          color: AppColors.primary,
-                          size: 60,
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'No Artist Image',
-                          style: TextStyle(
-                            color: AppColors.greyLight,
-                            fontSize: 14,
-                            fontFamily: 'DM Sans',
+                  child: ImageHelpers.buildSafeNetworkImage(
+                    imageUrl: artist.imageUrl,
+                    width: double.infinity,
+                    height: 160,
+                    fit: BoxFit
+                        .fitWidth, // Fit width untuk mengisi lebar penuh tanpa crop berlebihan
+                    fallbackWidget: Container(
+                      color: AppColors.greyDark,
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.person,
+                            color: AppColors.primary,
+                            size: 60,
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 8),
+                          Text(
+                            'No Artist Image',
+                            style: TextStyle(
+                              color: AppColors.greyLight,
+                              fontSize: 14,
+                              fontFamily: 'DM Sans',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
               ),
-              
+
               // Gradient overlay for text readability
               Container(
                 decoration: BoxDecoration(
@@ -873,7 +1002,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ),
               ),
-              
+
               // "Tentang artis" text overlay
               const Positioned(
                 top: 16,
@@ -898,7 +1027,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             ],
           ),
         ),
-        
+
         // Artist info below image
         Padding(
           padding: const EdgeInsets.all(20),
@@ -934,10 +1063,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // Follow button
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: AppColors.greyLight,
@@ -957,12 +1087,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Artist bio from PocketBase
               Text(
-                artist.bio.isNotEmpty ? artist.bio : 'No biography available for this artist.',
+                artist.bio.isNotEmpty
+                    ? artist.bio
+                    : 'No biography available for this artist.',
                 style: const TextStyle(
                   color: AppColors.greyLight,
                   fontSize: 14,
@@ -972,9 +1104,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
-              
+
               const SizedBox(height: 4),
-              
+
               // "lihat semua" text
               GestureDetector(
                 onTap: () {
@@ -1002,7 +1134,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ],
     );
   }
-  
+
   Widget _buildFallbackArtistContent(Song currentSong) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,7 +1172,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ],
               ),
-              
+
               // "Tentang artis" text overlay
               const Positioned(
                 top: 16,
@@ -1065,7 +1197,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             ],
           ),
         ),
-        
+
         // Artist info below image
         Padding(
           padding: const EdgeInsets.all(20),
@@ -1103,9 +1235,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Fallback message
               const Text(
                 'Artist information is not available in the database yet. Check back later for more details about this artist.',
@@ -1124,11 +1256,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ],
     );
   }
-  
+
   Widget _buildJelajahiArtistSection(Song currentSong) {
     // Use original artist name for consistent Jelajahi Artist section
     final displayArtistName = _originalArtistName ?? currentSong.artist;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1158,9 +1290,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Horizontal scrollable song list
         SizedBox(
           height: 200, // Fixed height for horizontal scroll
@@ -1174,16 +1306,17 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                       itemCount: _artistSongs.length,
                       itemBuilder: (context, index) {
                         final song = _artistSongs[index];
-                        return _buildArtistSongCard(song, index == 0, index == _artistSongs.length - 1);
+                        return _buildArtistSongCard(
+                            song, index == 0, index == _artistSongs.length - 1);
                       },
                     ),
         ),
-        
+
         const SizedBox(height: 40),
       ],
     );
   }
-  
+
   Widget _buildLoadingArtistSongs() {
     return ListView.builder(
       scrollDirection: Axis.horizontal,
@@ -1214,9 +1347,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Title placeholder
               Container(
                 height: 16,
@@ -1226,9 +1359,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              
+
               const SizedBox(height: 4),
-              
+
               // Artist placeholder
               Container(
                 height: 14,
@@ -1244,7 +1377,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       },
     );
   }
-  
+
   Widget _buildEmptyArtistSongs(String artistName) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1300,11 +1433,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ),
     );
   }
-  
+
   Widget _buildArtistSongCard(Song song, bool isFirst, bool isLast) {
     final playerState = ref.watch(playerControllerProvider);
     final isCurrentSong = playerState.currentSong?.id == song.id;
-    
+
     return GestureDetector(
       onTap: () {
         if (isCurrentSong) {
@@ -1370,7 +1503,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Play button overlay
                 Positioned.fill(
                   child: Container(
@@ -1383,17 +1516,17 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: isCurrentSong && playerState.isPlaying 
+                          color: isCurrentSong && playerState.isPlaying
                               ? AppColors.primary.withValues(alpha: 0.9)
                               : Colors.white.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          isCurrentSong && playerState.isPlaying 
-                              ? Icons.pause 
+                          isCurrentSong && playerState.isPlaying
+                              ? Icons.pause
                               : Icons.play_arrow,
-                          color: isCurrentSong && playerState.isPlaying 
-                              ? Colors.white 
+                          color: isCurrentSong && playerState.isPlaying
+                              ? Colors.white
                               : Colors.black,
                           size: 24,
                         ),
@@ -1401,7 +1534,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Current song indicator
                 if (isCurrentSong)
                   Positioned(
@@ -1422,9 +1555,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
                   ),
               ],
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Song title
             Text(
               song.title,
@@ -1437,9 +1570,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            
+
             const SizedBox(height: 2),
-            
+
             // Duration
             Text(
               _formatDuration(song.duration),
@@ -1454,7 +1587,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
       ),
     );
   }
-  
+
   /// Build fallback album art when image fails to load
   Widget _buildFallbackAlbumArt() {
     return Container(
@@ -1501,5 +1634,17 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
     String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
     return '$twoDigitMinutes:$twoDigitSeconds';
   }
-}
 
+  void _triggerSongChangeAnimation(Song currentSong) async {
+    // Set opacity to 0 immediately for smooth transition
+    _albumFadeController.value = 0.0;
+    _backgroundFadeController.value = 0.0;
+
+    // Small delay to ensure color extraction happens
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    // Fade in the new content
+    _albumFadeController.forward();
+    _backgroundFadeController.forward();
+  }
+}
