@@ -753,6 +753,16 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     }
   }
 
+  /// Reset shuffle mode when changing context
+  void resetShuffleOnContextChange() {
+    if (_isDisposed) return;
+    
+    // Reset shuffle mode when switching to different context
+    if (state.shuffleMode) {
+      state = state.copyWith(shuffleMode: false);
+    }
+  }
+
   /// Shuffle current queue
   void _shuffleCurrentQueue() {
     if (state.queue.isEmpty) return;

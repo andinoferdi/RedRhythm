@@ -49,6 +49,11 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
     _artistRepository = ArtistRepository(PocketBaseService());
     _songRepository = SongRepository(PocketBaseService());
     _loadData();
+    
+    // Reset shuffle mode when entering artist detail screen (context change)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(playerControllerProvider.notifier).resetShuffleOnContextChange();
+    });
   }
 
   @override
@@ -219,7 +224,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
     if (playerState.shuffleMode) {
       // Create shuffled queue with selected song at index 0
-      playQueue = List.from(_songs);
+      playQueue = List<Song>.from(_songs);
       playQueue.shuffle();
       
       // Move selected song to first position
@@ -228,7 +233,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       startIndex = 0;
     } else {
       // Use original order (already sorted by popularity)
-      playQueue = List.from(_songs);
+      playQueue = List<Song>.from(_songs);
       startIndex = _songs.indexOf(song);
     }
 
@@ -261,12 +266,12 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
       if (playerState.shuffleMode) {
         // Create shuffled queue
-        playQueue = List.from(_songs);
+        playQueue = List<Song>.from(_songs);
         playQueue.shuffle();
         startIndex = 0;
       } else {
         // Use original order (sorted by popularity)
-        playQueue = List.from(_songs);
+        playQueue = List<Song>.from(_songs);
         startIndex = 0;
       }
 
@@ -555,19 +560,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           Consumer(
             builder: (context, ref, child) {
               final playerState = ref.watch(playerControllerProvider);
-              final isPlayingFromThisArtist = playerState.currentArtistId == _artist?.id;
-              
-              // Only show shuffle as active if playing from this artist AND shuffle is on
-              final showShuffleActive = isPlayingFromThisArtist && playerState.shuffleMode;
               
               return IconButton(
                 onPressed: _toggleShuffle,
                 icon: Icon(
                   Icons.shuffle, 
-                  color: showShuffleActive ? Colors.red : Colors.white,
+                  color: playerState.shuffleMode ? Colors.red : Colors.white,
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: showShuffleActive ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
+                  backgroundColor: playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
                   padding: const EdgeInsets.all(12),
                 ),
               );

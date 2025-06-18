@@ -66,9 +66,11 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     _currentPlaylist = widget.playlist;
     _initializeData();
     
-    // Initialize global playlist state
+    // Initialize global playlist state and reset shuffle on context change
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playlistProvider.notifier).loadPlaylists();
+      // Reset shuffle mode when entering playlist screen (context change)
+      ref.read(playerControllerProvider.notifier).resetShuffleOnContextChange();
     });
   }
 
