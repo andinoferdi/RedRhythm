@@ -172,3 +172,4 @@ final genreNamesProvider = Provider<List<String>>((ref) {
   return genreController.getGenreNames();
 }); 
 
+

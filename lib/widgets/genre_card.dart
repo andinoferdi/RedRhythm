@@ -79,3 +79,4 @@ class GenreCard extends StatelessWidget {
   }
 } 
 
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 
@@ -282,19 +282,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Oops! Terjadi kesalahan',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage!,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -306,7 +299,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              child: const Text('Coba Lagi', style: TextStyle(color: Colors.white)),
+              child: const Text('Coba Lagi', style: TextStyle(color: Colors.white, fontFamily: 'Gotham')),
             ),
           ],
         ),
@@ -333,7 +326,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
           ),
@@ -350,7 +344,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
               ),
             ),
           ),
@@ -379,19 +374,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Tidak ada hasil',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
             ),
             const SizedBox(height: 8),
             Text(
               'Coba kata kunci yang berbeda',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
             ),
           ],
         ),
@@ -413,18 +401,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Pencarian terkini',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                            'Pencarian terkini',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
               ),
               TextButton(
                 onPressed: _clearAllRecentSearches,
                 child: const Text(
                   'Hapus semua',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
                 ),
               ),
             ],
@@ -464,19 +453,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Kamu belum mencari apapun',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
             ),
             const SizedBox(height: 8),
             Text(
               'Mulai cari lagu, artis, atau album favoritmu',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
           ],
@@ -565,7 +547,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                         ),
                       ),
                     ),
@@ -585,8 +567,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'DM Sans',
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -597,7 +579,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 14,
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -641,7 +623,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'DM Sans',
+                        fontFamily: 'Gotham',
                       ),
                     ),
                   ),
@@ -663,7 +645,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -674,7 +656,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: TextStyle(
                       color: Colors.grey,
                       fontSize: 14,
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -694,4 +676,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 } 
+
+
+
 

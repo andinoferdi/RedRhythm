@@ -26,8 +26,8 @@ class AppTheme {
           onSurface: Colors.white,
         ),
 
-        // Typography - menggunakan font DM Sans
-        fontFamily: 'DM Sans',
+        // Typography - menggunakan font Gotham
+        fontFamily: 'Gotham',
         textTheme: _textTheme,
 
         // Component themes
@@ -57,93 +57,93 @@ class AppTheme {
   // Text theme - Semua menggunakan font Gotham
   static TextTheme get _textTheme => const TextTheme(
         displayLarge: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 32,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         displayMedium: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 28,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         displaySmall: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 24,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         headlineLarge: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 22,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         headlineMedium: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         headlineSmall: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         titleLarge: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         titleMedium: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         titleSmall: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         bodyLarge: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 16,
           fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
         bodyMedium: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 14,
           fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
         bodySmall: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 12,
           fontWeight: FontWeight.w400,
           color: Colors.white,
         ),
         labelLarge: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         labelMedium: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         labelSmall: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
       );
@@ -154,7 +154,7 @@ class AppTheme {
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.white),
         titleTextStyle: TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: Colors.white,
@@ -172,9 +172,9 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
           ),
           textStyle: const TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: AppConstants.largeFontSize,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
@@ -186,7 +186,7 @@ class AppTheme {
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
           textStyle: const TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: AppConstants.mediumFontSize,
             fontWeight: FontWeight.w700,
           ),
@@ -218,7 +218,7 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         hintStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           color: AppColors.textDisabled,
         ),
         prefixIconColor: AppColors.textDisabled,
@@ -252,12 +252,12 @@ class AppTheme {
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         selectedLabelStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
         unselectedLabelStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 12,
           fontWeight: FontWeight.w400,
         ),
@@ -272,9 +272,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       );
 
@@ -286,9 +286,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       );
 
@@ -300,47 +300,48 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
         textStyle: const TextStyle(
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       );
 
   // Custom text styles
   static TextStyle get headingStyle => const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: AppConstants.titleFontSize,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
         color: AppColors.text,
       );
 
   static TextStyle get subheadingStyle => const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: AppConstants.extraLargeFontSize,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
         color: AppColors.text,
       );
 
   static TextStyle get bodyStyle => const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: AppConstants.mediumFontSize,
         fontWeight: FontWeight.w400,
         color: AppColors.text,
       );
 
   static TextStyle get captionStyle => const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: AppConstants.smallFontSize,
         fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
       );
 
   static TextStyle get linkStyle => const TextStyle(
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: AppConstants.mediumFontSize,
         fontWeight: FontWeight.w700,
         color: AppColors.primary,
       );
 }
+
 
 

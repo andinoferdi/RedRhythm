@@ -98,7 +98,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               child: Text(
                 displayMessage,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                   fontSize: 14,
                 ),
               ),
@@ -138,10 +138,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               child: Text(
                 message,
                 style: const TextStyle(
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                   fontSize: 14,
                   color: Colors.black,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -268,9 +268,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         title: const Text(
           'Reset Password',
           style: TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
@@ -304,9 +304,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: Text(
               _currentStep == 1 ? 'Forgot Password' : 'Create New Password',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
                 fontSize: 24,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
@@ -318,7 +318,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 ? 'Masukkan email akun Anda untuk reset password secara langsung'
                 : 'Silakan masukkan password baru untuk akun Anda',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
                 fontSize: 16,
                 color: Colors.grey,
               ),
@@ -342,7 +342,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             Text(
               'Email: ${_emailController.text}',
               style: const TextStyle(
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
                 fontSize: 16,
                 color: Colors.white,
               ),
@@ -389,7 +389,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       style: const TextStyle(
                         color: Colors.red,
                         fontSize: 14,
-                        fontFamily: 'DM Sans',
+                        fontFamily: 'Gotham',
                       ),
                     ),
                   ),
@@ -411,9 +411,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               child: const Text(
                 'Kembali ke Login',
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 ),
               ),
@@ -437,9 +437,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const Text(
           'Password Berhasil Direset',
           style: TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 24,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
         ),
@@ -447,7 +447,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const Text(
           'Password Anda telah berhasil diubah. Anda dapat login menggunakan password baru.',
           style: TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 16,
             color: Colors.grey,
           ),
@@ -468,9 +468,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             child: const Text(
               'Kembali ke Login',
               style: TextStyle(
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
             ),
@@ -496,7 +496,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       ),
       child: TextFormField(
         controller: controller,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
         keyboardType: keyboardType,
         validator: validator,
         obscureText: isPassword,
@@ -505,7 +505,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           hintText: hint,
           hintStyle: const TextStyle(
             color: Color.fromRGBO(255, 255, 255, 0.6),
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
           ),
           prefixIcon: Icon(
             icon,
@@ -532,14 +532,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           errorStyle: const TextStyle(
             color: Colors.red,
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
     );
   }
 }
+
 
 

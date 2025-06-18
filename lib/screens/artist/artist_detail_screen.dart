@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/artist.dart';
@@ -195,7 +195,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                       'Telah berhenti mengikuti "${_artist!.name}"',
                       style: const TextStyle(
                         color: Colors.black,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -229,7 +229,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                       'Kini mengikuti "${_artist!.name}"',
                       style: const TextStyle(
                         color: Colors.black,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -464,7 +464,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 80,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
@@ -532,18 +532,25 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     _artist!.name,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900, // Extra bold
+                      fontSize: 44,
+                      fontWeight: FontWeight.w900,
+                      fontFamily: 'Gotham',
+                      letterSpacing: 0.8,
+                      height: 1.1,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     '9,2 jt pendengar bulanan',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Gotham',
+                      letterSpacing: 0.3,
+                      height: 1.2,
                     ),
                   ),
                 ],
@@ -590,8 +597,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'DM Sans',
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
+                      letterSpacing: 0.2,
                     ),
                   ),
                 ),
@@ -673,7 +681,10 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
+              letterSpacing: 0.4,
+              height: 1.2,
             ),
           ),
           const SizedBox(height: 16),
@@ -747,7 +758,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                             style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w700,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -890,16 +901,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
               style: TextStyle(
                 color: Colors.grey[400],
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gotham',
+                letterSpacing: 0.3,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage ?? 'Tidak dapat memuat data artist',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -944,16 +954,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
               style: TextStyle(
                 color: Colors.grey[400],
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gotham',
+                letterSpacing: 0.3,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Informasi artist yang Anda cari tidak tersedia',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -980,3 +989,5 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
     );
   }
 }
+
+

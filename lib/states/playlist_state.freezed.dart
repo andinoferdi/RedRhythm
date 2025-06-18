@@ -301,3 +301,4 @@ abstract class _PlaylistState implements PlaylistState {
   _$$PlaylistStateImplCopyWith<_$PlaylistStateImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+

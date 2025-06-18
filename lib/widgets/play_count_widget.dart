@@ -42,7 +42,7 @@ class PlayCountWidget extends StatelessWidget {
             color: textColor ?? Colors.grey[500],
             fontSize: fontSize,
             fontWeight: fontWeight,
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
           ),
         ),
       ],
@@ -89,8 +89,8 @@ class PlayCountBadge extends StatelessWidget {
             style: TextStyle(
               color: textColor ?? Colors.white,
               fontSize: 11,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'DM Sans',
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
             ),
           ),
         ],
@@ -98,3 +98,4 @@ class PlayCountBadge extends StatelessWidget {
     );
   }
 } 
+

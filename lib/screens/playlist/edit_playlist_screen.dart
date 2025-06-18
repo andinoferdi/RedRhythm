@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
@@ -268,11 +268,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         backgroundColor: AppColors.surface,
         title: const Text(
           'Hapus dari Playlist',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
         ),
         content: Text(
           'Hapus "${song.title}" dari playlist ini?\n\nPerubahan akan disimpan saat menekan tombol Simpan.',
-          style: const TextStyle(color: Colors.white70),
+          style: const TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
         ),
         actions: [
           TextButton(
@@ -351,7 +351,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 message,
                 style: const TextStyle(
                   color: Colors.black,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -397,11 +397,11 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         backgroundColor: AppColors.surface,
         title: const Text(
           'Perubahan Belum Disimpan',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
         ),
         content: const Text(
           'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
         ),
         actions: [
           TextButton(
@@ -594,7 +594,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                         onPressed: _removeImage,
                         child: const Text(
                           'Ganti gambar',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
                         ),
                       ),
                     ),
@@ -779,7 +779,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             ),
             decoration: InputDecoration(
               hintText: 'Tambahkan deskripsi playlist...',
-              hintStyle: const TextStyle(color: Colors.white54),
+              hintStyle: const TextStyle(color: Colors.white54, fontFamily: 'Gotham'),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.white24),
@@ -808,7 +808,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 onPressed: _cancelEditingDescription,
                 child: const Text(
                   'Batal',
-                  style: TextStyle(color: Colors.white54),
+                  style: TextStyle(color: Colors.white54, fontFamily: 'Gotham'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -816,7 +816,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 onPressed: _saveDescription,
                 child: const Text(
                   'Simpan',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
                 ),
               ),
             ],
@@ -876,7 +876,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
           textAlign: TextAlign.center,
         ),
@@ -910,7 +910,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           ),
           child: const Text(
             'Cari lagu',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Gotham'),
           ),
         ),
       ],
@@ -958,4 +958,6 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     );
   }
 }
+
+
 

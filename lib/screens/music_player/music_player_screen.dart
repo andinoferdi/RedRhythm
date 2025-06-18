@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
@@ -182,7 +182,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       'Telah berhenti mengikuti "${artist.name}"',
                       style: const TextStyle(
                         color: Colors.black,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -210,7 +210,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       'Kini mengikuti "${artist.name}"',
                       style: const TextStyle(
                         color: Colors.black,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -253,7 +253,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         body: Center(
           child: Text(
             'No song is currently playing',
-            style: TextStyle(color: AppColors.text),
+            style: TextStyle(color: AppColors.text, fontFamily: 'Gotham'),
           ),
         ),
       );
@@ -410,7 +410,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         color: colors.textPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        fontFamily: 'DM Sans',
+                        fontFamily: 'Gotham',
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -428,7 +428,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         style: TextStyle(
                           color: colors.textSecondary,
                           fontSize: 18,
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -679,9 +679,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       const Text(
                         'Now Playing',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                           fontSize: 18,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
@@ -775,7 +775,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
                 shadows: [
                   Shadow(
                     color: Colors.black26,
@@ -818,7 +818,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       color: Colors.white,
                       fontSize: 16,
                       height: 1.6,
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
@@ -862,7 +862,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                               color: colors.primary,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              fontFamily: 'DM Sans',
+                              fontFamily: 'Gotham',
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -901,7 +901,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 style: TextStyle(
                   color: AppColors.greyLight,
                   fontSize: 14,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                 ),
               ),
             ),
@@ -928,8 +928,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     style: TextStyle(
                       color: AppColors.greyLight,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'DM Sans',
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
                     ),
                   ),
                   SizedBox(width: 4),
@@ -987,7 +987,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
           style: TextStyle(
             color: AppColors.greyLight,
             fontSize: 14,
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
           ),
         ),
         SizedBox(height: 20),
@@ -1044,7 +1044,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             style: TextStyle(
                               color: AppColors.greyLight,
                               fontSize: 14,
-                              fontFamily: 'DM Sans',
+                              fontFamily: 'Gotham',
                             ),
                           ),
                         ],
@@ -1083,7 +1083,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'DM Sans',
+                    fontFamily: 'Gotham',
                     shadows: [
                       Shadow(
                         color: Colors.black54,
@@ -1116,7 +1116,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1127,7 +1127,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           style: const TextStyle(
                             color: AppColors.greyLight,
                             fontSize: 14,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                         ),
                       ],
@@ -1161,8 +1161,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             style: const TextStyle(
                               color: Colors.black,
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'DM Sans',
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Gotham',
                             ),
                           ),
                         ),
@@ -1183,7 +1183,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   color: AppColors.greyLight,
                   fontSize: 14,
                   height: 1.5,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -1205,8 +1205,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'DM Sans',
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Gotham',
                   ),
                 ),
               ),
@@ -1249,7 +1249,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     style: TextStyle(
                       color: AppColors.greyLight,
                       fontSize: 14,
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                     ),
                   ),
                 ],
@@ -1265,7 +1265,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'DM Sans',
+                    fontFamily: 'Gotham',
                     shadows: [
                       Shadow(
                         color: Colors.black54,
@@ -1298,7 +1298,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1309,7 +1309,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           style: TextStyle(
                             color: AppColors.greyLight,
                             fontSize: 14,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                         ),
                       ],
@@ -1328,8 +1328,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       style: TextStyle(
                         color: Colors.black54,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'DM Sans',
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Gotham',
                       ),
                     ),
                   ),
@@ -1345,7 +1345,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   color: AppColors.greyLight,
                   fontSize: 14,
                   height: 1.5,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -1375,7 +1375,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                 ),
               ),
               Text(
@@ -1384,7 +1384,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   color: AppColors.primary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                 ),
               ),
             ],
@@ -1503,7 +1503,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               style: const TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 14,
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1513,8 +1513,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1524,7 +1524,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               style: TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 12,
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
             ),
@@ -1664,8 +1664,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               style: TextStyle(
                 color: isCurrentSong ? AppColors.primary : Colors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gotham',
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1679,7 +1679,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               style: const TextStyle(
                 color: AppColors.greyLight,
                 fontSize: 12,
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
               ),
             ),
           ],
@@ -1719,8 +1719,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             style: TextStyle(
               color: AppColors.greyLight,
               fontSize: 16,
-              fontFamily: 'DM Sans',
-              fontWeight: FontWeight.w500,
+              fontFamily: 'Gotham',
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1748,3 +1748,6 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
     _backgroundFadeController.forward();
   }
 }
+
+
+

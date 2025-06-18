@@ -90,23 +90,24 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Admin Options',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                            'Admin Options',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.timer, color: Colors.orange),
                 title: const Text(
                   'Update Song Durations',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
                 ),
                 subtitle: const Text(
                   'Auto-detect durations from MP3 files',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -167,19 +168,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        playlist.data['name'] ?? 'Playlist Tanpa Judul',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                                          playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
                       ),
                       Text(
                         'Playlist',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
                       ),
                     ],
                   ),
@@ -243,7 +241,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     style: TextStyle(
                       color: isDestructive ? Colors.red : Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
@@ -293,8 +291,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'DM Sans',
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Gotham',
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -306,7 +304,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 style: TextStyle(
                   color: Colors.grey[300],
                   fontSize: 16,
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                   fontWeight: FontWeight.w400,
                 ),
                 textAlign: TextAlign.center,
@@ -335,7 +333,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -364,7 +362,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           color: Colors.red,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -399,7 +397,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     'Playlist "${playlist.data['name']}" berhasil dihapus',
                     style: const TextStyle(
                       color: Colors.black,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -453,7 +451,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -462,21 +460,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         return Text(
-                          'Playlist ${snapshot.data}',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
+                          'Playlist • ${snapshot.data}',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         );
                       } else {
                         return Text(
                           'Playlist',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
+                          style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         );
@@ -532,7 +524,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -565,9 +557,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'DM Sans',
+                                      fontSize: 24,
+                          fontWeight: FontWeight.w900,
+            fontFamily: 'Gotham',
           ),
         ),
       ),
@@ -622,8 +614,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'DM Sans',
+                              fontWeight: FontWeight.w900,
+                              fontFamily: 'Gotham',
                             ),
                           ),
                         ),
@@ -641,7 +633,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const Text(
@@ -700,7 +692,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     'Telah berhenti mengikuti "${artistSelect.artistName}"',
                     style: const TextStyle(
                       color: Colors.black,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -759,7 +751,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           children: [
             Text(
               playlistError,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -795,11 +787,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Koleksi masih kosong',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -917,8 +905,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 25, // Match size with other screens
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'DM Sans',
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Gotham',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1035,8 +1024,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: 'DM Sans',
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Gotham',
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -1060,7 +1049,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
-                                  fontFamily: 'DM Sans',
+                                  fontFamily: 'Gotham',
                                   fontWeight: FontWeight.w400,
                                 ),
                                 cursorColor:
@@ -1070,7 +1059,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                   hintStyle: TextStyle(
                                     color: Colors.grey[500],
                                     fontSize: 16,
-                                    fontFamily: 'DM Sans',
+                                    fontFamily: 'Gotham',
                                     fontWeight: FontWeight.w400,
                                   ),
                                   border: InputBorder.none,
@@ -1118,7 +1107,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                           : Colors.grey[300],
                                       fontSize: 13,
                                       fontWeight: FontWeight.w700,
-                                      fontFamily: 'DM Sans',
+                                      fontFamily: 'Gotham',
                                       letterSpacing: 1.2,
                                     ),
                                   ),
@@ -1177,7 +1166,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                                         'Playlist "$name" berhasil dibuat!',
                                                         style: const TextStyle(
                                                           color: Colors.black,
-                                                          fontWeight: FontWeight.w500,
+                                                          fontWeight: FontWeight.w700,
                                                         ),
                                                       ),
                                                     ],
@@ -1250,7 +1239,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            fontFamily: 'DM Sans',
+                                            fontFamily: 'Gotham',
                                             letterSpacing: 1.2,
                                             color: Colors.white,
                                           ),
@@ -1272,3 +1261,5 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 }
+
+

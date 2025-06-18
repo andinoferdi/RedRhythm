@@ -402,7 +402,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                               style: TextStyle(
                                 color: colors.textPrimary,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -413,6 +413,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                               style: TextStyle(
                                 color: colors.textSecondary,
                                 fontSize: 12,
+                                fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -519,3 +520,4 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     );
   }
 }
+

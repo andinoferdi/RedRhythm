@@ -230,3 +230,4 @@ class SearchHistoryUtils {
     return combined;
   }
 } 
+

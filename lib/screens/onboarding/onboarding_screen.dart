@@ -51,9 +51,9 @@ class OnboardingScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   text: const TextSpan(
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                       fontSize: 24,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                     children: [
@@ -78,9 +78,9 @@ class OnboardingScreen extends StatelessWidget {
                 const Text(
                   'now!',
                   style: TextStyle(
-                    fontFamily: 'DM Sans',
+                    fontFamily: 'Gotham',
                     fontSize: 24,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
@@ -101,9 +101,9 @@ class OnboardingScreen extends StatelessWidget {
                     child: const Text(
                       'Get Started',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
+                        fontFamily: 'Gotham',
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
@@ -117,5 +117,6 @@ class OnboardingScreen extends StatelessWidget {
     );
   }
 }
+
 
 

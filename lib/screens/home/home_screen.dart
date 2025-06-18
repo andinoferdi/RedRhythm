@@ -261,10 +261,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   child: const Text(
                     'Home',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                       color: Colors.white,
                       fontSize: 25, // Match size with other screens
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -332,7 +333,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -359,7 +362,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'Error: ${genreState.error}',
-                    style: TextStyle(color: Colors.red),
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontFamily: 'Gotham',
+                    ),
                   ),
                 ),
               );
@@ -372,7 +378,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'No genres available',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontFamily: 'Gotham',
+                    ),
                   ),
                 ),
               );
@@ -462,7 +471,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Gotham',
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -489,7 +499,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                           backgroundColor: AppColors.surface,
           title: const Text(
             'Profile Options',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Gotham',
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -517,7 +530,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Gotham',
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -528,6 +542,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                             style: TextStyle(
                               color: Colors.grey.shade400,
                               fontSize: 14,
+                              fontFamily: 'Gotham',
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -543,7 +558,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 leading: const Icon(Icons.account_circle, color: Colors.white),
                 title: const Text(
                   'View Profile',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Gotham',
+                  ),
                 ),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -554,7 +572,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 leading: const Icon(Icons.bug_report, color: Colors.orange),
                 title: const Text(
                   'Album Sync Tool',
-                  style: TextStyle(color: Colors.orange),
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontFamily: 'Gotham',
+                  ),
                 ),
                 onTap: () {
                   Navigator.of(context).pop();
@@ -569,7 +590,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 leading: const Icon(Icons.logout, color: Colors.red),
                 title: const Text(
                   'Logout',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontFamily: 'Gotham',
+                  ),
                 ),
                 onTap: () async {
                   Navigator.of(context).pop();
@@ -600,7 +624,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -663,7 +689,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
+              letterSpacing: 0.4,
             ),
           ),
         ),
@@ -690,7 +718,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
                   child: Text(
                     'Error: ${playHistoryState.error}',
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontFamily: 'Gotham',
+                    ),
                   ),
                 ),
               );
@@ -703,7 +734,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'No recently played songs',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontFamily: 'Gotham',
+                    ),
                   ),
                 ),
               );
@@ -744,7 +778,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                         style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'Gotham',
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
@@ -815,8 +850,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     fontSize: 18,
+                    fontFamily: 'Gotham',
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -825,6 +861,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Gotham',
                   ),
                 ),
               ],
@@ -835,5 +873,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
 }
+
 
 

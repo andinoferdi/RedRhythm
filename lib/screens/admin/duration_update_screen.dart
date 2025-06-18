@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../controllers/duration_controller.dart';
@@ -64,7 +64,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 const Text(
                   'This will automatically detect and update song durations from MP3 files for all songs with duration = 0.',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
                 ),
               ],
             ),
@@ -99,7 +99,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                   // Progress text
                   Text(
                     '${durationState.processedSongs} / ${durationState.totalSongs} songs processed',
-                    style: const TextStyle(fontSize: 14),
+                    style: const TextStyle(fontSize: 14, fontFamily: 'Gotham'),
                   ),
                   
                   if (durationState.currentSongTitle != null) ...[
@@ -144,9 +144,9 @@ class DurationUpdateScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text('✅ Success: ${durationState.successCount} songs'),
-                  Text('❌ Failed: ${durationState.failCount} songs'),
-                  Text('📊 Total: ${durationState.totalSongs} songs'),
+                  Text('âœ… Success: ${durationState.successCount} songs'),
+                  Text('âŒ Failed: ${durationState.failCount} songs'),
+                  Text('ðŸ“Š Total: ${durationState.totalSongs} songs'),
                 ],
               ),
             ),
@@ -179,7 +179,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     durationState.error!,
-                    style: const TextStyle(color: Colors.red),
+                    style: const TextStyle(color: Colors.red, fontFamily: 'Gotham'),
                   ),
                 ],
               ),
@@ -242,7 +242,7 @@ class DurationUpdateScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '🎨 Color Extraction Test',
+              'ðŸŽ¨ Color Extraction Test',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -251,7 +251,7 @@ class DurationUpdateScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             const Text(
               'Test the new smart color extraction algorithm',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
             ),
             const SizedBox(height: 16),
             
@@ -264,7 +264,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                 if (currentSong == null) {
                   return const Text(
                     'No song currently playing',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
                   );
                 }
                 
@@ -352,7 +352,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('🎨 Colors refreshed with new algorithm!'),
+                              content: Text('ðŸŽ¨ Colors refreshed with new algorithm!'),
                               backgroundColor: Colors.purple,
                             ),
                           );
@@ -385,7 +385,7 @@ class DurationUpdateScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '🎭 Elegant Color Palettes',
+              'ðŸŽ­ Elegant Color Palettes',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -394,7 +394,7 @@ class DurationUpdateScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             const Text(
               'Preview and test the available elegant color palettes',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
             ),
             const SizedBox(height: 16),
             
@@ -504,4 +504,6 @@ class DurationUpdateScreen extends ConsumerWidget {
     );
   }
 } 
+
+
 

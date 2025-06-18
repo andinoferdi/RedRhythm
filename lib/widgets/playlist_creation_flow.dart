@@ -129,7 +129,7 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
                 message,
                 style: const TextStyle(
                   color: Colors.black,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -244,7 +244,7 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 12),
@@ -317,7 +317,7 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
           style: TextStyle(
             color: Colors.grey[400],
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 4),
@@ -376,13 +376,13 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
           validator: validator,
           maxLines: maxLines,
           textInputAction: textInputAction,
@@ -451,7 +451,7 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 Text(
@@ -481,5 +481,6 @@ class _PlaylistCreationFlowState extends State<PlaylistCreationFlow> {
     );
   }
 }
+
 
 

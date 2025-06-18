@@ -147,3 +147,4 @@ final artistControllerProvider = StateNotifierProvider<ArtistController, ArtistS
   final repository = ref.watch(artistRepositoryProvider);
   return ArtistController(repository);
 });
+

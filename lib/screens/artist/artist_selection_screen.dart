@@ -141,9 +141,10 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                           'Pilih artis lain yang kamu suka.',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'DM Sans',
+                                                      fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                            fontFamily: 'Gotham',
                           ),
                         ),
                       ),
@@ -189,9 +190,10 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                     child: Text(
                       'Selesai (${_selectedArtists.length})',
                       style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'DM Sans',
+                                              fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                        fontFamily: 'Gotham',
                       ),
                     ),
                   ),
@@ -276,8 +278,8 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12, // Reduced from 14 to fit better
-                    fontWeight: FontWeight.w500,
-                    fontFamily: 'DM Sans',
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Gotham',
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -305,8 +307,8 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 20, // Reduced from 24 to match smaller image
-            fontWeight: FontWeight.bold,
-            fontFamily: 'DM Sans',
+            fontWeight: FontWeight.w900,
+            fontFamily: 'Gotham',
           ),
         ),
       ),
@@ -364,7 +366,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
             style: TextStyle(
               color: Colors.grey[400],
               fontSize: 16,
-              fontFamily: 'DM Sans',
+              fontFamily: 'Gotham',
             ),
           ),
 
@@ -373,5 +375,6 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
     );
   }
 }
+
 
 

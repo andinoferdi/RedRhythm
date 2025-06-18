@@ -313,3 +313,4 @@ abstract class _ArtistSelect implements ArtistSelect {
   _$$ArtistSelectImplCopyWith<_$ArtistSelectImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
+

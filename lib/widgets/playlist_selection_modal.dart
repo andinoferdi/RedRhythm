@@ -157,7 +157,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             SnackBar(
               content: Text(
                 message,
-                style: TextStyle(color: Colors.black),
+                style: TextStyle(color: Colors.black, fontFamily: 'Gotham'),
               ),
               backgroundColor: Colors.white,
               duration: Duration(seconds: 2),
@@ -295,7 +295,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Spacer(),
@@ -340,7 +340,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(height: 8),
@@ -389,7 +389,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                                         style: TextStyle(
                                           color: AppColors.text,
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -466,4 +466,5 @@ Future<void> showPlaylistSelectionModal(
     ),
   );
 } 
+
 

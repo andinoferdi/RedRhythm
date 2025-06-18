@@ -103,7 +103,7 @@ class CustomBottomNav extends StatelessWidget {
               style: TextStyle(
                 color: isSelected ? AppColors.navSelected : AppColors.grey,
                 fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -112,5 +112,6 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 }
+
 
 

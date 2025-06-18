@@ -27,9 +27,9 @@ class _StatsScreenState extends State<StatsScreen> {
         title: const Text(
           'Your Listening Stats',
           style: TextStyle(
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: AppColors.text,
           ),
         ),
@@ -77,7 +77,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ? Colors.red 
                         : Colors.white,
                     fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -243,7 +243,7 @@ class _StatsScreenState extends State<StatsScreen> {
                         ? Colors.red 
                         : Colors.white,
                     fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -261,5 +261,6 @@ class _StatsScreenState extends State<StatsScreen> {
     );
   }
 }
+
 
 

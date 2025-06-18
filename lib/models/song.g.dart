@@ -34,3 +34,4 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'audioFileName': instance.audioFileName,
       'playCount': instance.playCount,
     };
+

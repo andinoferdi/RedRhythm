@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:pocketbase/pocketbase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
@@ -352,7 +352,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                     '${song.title} berhasil ditambahkan',
                     style: const TextStyle(
                       color: Colors.black,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -672,7 +672,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
         style: TextStyle(
           color: Colors.grey[400],
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       );
     }
@@ -691,7 +691,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
       style: TextStyle(
         color: Colors.grey[400],
         fontSize: 14,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -709,8 +709,9 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   _currentPlaylist.data['name'] ?? 'Playlist Tanpa Judul',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                                      fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -792,7 +793,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                     ),
                     overflow: TextOverflow.visible, // Prevent text cutoff
                   ),
@@ -856,7 +857,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
               children: [
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -887,11 +888,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Playlist masih kosong',
-                  style: TextStyle(
-                    color: Colors.grey[400],
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -908,7 +905,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text(
                     'Tambah Lagu',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -984,7 +981,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -1030,7 +1027,8 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
@@ -1052,7 +1050,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -1203,3 +1201,5 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     );
   }
 } 
+
+

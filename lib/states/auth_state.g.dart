@@ -25,3 +25,4 @@ Map<String, dynamic> _$$AuthStateImplToJson(_$AuthStateImpl instance) =>
       'error': instance.error,
       'successMessage': instance.successMessage,
     };
+

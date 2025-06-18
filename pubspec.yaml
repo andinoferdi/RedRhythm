@@ -55,12 +55,23 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  assets:
-    - assets/images/
-    - assets/images/playlists/
-    - assets/images/profile/
-
+  # Set Gotham as default font family
   fonts:
+    - family: Gotham
+      fonts:
+        - asset: assets/fonts/Gotham/Gotham-XLight.otf
+          weight: 200
+        - asset: assets/fonts/Gotham/Gotham-Light.otf
+          weight: 300
+        - asset: assets/fonts/Gotham/GothamBook.ttf
+          weight: 400
+        - asset: assets/fonts/Gotham/GothamMedium.ttf
+          weight: 500
+        - asset: assets/fonts/Gotham/GothamBold.ttf
+          weight: 700
+        - asset: assets/fonts/Gotham/Gotham-Black.otf
+          weight: 900
+
     - family: DM Sans
       fonts:
         - asset: assets/fonts/DM_Sans/static/DMSans-Light.ttf
@@ -77,3 +88,8 @@ flutter:
           weight: 800
         - asset: assets/fonts/DM_Sans/static/DMSans-Black.ttf
           weight: 900
+
+  assets:
+    - assets/images/
+    - assets/images/playlists/
+    - assets/images/profile/

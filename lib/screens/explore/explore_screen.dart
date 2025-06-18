@@ -91,7 +91,7 @@ class ExploreScreen extends ConsumerWidget {
                       color: Colors.white,
                       fontSize: 25, // Match size with other screens
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -244,5 +244,6 @@ class ExploreScreen extends ConsumerWidget {
 
 
 }
+
 
 

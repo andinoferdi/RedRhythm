@@ -89,8 +89,8 @@ class SongItemWidget extends ConsumerWidget {
                         style: TextStyle(
                           color: actualIsCurrentSong ? Colors.red : Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'DM Sans',
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gotham',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -101,7 +101,8 @@ class SongItemWidget extends ConsumerWidget {
                         style: TextStyle(
                           color: Colors.grey[400],
                           fontSize: 14,
-                          fontFamily: 'DM Sans',
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Gotham',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -130,4 +131,5 @@ class SongItemWidget extends ConsumerWidget {
     );
   }
 } 
+
 

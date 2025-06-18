@@ -37,7 +37,7 @@ class AuthTextField extends StatelessWidget {
       ),
       child: TextFormField(
         controller: controller,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
         keyboardType: keyboardType,
         obscureText: isPassword && obscureText,
         validator: validator,
@@ -66,7 +66,7 @@ class AuthTextField extends StatelessWidget {
           hintText: hint,
           hintStyle: const TextStyle(
             color: Color.fromRGBO(255, 255, 255, 0.6),
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
           ),
           prefixIcon: Icon(
             icon,
@@ -102,13 +102,14 @@ class AuthTextField extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           errorStyle: const TextStyle(
             color: Colors.red,
-            fontFamily: 'DM Sans',
+            fontFamily: 'Gotham',
             fontSize: 12,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
     );
   }
 } 
+
 

@@ -49,16 +49,16 @@ class SpotifySearchBar extends StatelessWidget {
         style: const TextStyle(
           color: Colors.black87,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'DM Sans',
+          fontWeight: FontWeight.w700,
+          fontFamily: 'Gotham',
         ),
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: const TextStyle(
             color: Colors.grey,
             fontSize: 16,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'DM Sans',
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Gotham',
           ),
           prefixIcon: const Icon(
             Icons.search,
@@ -91,3 +91,4 @@ class SpotifySearchBar extends StatelessWidget {
     );
   }
 } 
+

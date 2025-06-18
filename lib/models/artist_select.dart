@@ -59,3 +59,4 @@ class ArtistSelect with _$ArtistSelect {
     );
   }
 } 
+

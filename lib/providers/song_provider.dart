@@ -152,3 +152,4 @@ final songSearchProvider = Provider.family<List<Song>, String>((ref, query) {
   return songController.searchSongs(query);
 }); 
 
+

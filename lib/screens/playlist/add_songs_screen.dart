@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../../models/song.dart';
@@ -134,7 +134,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
               '${songIdsList.length} lagu berhasil ditambahkan',
               style: const TextStyle(
                 color: Colors.black,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
               ),
             ),
             backgroundColor: Colors.white,
@@ -172,7 +172,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
         leading: IconButton(
@@ -188,7 +188,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
                 style: const TextStyle(
                   color: Colors.red,
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -202,7 +202,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: _filterSongs,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               decoration: InputDecoration(
                 hintText: 'Cari lagu atau artis...',
                 hintStyle: TextStyle(color: Colors.grey[400]),
@@ -241,7 +241,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
           children: [
             Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -270,11 +270,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
               _searchController.text.isEmpty 
                   ? 'Tidak ada lagu tersedia'
                   : 'Tidak ditemukan lagu yang cocok',
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
             ),
           ],
         ),
@@ -315,7 +311,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
         child: SongItemWidget(
           song: song,
           subtitle: isInPlaylist 
-              ? '${song.artist} • Sudah ditambahkan'
+              ? '${song.artist} â€¢ Sudah ditambahkan'
               : song.artist,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           trailing: Checkbox(
@@ -346,4 +342,6 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
     );
   }
 } 
+
+
 

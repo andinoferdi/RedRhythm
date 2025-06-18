@@ -157,7 +157,7 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                     message,
                     style: const TextStyle(
                       color: Colors.black,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -281,7 +281,7 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                             Text(
@@ -329,7 +329,7 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
                           style: TextStyle(
                             color: Colors.grey,
                             fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -370,13 +370,13 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
           validator: validator,
           maxLines: maxLines,
           textInputAction: textInputAction,
@@ -429,7 +429,7 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -569,5 +569,6 @@ class _PlaylistFormDialogState extends State<PlaylistFormDialog> {
     );
   }
 }
+
 
 

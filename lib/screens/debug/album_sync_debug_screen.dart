@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/album_image_sync_tool.dart';
@@ -40,7 +40,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       final pbService = PocketBaseService();
       final tool = AlbumImageSyncTool(pbService);
       
-      _addOutput('🔍 Starting album image check...\n');
+      _addOutput('ðŸ” Starting album image check...\n');
       
       // Override debugPrint to capture output
       final originalDebugPrint = debugPrint;
@@ -57,7 +57,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       debugPrint = originalDebugPrint;
       
     } catch (e) {
-      _addOutput('❌ Error: $e');
+      _addOutput('âŒ Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -67,7 +67,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
 
   Future<void> _listAlbumFiles() async {
     if (_albumIdController.text.trim().isEmpty) {
-      _addOutput('⚠️ Please enter Album ID');
+      _addOutput('âš ï¸ Please enter Album ID');
       return;
     }
 
@@ -79,7 +79,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       final pbService = PocketBaseService();
       final tool = AlbumImageSyncTool(pbService);
       
-      _addOutput('\n🔍 Listing files for album: ${_albumIdController.text.trim()}\n');
+      _addOutput('\nðŸ” Listing files for album: ${_albumIdController.text.trim()}\n');
       
       // Override debugPrint to capture output
       final originalDebugPrint = debugPrint;
@@ -96,7 +96,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       debugPrint = originalDebugPrint;
       
     } catch (e) {
-      _addOutput('❌ Error: $e');
+      _addOutput('âŒ Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -106,7 +106,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
 
   Future<void> _updateAlbumCover() async {
     if (_albumIdController.text.trim().isEmpty || _newFileNameController.text.trim().isEmpty) {
-      _addOutput('⚠️ Please enter both Album ID and new file name');
+      _addOutput('âš ï¸ Please enter both Album ID and new file name');
       return;
     }
 
@@ -118,7 +118,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       final pbService = PocketBaseService();
       final tool = AlbumImageSyncTool(pbService);
       
-      _addOutput('\n🔄 Updating album cover...\n');
+      _addOutput('\nðŸ”„ Updating album cover...\n');
       
       // Override debugPrint to capture output
       final originalDebugPrint = debugPrint;
@@ -137,10 +137,10 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
       // Restore original debugPrint
       debugPrint = originalDebugPrint;
       
-      _addOutput('\n✅ Update completed! You may need to restart the app to see changes.\n');
+      _addOutput('\nâœ… Update completed! You may need to restart the app to see changes.\n');
       
     } catch (e) {
-      _addOutput('❌ Error: $e');
+      _addOutput('âŒ Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -174,7 +174,7 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
                 '1. Klik "Check All Albums" untuk melihat status semua album\n'
                 '2. Masukkan Album ID dan klik "List Files" untuk melihat file yang ada\n'
                 '3. Masukkan nama file yang benar dan klik "Update Cover" untuk memperbaiki',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
               ),
             ),
             const SizedBox(height: 16),
@@ -214,10 +214,10 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
             // Album ID input
             TextField(
               controller: _albumIdController,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               decoration: const InputDecoration(
                 labelText: 'Album ID',
-                labelStyle: TextStyle(color: Colors.white70),
+                labelStyle: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
                 border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.white30),
@@ -232,10 +232,10 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
             // New file name input
             TextField(
               controller: _newFileNameController,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               decoration: const InputDecoration(
                 labelText: 'New Cover Image File Name (e.g., cover_new_abc123.jpg)',
-                labelStyle: TextStyle(color: Colors.white70),
+                labelStyle: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
                 border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.white30),
@@ -312,4 +312,6 @@ class _AlbumSyncDebugScreenState extends ConsumerState<AlbumSyncDebugScreen> {
     );
   }
 } 
+
+
 

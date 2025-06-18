@@ -147,7 +147,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               state.successMessage!,
               style: const TextStyle(
                 color: Colors.black,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w700,
               ),
             ),
             backgroundColor: Colors.white,
@@ -202,9 +202,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   child: Text(
                     'Create your account',
                     style: TextStyle(
-                      fontFamily: 'DM Sans',
+                      fontFamily: 'Gotham',
                       fontSize: 24,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),
@@ -288,7 +288,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: Text(
                         'I agree to the Terms and Conditions',
                         style: const TextStyle(
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                           fontSize: 16,
                           color: Colors.white,
                         ),
@@ -309,7 +309,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     const Text(
                       'Already have an account? ',
                       style: TextStyle(
-                        fontFamily: 'DM Sans',
+                        fontFamily: 'Gotham',
                         fontSize: 16,
                         color: Colors.white,
                       ),
@@ -319,7 +319,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       child: const Text(
                         'Log In',
                         style: TextStyle(
-                          fontFamily: 'DM Sans',
+                          fontFamily: 'Gotham',
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                                                       color: AppColors.primary,
@@ -352,7 +352,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       controller: controller,
       style: const TextStyle(
         color: Colors.white,
-        fontFamily: 'DM Sans',
+        fontFamily: 'Gotham',
         fontSize: 16,
       ),
       keyboardType: keyboardType,
@@ -377,7 +377,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         hintText: hint,
         hintStyle: TextStyle(
           color: Colors.white.withValues(alpha: 0.6),
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 16,
         ),
         prefixIcon: Icon(
@@ -443,13 +443,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         errorStyle: const TextStyle(
           color: Colors.red,
-          fontFamily: 'DM Sans',
+          fontFamily: 'Gotham',
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 }
+
 
 

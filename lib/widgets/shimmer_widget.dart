@@ -104,3 +104,4 @@ class ShimmerImagePlaceholder extends StatelessWidget {
   }
 } 
 
+

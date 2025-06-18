@@ -73,7 +73,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                             color: Colors.white,
                             fontSize: 16,
                                       fontWeight: FontWeight.bold,
-                                      fontFamily: 'DM Sans',
+                                      fontFamily: 'Gotham',
                                     ),
                           textAlign: TextAlign.center,
                                     maxLines: 1,
@@ -85,7 +85,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                     style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 11,
-                                      fontFamily: 'DM Sans',
+                                      fontFamily: 'Gotham',
                                     ),
                           textAlign: TextAlign.center,
                                     maxLines: 1,
@@ -180,7 +180,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                         ),
                         Text(
@@ -188,7 +188,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 12,
-                            fontFamily: 'DM Sans',
+                            fontFamily: 'Gotham',
                           ),
                         ),
                       ],
@@ -261,9 +261,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                     ? Colors.white.withValues(alpha: 0.6)
                     : Colors.white,
                 fontSize: isSpecialSection ? 13 : 18,
-                fontWeight: isSpecialSection ? FontWeight.w500 : FontWeight.w600,
+                fontWeight: isSpecialSection ? FontWeight.w700 : FontWeight.w700,
                 height: 1.4,
-                fontFamily: 'DM Sans',
+                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.left,
             ),
@@ -293,8 +293,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 18,
-                fontWeight: FontWeight.w500,
-                fontFamily: 'DM Sans',
+                fontWeight: FontWeight.w700,
+                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
               ),
@@ -304,4 +304,5 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
     );
   }
 } 
+
 

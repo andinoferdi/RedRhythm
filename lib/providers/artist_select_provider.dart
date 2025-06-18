@@ -118,3 +118,4 @@ final artistSelectProvider = StateNotifierProvider<ArtistSelectProvider, List<Ar
 final autoRefreshArtistSelectProvider = Provider<List<ArtistSelect>>((ref) {
   return ref.watch(artistSelectProvider);
 }); 
+

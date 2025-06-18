@@ -25,7 +25,7 @@ class LoadingButton extends StatefulWidget {
     this.textColor,
     this.loadingColor,
     this.fontSize = 18,
-    this.fontWeight = FontWeight.w600,
+    this.fontWeight = FontWeight.w700,
     this.borderRadius,
   });
 
@@ -97,7 +97,7 @@ class _LoadingButtonState extends State<LoadingButton>
             : Text(
                 widget.text,
                 style: TextStyle(
-                  fontFamily: 'DM Sans',
+                  fontFamily: 'Gotham',
                   fontSize: widget.fontSize,
                   fontWeight: widget.fontWeight,
                   color: widget.textColor ?? Colors.white,
@@ -129,5 +129,6 @@ class _LoadingButtonState extends State<LoadingButton>
     );
   }
 }
+
 
 

@@ -43,8 +43,8 @@ class SpotifyStyleButton extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18, // Increased from 16
-                  fontWeight: FontWeight.w500, // Using Gotham medium weight
-                  fontFamily: 'DM Sans',
+                  fontWeight: FontWeight.w700, // Using Gotham bold weight
+                  fontFamily: 'Gotham',
                 ),
               ),
             ),
@@ -54,4 +54,5 @@ class SpotifyStyleButton extends StatelessWidget {
     );
   }
 } 
+
 
