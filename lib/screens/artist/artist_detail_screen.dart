@@ -208,13 +208,40 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   }
 
   void _playSong(Song song) {
-    ref.read(playerControllerProvider.notifier).playSong(song);
+    if (_songs.isEmpty) return;
+    
+    final songIndex = _songs.indexWhere((s) => s.id == song.id);
+    if (songIndex == -1) return;
+    
+    // Play queue from artist context - exactly like playlist
+    ref.read(playerControllerProvider.notifier).playQueueFromArtist(
+      _songs,
+      songIndex,
+      _artist!.id, // Use artist ID as context
+    );
   }
 
   void _playAllSongs() {
     if (_songs.isEmpty) return;
-    ref.read(playerControllerProvider.notifier).playSong(_songs[0]);
-    ref.read(playerControllerProvider.notifier).toggleShuffle();
+    
+    // Play first song from artist context
+    ref.read(playerControllerProvider.notifier).playQueueFromArtist(
+      _songs,
+      0,
+      _artist!.id,
+    );
+  }
+
+  void _shuffleAllSongs() {
+    if (_songs.isEmpty) return;
+    
+    // Shuffle and play from artist context
+    final shuffledSongs = List<Song>.from(_songs)..shuffle();
+    ref.read(playerControllerProvider.notifier).playQueueFromArtist(
+      shuffledSongs,
+      0,
+      _artist!.id,
+    );
   }
 
   @override
@@ -445,9 +472,21 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           const Spacer(),
 
           // Shuffle button
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.shuffle, color: Colors.white, size: 28),
+          Consumer(
+            builder: (context, ref, child) {
+              final playerState = ref.watch(playerControllerProvider);
+              final isPlayingFromThisArtist = playerState.currentArtistId == _artist?.id;
+              final hasShuffleMode = isPlayingFromThisArtist && playerState.shuffleMode;
+              
+              return IconButton(
+                onPressed: _songs.isNotEmpty ? _shuffleAllSongs : null,
+                icon: Icon(
+                  Icons.shuffle, 
+                  color: hasShuffleMode ? Colors.red : Colors.white, 
+                  size: 28
+                ),
+              );
+            },
           ),
 
           const SizedBox(width: 8),
@@ -596,85 +635,90 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
         final index = entry.key;
         final song = entry.value;
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              // Song number
-              SizedBox(
-                width: 24,
-                child: Text(
-                  '${index + 1}',
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+        return Consumer(
+          builder: (context, ref, child) {
+            final playerState = ref.watch(playerControllerProvider);
+            final currentArtistId = playerState.currentArtistId;
+            
+            // STRICT CHECKING: Only show as "playing" if:
+            // 1. Song is currently playing
+            // 2. CurrentArtistId matches THIS artist (not null)
+            // 3. Song is in current queue at correct position
+            
+            final isCurrentSong = playerState.currentSong?.id == song.id;
+            final isPlayingFromThisArtist = currentArtistId != null && 
+                                           currentArtistId == _artist?.id;
+            
+            // CRITICAL: Only show as playing if song is playing FROM THIS ARTIST
+            // If currentArtistId is null OR different from this artist, don't show as playing
+            
+            final shouldShowAsPlaying = isCurrentSong && 
+                                      isPlayingFromThisArtist && 
+                                      playerState.isPlaying;
+            
+            // Additional validation: Check queue position to prevent race conditions
+            bool isActuallyPlayingFromQueue = false;
+            if (shouldShowAsPlaying && playerState.queue.isNotEmpty) {
+              final currentIndex = playerState.currentIndex;
+              if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
+                final queueSong = playerState.queue[currentIndex];
+                isActuallyPlayingFromQueue = queueSong.id == song.id;
+              }
+            }
+            
+            // FINAL CHECK: All conditions must be true
+            final isPlaying = shouldShowAsPlaying && isActuallyPlayingFromQueue;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  // Song number with play indicator
+                  SizedBox(
+                    width: 24,
+                    child: isPlaying
+                        ? const Icon(
+                            Icons.volume_up,
+                            color: Colors.red,
+                            size: 16,
+                          )
+                        : Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(width: 16),
+                  const SizedBox(width: 12),
 
-              // Song thumbnail
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF282828),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: ImageHelpers.buildSafeNetworkImage(
-                  imageUrl: song.albumArtUrl,
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                  fallbackWidget: const Icon(
-                    Icons.music_note,
-                    color: Colors.grey,
+                  // Use SongItemWidget for consistency
+                  Expanded(
+                    child: SongItemWidget(
+                      song: song,
+                      subtitle: song.formattedPlayCount,
+                      isCurrentSong: isCurrentSong && isPlayingFromThisArtist,
+                      isPlaying: isPlaying,
+                      onTap: () => _playSong(song),
+                      contentPadding: EdgeInsets.zero,
+                      trailing: isPlaying 
+                          ? null // AnimatedSoundBars will be shown by SongItemWidget
+                          : IconButton(
+                              onPressed: () {},
+                              icon: const Icon(
+                                Icons.more_vert,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                            ),
+                    ),
                   ),
-                ),
+                ],
               ),
-
-              const SizedBox(width: 12),
-
-              // Song info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      song.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      song.formattedPlayCount,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // More options
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(
-                  Icons.more_vert,
-                  color: Colors.grey,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       }).toList(),
     );

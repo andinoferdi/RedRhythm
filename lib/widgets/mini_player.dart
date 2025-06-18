@@ -254,7 +254,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         (previous, next) {
       _onSongChanged(previous, next);
 
-      // Auto-extract colors for new song
+      // Auto-extract colors for new song from album art (not from playlist)
       if (next != null && previous?.id != next.id) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ref.read(dynamicColorProvider.notifier).extractColorsFromSong(next);

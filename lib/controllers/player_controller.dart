@@ -559,6 +559,31 @@ class PlayerController extends StateNotifier<PlayerState> {
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: playlistId,
+      currentArtistId: null, // Clear artist context when playing from playlist
+    );
+
+    // Always autoPlay=true when explicitly playing a queue
+    await playSong(songToPlay,
+        forceRestart: shouldForceRestart, autoPlay: true);
+  }
+
+  /// Set queue and play with artist context
+  Future<void> playQueueFromArtist(
+      List<Song> songs, int startIndex, String artistId) async {
+    if (_isDisposed) return;
+    if (songs.isEmpty || startIndex < 0 || startIndex >= songs.length) return;
+
+    final songToPlay = songs[startIndex];
+    final isCurrentSong = state.currentSong?.id == songToPlay.id;
+    final isDifferentContext = state.currentArtistId != artistId;
+
+    final shouldForceRestart = isCurrentSong && isDifferentContext;
+
+    state = state.copyWith(
+      queue: songs,
+      currentIndex: startIndex,
+      currentPlaylistId: null, // Clear playlist context when playing from artist
+      currentArtistId: artistId,
     );
 
     // Always autoPlay=true when explicitly playing a queue
@@ -573,7 +598,7 @@ class PlayerController extends StateNotifier<PlayerState> {
 
     final songToPlay = songs[startIndex];
     final isCurrentSong = state.currentSong?.id == songToPlay.id;
-    final isDifferentContext = state.currentPlaylistId != null;
+    final isDifferentContext = state.currentPlaylistId != null || state.currentArtistId != null;
 
     final shouldForceRestart = isCurrentSong && isDifferentContext;
 
@@ -581,6 +606,7 @@ class PlayerController extends StateNotifier<PlayerState> {
       queue: songs,
       currentIndex: startIndex,
       currentPlaylistId: null,
+      currentArtistId: null, // Clear artist context
     );
 
     // Always autoPlay=true when explicitly playing a queue
@@ -779,7 +805,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
 
     final isCurrentSong = state.currentSong?.id == song.id;
-    final isDifferentContext = state.currentPlaylistId != null;
+    final isDifferentContext = state.currentPlaylistId != null || state.currentArtistId != null;
 
     final shouldForceRestart =
         forceRestart || isCurrentSong || (isCurrentSong && isDifferentContext);
@@ -793,6 +819,7 @@ class PlayerController extends StateNotifier<PlayerState> {
           queue: [song],
           currentIndex: 0,
           currentPlaylistId: null,
+          currentArtistId: null,
         );
       } else {
         final List<Song> shuffledSongs = List.from(allSongs)..shuffle();
@@ -803,15 +830,17 @@ class PlayerController extends StateNotifier<PlayerState> {
           queue: shuffledSongs,
           currentIndex: 0,
           currentPlaylistId: null,
+          currentArtistId: null,
           shuffleMode: true,
         );
       }
     } catch (e) {
-      debugPrint('Error loading all songs for individual playback: $e');
+      debugPrint('Error loading all songs for individual playbook: $e');
       state = state.copyWith(
         queue: [song],
         currentIndex: 0,
         currentPlaylistId: null,
+        currentArtistId: null,
       );
     }
 

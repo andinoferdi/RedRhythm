@@ -19,8 +19,7 @@ import '../../utils/image_helpers.dart';
 import '../../providers/playlist_provider.dart';
 import '../../widgets/animated_sound_bars.dart';
 import '../../routes/app_router.dart';
-import '../../providers/dynamic_color_provider.dart';
-import '../../utils/color_extractor.dart';
+
 
 @RoutePage()
 class PlaylistScreen extends ConsumerStatefulWidget {
@@ -73,56 +72,9 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     });
   }
 
-  /// Extract colors from playlist cover image for dynamic background
-  Future<void> _extractPlaylistColors() async {
-    try {
-      // Get the playlist cover image URL
-      final coverImageUrl = _getPlaylistCoverImageUrl();
-      
-      if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
-        // Extract colors from the playlist cover image
-        final colors = await ColorExtractor.extractColorsFromUrl(coverImageUrl);
-        
-        // Update the dynamic color provider with extracted colors
-        if (mounted) {
-          ref.read(dynamicColorProvider.notifier).state = DynamicColorState(
-            colors: colors,
-            isLoading: false,
-            hasError: false,
-            currentSongId: _currentPlaylist.id, // Use playlist ID as identifier
-          );
-        }
-      } else {
-        // If no cover image, try to extract from first song's album art
-        if (_songs.isNotEmpty) {
-          final firstSong = _songs.first;
-          if (firstSong.albumArtUrl.isNotEmpty) {
-            await ref.read(dynamicColorProvider.notifier).extractColorsFromSong(firstSong);
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('Error extracting playlist colors: $e');
-      // Use default colors on error
-      if (mounted) {
-        ref.read(dynamicColorProvider.notifier).state = DynamicColorState.initial();
-      }
-    }
-  }
 
-  /// Get playlist cover image URL
-  String? _getPlaylistCoverImageUrl() {
-    final coverImage = _currentPlaylist.data['cover_image'] as String?;
-    if (coverImage != null && coverImage.trim().isNotEmpty) {
-      final pbService = PocketBaseService();
-      try {
-        return pbService.pb.files.getUrl(_currentPlaylist, coverImage).toString();
-      } catch (e) {
-        debugPrint('Error getting playlist cover image URL: $e');
-      }
-    }
-    return null;
-  }
+
+
 
   Future<void> _initializeData() async {
     setState(() {
@@ -150,8 +102,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           _isLoadingCreator = false;
         });
         
-        // Extract colors after data is loaded
-        await _extractPlaylistColors();
+        // Colors extraction removed - using default colors
       }
     } catch (e) {
       if (mounted) {
@@ -283,8 +234,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
       PlaylistImageWidget.clearCache(_currentPlaylist.id);
       PlaylistImageWidget.clearAllCache(); // Clear all cache to be sure
       
-      // Clear color cache as well
-      ColorExtractor.clearCache();
+      // Color cache clearing removed
       
       // Clear mini player cache if it exists (import required at top of file)
       // This ensures mini player also reflects updated playlist image
@@ -324,8 +274,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           _imageRebuildCounter++; // Only increment once
         });
         
-        // Re-extract colors after refresh
-        await _extractPlaylistColors();
+        // Colors extraction removed - using default colors
       }
     } catch (e) {
       // Reset loading states even on error
@@ -540,7 +489,6 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
-    final dynamicColorState = ref.watch(dynamicColorProvider);
     
     // Watch auto-refresh playlist provider for automatic updates
     ref.watch(autoRefreshPlaylistProvider);
@@ -570,41 +518,18 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     });
 
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    
-    // Get dynamic colors
-    final colors = dynamicColorState.colors ?? ColorExtractor.getDefaultColors();
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Dynamic background gradient
-          Container(
-            height: double.infinity,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  colors.backgroundStart.withValues(alpha: 0.8),
-                  colors.backgroundStart.withValues(alpha: 0.6),
-                  colors.backgroundStart.withValues(alpha: 0.3),
-                  const Color(0xFF1A1A1A).withValues(alpha: 0.8),
-                  AppColors.background,
-                ],
-                stops: const [0.0, 0.2, 0.4, 0.7, 1.0],
-              ),
-            ),
-          ),
-          
           // Main content
           Column(
             children: [
               Expanded(
                 child: CustomScrollView(
                   slivers: [
-                    _buildSliverAppBar(colors),
+                    _buildSliverAppBar(),
                     SliverToBoxAdapter(
                       child: _buildPlaylistInfo(),
                     ),
@@ -639,7 +564,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     );
   }
 
-  Widget _buildSliverAppBar(DominantColors colors) {
+  Widget _buildSliverAppBar() {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
@@ -652,19 +577,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
       ),
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                colors.backgroundStart.withValues(alpha: 0.9),
-                colors.backgroundStart.withValues(alpha: 0.7),
-                colors.backgroundStart.withValues(alpha: 0.4),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.3, 0.7, 1.0],
-          ),
-        ),
+          color: AppColors.background,
         child: Center(
           child: Container(
             width: 200,
@@ -674,7 +587,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
               borderRadius: BorderRadius.circular(4),
               boxShadow: [
                 BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -1051,12 +964,43 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
               
               // Note: Race condition fix is working correctly - song playing without playlist context is properly handled
               
-              return SongItemWidget(
-                song: song,
-                isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
-                isPlaying: isPlaying,
-                onTap: () => _playSong(song),
-                index: index + 1,
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    // Song number with play indicator
+                    SizedBox(
+                      width: 24,
+                      child: isPlaying
+                          ? const Icon(
+                              Icons.volume_up,
+                              color: Colors.red,
+                              size: 16,
+                            )
+                          : Text(
+                              '${index + 1}',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Use SongItemWidget for consistency
+                    Expanded(
+                      child: SongItemWidget(
+                        song: song,
+                        isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
+                        isPlaying: isPlaying,
+                        onTap: () => _playSong(song),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           );

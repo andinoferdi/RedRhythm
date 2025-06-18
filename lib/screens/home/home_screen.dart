@@ -710,15 +710,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 
                 return Column(
                   children: [
-                    SongItemWidget(
-                      song: song,
-                      subtitle: 'Song • ${song.artist}',
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
-                      onTap: () {
-                        // Use playSongById to load complete song data without playlist context
-                        ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final playerState = ref.watch(playerControllerProvider);
+                        final isCurrentSong = playerState.currentSong?.id == song.id;
+                        final isPlaying = isCurrentSong && playerState.isPlaying;
                         
-                        // Color extraction will be handled automatically by mini_player when song changes
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              // Song number with play indicator
+                              SizedBox(
+                                width: 24,
+                                child: isPlaying
+                                    ? const Icon(
+                                        Icons.volume_up,
+                                        color: Colors.red,
+                                        size: 16,
+                                      )
+                                    : Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Use SongItemWidget for consistency
+                              Expanded(
+                                child: SongItemWidget(
+                                  song: song,
+                                  subtitle: 'Song • ${song.artist}',
+                                  contentPadding: EdgeInsets.zero,
+                                  isCurrentSong: isCurrentSong,
+                                  isPlaying: isPlaying,
+                                  onTap: () {
+                                    // Use playSongById to load complete song data without playlist context
+                                    ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
+                                    
+                                    // Color extraction will be handled automatically by mini_player when song changes
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                     if (index < playHistoryState.recentlyPlayed.length - 1)

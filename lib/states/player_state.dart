@@ -24,6 +24,7 @@ class PlayerState with _$PlayerState {
     @Default(false) bool shuffleMode,
     @Default(RepeatMode.off) RepeatMode repeatMode,
     String? currentPlaylistId,
+    String? currentArtistId,
   }) = _PlayerState;
 
   factory PlayerState.fromJson(Map<String, dynamic> json) => _$PlayerStateFromJson(json);

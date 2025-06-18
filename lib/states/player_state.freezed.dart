@@ -29,6 +29,7 @@ mixin _$PlayerState {
   bool get shuffleMode => throw _privateConstructorUsedError;
   RepeatMode get repeatMode => throw _privateConstructorUsedError;
   String? get currentPlaylistId => throw _privateConstructorUsedError;
+  String? get currentArtistId => throw _privateConstructorUsedError;
 
   /// Serializes this PlayerState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -55,7 +56,8 @@ abstract class $PlayerStateCopyWith<$Res> {
       bool isBuffering,
       bool shuffleMode,
       RepeatMode repeatMode,
-      String? currentPlaylistId});
+      String? currentPlaylistId,
+      String? currentArtistId});
 
   $SongCopyWith<$Res>? get currentSong;
 }
@@ -84,6 +86,7 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
     Object? shuffleMode = null,
     Object? repeatMode = null,
     Object? currentPlaylistId = freezed,
+    Object? currentArtistId = freezed,
   }) {
     return _then(_value.copyWith(
       currentSong: freezed == currentSong
@@ -122,6 +125,10 @@ class _$PlayerStateCopyWithImpl<$Res, $Val extends PlayerState>
           ? _value.currentPlaylistId
           : currentPlaylistId // ignore: cast_nullable_to_non_nullable
               as String?,
+      currentArtistId: freezed == currentArtistId
+          ? _value.currentArtistId
+          : currentArtistId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -157,7 +164,8 @@ abstract class _$$PlayerStateImplCopyWith<$Res>
       bool isBuffering,
       bool shuffleMode,
       RepeatMode repeatMode,
-      String? currentPlaylistId});
+      String? currentPlaylistId,
+      String? currentArtistId});
 
   @override
   $SongCopyWith<$Res>? get currentSong;
@@ -185,6 +193,7 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
     Object? shuffleMode = null,
     Object? repeatMode = null,
     Object? currentPlaylistId = freezed,
+    Object? currentArtistId = freezed,
   }) {
     return _then(_$PlayerStateImpl(
       currentSong: freezed == currentSong
@@ -223,6 +232,10 @@ class __$$PlayerStateImplCopyWithImpl<$Res>
           ? _value.currentPlaylistId
           : currentPlaylistId // ignore: cast_nullable_to_non_nullable
               as String?,
+      currentArtistId: freezed == currentArtistId
+          ? _value.currentArtistId
+          : currentArtistId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -239,7 +252,8 @@ class _$PlayerStateImpl implements _PlayerState {
       this.isBuffering = false,
       this.shuffleMode = false,
       this.repeatMode = RepeatMode.off,
-      this.currentPlaylistId})
+      this.currentPlaylistId,
+      this.currentArtistId})
       : _queue = queue;
 
   factory _$PlayerStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -276,10 +290,12 @@ class _$PlayerStateImpl implements _PlayerState {
   final RepeatMode repeatMode;
   @override
   final String? currentPlaylistId;
+  @override
+  final String? currentArtistId;
 
   @override
   String toString() {
-    return 'PlayerState(currentSong: $currentSong, queue: $queue, currentIndex: $currentIndex, currentPosition: $currentPosition, isPlaying: $isPlaying, isBuffering: $isBuffering, shuffleMode: $shuffleMode, repeatMode: $repeatMode, currentPlaylistId: $currentPlaylistId)';
+    return 'PlayerState(currentSong: $currentSong, queue: $queue, currentIndex: $currentIndex, currentPosition: $currentPosition, isPlaying: $isPlaying, isBuffering: $isBuffering, shuffleMode: $shuffleMode, repeatMode: $repeatMode, currentPlaylistId: $currentPlaylistId, currentArtistId: $currentArtistId)';
   }
 
   @override
@@ -303,7 +319,9 @@ class _$PlayerStateImpl implements _PlayerState {
             (identical(other.repeatMode, repeatMode) ||
                 other.repeatMode == repeatMode) &&
             (identical(other.currentPlaylistId, currentPlaylistId) ||
-                other.currentPlaylistId == currentPlaylistId));
+                other.currentPlaylistId == currentPlaylistId) &&
+            (identical(other.currentArtistId, currentArtistId) ||
+                other.currentArtistId == currentArtistId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -318,7 +336,8 @@ class _$PlayerStateImpl implements _PlayerState {
       isBuffering,
       shuffleMode,
       repeatMode,
-      currentPlaylistId);
+      currentPlaylistId,
+      currentArtistId);
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
@@ -346,7 +365,8 @@ abstract class _PlayerState implements PlayerState {
       final bool isBuffering,
       final bool shuffleMode,
       final RepeatMode repeatMode,
-      final String? currentPlaylistId}) = _$PlayerStateImpl;
+      final String? currentPlaylistId,
+      final String? currentArtistId}) = _$PlayerStateImpl;
 
   factory _PlayerState.fromJson(Map<String, dynamic> json) =
       _$PlayerStateImpl.fromJson;
@@ -369,6 +389,8 @@ abstract class _PlayerState implements PlayerState {
   RepeatMode get repeatMode;
   @override
   String? get currentPlaylistId;
+  @override
+  String? get currentArtistId;
 
   /// Create a copy of PlayerState
   /// with the given fields replaced by the non-null parameter values.
