@@ -40,6 +40,33 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     });
   }
 
+  Future<String> _getPlaylistCreatorName(RecordModel playlist) async {
+    try {
+      final creatorId = playlist.data['user_id'] as String?;
+      if (creatorId == null || creatorId.isEmpty) {
+        return 'Unknown User';
+      }
+
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      
+      final creatorUser = await pbService.pb.collection('users').getOne(creatorId);
+      
+      // Get the creator's name from the user record
+      final name = creatorUser.data['name'] as String?;
+      final username = creatorUser.data['username'] as String?;
+      
+      // Use 'name' field first, fallback to 'username', then 'Unknown User'
+      return name?.isNotEmpty == true 
+          ? name!
+          : (username?.isNotEmpty == true ? username! : 'Unknown User');
+          
+    } catch (e) {
+      // Return fallback name on error
+      return 'Unknown User';
+    }
+  }
+
   void _showAdminOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -434,16 +461,31 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    playlist.data['description']?.isNotEmpty == true
-                        ? playlist.data['description']
-                        : 'Playlist',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  FutureBuilder<String>(
+                    future: _getPlaylistCreatorName(playlist),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Text(
+                          'Playlist ${snapshot.data}',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      } else {
+                        return Text(
+                          'Playlist',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      }
+                    },
                   ),
                 ],
               ),

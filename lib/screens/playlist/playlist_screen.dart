@@ -644,6 +644,8 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
       expandedHeight: 300,
       pinned: true,
       backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent, // Remove surface tint
+      elevation: 0, // Remove elevation shadow
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
         onPressed: () => Navigator.pop(context),
@@ -859,7 +861,8 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              Flexible(
+              Expanded(
+                flex: 2, // Give more space to the play button
                 child: ElevatedButton.icon(
                   onPressed: _songs.isNotEmpty ? _playAllSongs : null,
                   icon: Icon(
@@ -867,6 +870,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                         ? Icons.pause 
                         : Icons.play_arrow, 
                     color: Colors.white,
+                    size: 20,
                   ),
                   label: Text(
                     isPlaylistPlaying && playerState.isPlaying ? 'Jeda' : 'Putar',
@@ -875,6 +879,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
+                    overflow: TextOverflow.visible, // Prevent text cutoff
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -882,11 +887,12 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    minimumSize: const Size(120, 48), // Ensure minimum size
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               IconButton(
                 onPressed: _toggleShuffle,
                 icon: Icon(
@@ -898,7 +904,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   padding: const EdgeInsets.all(12),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               IconButton(
                 onPressed: _navigateToAddSongs,
                 icon: const Icon(Icons.add, color: Colors.white),

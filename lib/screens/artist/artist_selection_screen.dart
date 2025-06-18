@@ -235,7 +235,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.9, // Increased from 0.8 to give more height
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -247,12 +247,13 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
         return GestureDetector(
           onTap: () => _toggleArtistSelection(artist.id),
           child: Column(
+            mainAxisSize: MainAxisSize.min, // Take only necessary space
             children: [
               Stack(
                 children: [
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 72, // Reduced from 80 to fit better
+                    height: 72, // Reduced from 80 to fit better
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: isSelected
@@ -261,13 +262,13 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                     ),
                     child: ClipOval(
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: 72,
+                        height: 72,
                         color: Colors.grey[800],
                         child: ImageHelpers.buildSafeNetworkImage(
                           imageUrl: artist.imageUrl,
-                          width: 80,
-                          height: 80,
+                          width: 72,
+                          height: 72,
                           fit: BoxFit.cover, // Cover untuk memenuhi lingkaran dengan minimal crop
                           fallbackWidget: _buildPlaceholderImage(artist.name),
                         ),
@@ -279,8 +280,8 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                       right: 0,
                       bottom: 0,
                       child: Container(
-                        width: 24,
-                        height: 24,
+                        width: 22,
+                        height: 22,
                         decoration: const BoxDecoration(
                           color: Colors.white,
                           shape: BoxShape.circle,
@@ -288,24 +289,26 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                         child: const Icon(
                           Icons.check,
                           color: Colors.black,
-                          size: 16,
+                          size: 14,
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                artist.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'DM Sans',
+              const SizedBox(height: 6), // Reduced from 8 to save space
+              Flexible( // Use Flexible to allow text to shrink if needed
+                child: Text(
+                  artist.name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12, // Reduced from 14 to fit better
+                    fontWeight: FontWeight.w500,
+                    fontFamily: 'DM Sans',
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -316,8 +319,8 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
 
   Widget _buildPlaceholderImage(String artistName) {
     return Container(
-      width: 80,
-      height: 80,
+      width: 72,
+      height: 72,
       decoration: BoxDecoration(
         color: Colors.grey[800],
         shape: BoxShape.circle,
@@ -327,7 +330,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
           artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 24,
+            fontSize: 20, // Reduced from 24 to match smaller image
             fontWeight: FontWeight.bold,
             fontFamily: 'DM Sans',
           ),
@@ -341,24 +344,27 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.9, // Match the main grid
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
       itemCount: 12,
       itemBuilder: (context, index) {
         return Column(
+          mainAxisSize: MainAxisSize.min, // Match the main grid
           children: [
             ShimmerImagePlaceholder(
-              width: 80,
-              height: 80,
-              borderRadius: BorderRadius.circular(40),
+              width: 72, // Match the new image size
+              height: 72, // Match the new image size
+              borderRadius: BorderRadius.circular(36), // Half of width/height
             ),
-            const SizedBox(height: 8),
-            ShimmerImagePlaceholder(
-              width: 60,
-              height: 12,
-              borderRadius: BorderRadius.circular(6),
+            const SizedBox(height: 6), // Match the reduced spacing
+            Flexible( // Match the main grid structure
+              child: ShimmerImagePlaceholder(
+                width: 60,
+                height: 10, // Slightly smaller to match new text size
+                borderRadius: BorderRadius.circular(5),
+              ),
             ),
           ],
         );
