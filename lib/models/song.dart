@@ -19,6 +19,7 @@ class Song with _$Song {
     String? playlistId,
     String? audioFileUrl,
     String? audioFileName,
+    @Default(0) int playCount, // Track how many times this song has been played
   }) = _Song;
 
   factory Song.fromJson(Map<String, dynamic> json) => _$SongFromJson(json);
@@ -123,6 +124,7 @@ class Song with _$Song {
       playlistId: record.data['playlist_id'] as String?,
       audioFileName: audioFileName,
       audioFileUrl: null, // URL akan dibuat di PlayerController
+      playCount: record.data['play_count'] as int? ?? 0, // Get play count from PocketBase
     );
   }
   
@@ -156,6 +158,17 @@ class Song with _$Song {
 /// Extension to convert duration in seconds to Duration
 extension DurationExt on Song {
   Duration get duration => Duration(seconds: durationInSeconds);
+  
+  /// Get formatted play count for display
+  String get formattedPlayCount {
+    if (playCount < 1000) {
+      return playCount.toString();
+    } else if (playCount < 1000000) {
+      return '${(playCount / 1000).toStringAsFixed(1)}K';
+    } else {
+      return '${(playCount / 1000000).toStringAsFixed(1)}M';
+    }
+  }
 }
 
 

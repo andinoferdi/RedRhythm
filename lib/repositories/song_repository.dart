@@ -186,6 +186,27 @@ class SongRepository {
       throw Exception('Failed to search songs: $e');
     }
   }
+
+  /// Increment play count for a song
+  Future<void> incrementPlayCount(String songId) async {
+    try {
+      // Get current play count
+      final record = await _pb.collection('songs').getOne(songId);
+      final currentPlayCount = record.data['play_count'] as int? ?? 0;
+      
+      // Increment and update
+      await _pb.collection('songs').update(songId, body: {
+        'play_count': currentPlayCount + 1,
+      });
+      
+      // Clear cache to ensure fresh data on next load
+      clearCache();
+      
+    } catch (e) {
+      // Don't throw error to avoid breaking song playback
+      // Just log the error for debugging
+    }
+  }
 }
 
 

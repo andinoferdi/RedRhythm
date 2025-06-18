@@ -17,6 +17,7 @@ _$SongImpl _$$SongImplFromJson(Map<String, dynamic> json) => _$SongImpl(
       playlistId: json['playlistId'] as String?,
       audioFileUrl: json['audioFileUrl'] as String?,
       audioFileName: json['audioFileName'] as String?,
+      playCount: (json['playCount'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
@@ -31,4 +32,5 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'playlistId': instance.playlistId,
       'audioFileUrl': instance.audioFileUrl,
       'audioFileName': instance.audioFileName,
+      'playCount': instance.playCount,
     };

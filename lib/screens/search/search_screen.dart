@@ -11,7 +11,11 @@ import '../../routes/app_router.dart';
 
 import '../../controllers/player_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/artist_controller.dart';
 import '../../providers/song_provider.dart';
+import '../../models/artist.dart';
+import '../../repositories/artist_repository.dart';
+import '../../services/pocketbase_service.dart';
 
 import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
@@ -32,16 +36,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final FocusNode _searchFocusNode = FocusNode();
   
   List<Song> _searchResults = [];
-  List<Song> _recentSearchedSongs = [];
+  List<Artist> _artistSearchResults = [];
+  List<dynamic> _recentSearches = []; // Changed to dynamic to support both songs and artists
   bool _isLoading = false;
   bool _hasSearched = false;
   String? _errorMessage;
   String? _currentUserId;
+  late ArtistRepository _artistRepository;
 
   @override
   void initState() {
     super.initState();
-    _loadRecentSearchedSongs();
+    _artistRepository = ArtistRepository(PocketBaseService());
+    _loadRecentSearches();
     _searchFocusNode.requestFocus();
     
     // Load songs using new provider
@@ -60,7 +67,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     
     if (_currentUserId != newUserId) {
       _currentUserId = newUserId;
-      _loadRecentSearchedSongs();
+      _loadRecentSearches();
     }
   }
 
@@ -73,50 +80,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
 
 
-  Future<void> _loadRecentSearchedSongs() async {
+  Future<void> _loadRecentSearches() async {
     final authState = ref.read(authControllerProvider);
-    List<Song> songs = [];
+    List<dynamic> searches = [];
     
     if (authState.isAuthenticated && authState.user != null) {
-      songs = await SearchHistoryUtils.getUserSearchHistory(authState.user!.id);
+      // Load both songs and artists from search history
+      final songs = await SearchHistoryUtils.getUserSearchHistory(authState.user!.id);
+      searches.addAll(songs);
+      // TODO: Add artist history loading when implemented
     }
     
     setState(() {
-      _recentSearchedSongs = songs;
+      _recentSearches = searches;
     });
   }
 
-  Future<void> _saveRecentSearchedSongs() async {
+  Future<void> _addToRecentSearches(dynamic item) async {
     final authState = ref.read(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
-      await SearchHistoryUtils.saveUserSearchHistory(authState.user!.id, _recentSearchedSongs);
+      if (item is Song) {
+        await SearchHistoryUtils.addSongToUserHistory(authState.user!.id, item);
+      }
+      // TODO: Add artist to history when implemented
+      await _loadRecentSearches();
     }
   }
 
-  Future<void> _addToRecentSearchedSongs(Song song) async {
+  Future<void> _removeFromRecentSearches(dynamic item) async {
     final authState = ref.read(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
-      await SearchHistoryUtils.addSongToUserHistory(authState.user!.id, song);
-      await _loadRecentSearchedSongs();
+      if (item is Song) {
+        await SearchHistoryUtils.removeSongFromUserHistory(authState.user!.id, item);
+      }
+      // TODO: Remove artist from history when implemented
+      await _loadRecentSearches();
     }
   }
 
-  Future<void> _removeFromRecentSearchedSongs(Song song) async {
-    final authState = ref.read(authControllerProvider);
-    if (authState.isAuthenticated && authState.user != null) {
-      await SearchHistoryUtils.removeSongFromUserHistory(authState.user!.id, song);
-      await _loadRecentSearchedSongs();
-    }
-  }
-
-  Future<void> _clearAllRecentSearchedSongs() async {
+  Future<void> _clearAllRecentSearches() async {
     final authState = ref.read(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
       await SearchHistoryUtils.clearUserSearchHistory(authState.user!.id);
     } else {
       await SearchHistoryUtils.clearGuestSearchHistory();
     }
-    await _loadRecentSearchedSongs();
+    await _loadRecentSearches();
   }
 
   Future<void> _performSearch(String query) async {
@@ -129,12 +138,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
 
     try {
-      // Use new song provider for local search (much faster)
+      // Search both songs and artists
       final songController = ref.read(songProvider.notifier);
-      final searchResults = songController.searchSongs(query);
+      final songResults = songController.searchSongs(query);
+      
+      final artistResults = await _artistRepository.searchArtists(query);
 
       setState(() {
-        _searchResults = searchResults;
+        _searchResults = songResults;
+        _artistSearchResults = artistResults;
         _isLoading = false;
       });
     } catch (e) {
@@ -146,12 +158,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _playSong(Song song, int index) {
-    // Add song to recent searched songs when played from search results
-    _addToRecentSearchedSongs(song);
+    // Add song to recent searches when played from search results
+    _addToRecentSearches(song);
     // Use playSongById to load complete song data without playlist context (like home screen)
     ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(song.id);
     
     // Color extraction will be handled automatically by mini_player when song changes
+  }
+
+  void _openArtistDetail(Artist artist) {
+    // Add artist to recent searches
+    _addToRecentSearches(artist);
+    // Navigate to artist detail screen
+    context.router.push(ArtistDetailRoute(
+      artistId: artist.id,
+      artistName: artist.name,
+    ));
   }
 
   void _playSongFromRecent(Song song) {
@@ -216,6 +238,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               _searchController.clear();
                               setState(() {
                                 _searchResults = [];
+                                _artistSearchResults = [];
                                 _hasSearched = false;
                               });
                             },
@@ -231,6 +254,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     } else {
                       setState(() {
                         _searchResults = [];
+                        _artistSearchResults = [];
                         _hasSearched = false;
                       });
                     }
@@ -260,7 +284,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       return _buildSearchResults();
     }
 
-    return _buildRecentSearchedSongs();
+          return _buildRecentSearches();
   }
 
   Widget _buildErrorState() {
@@ -311,17 +335,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    if (_searchResults.isEmpty) {
+    final hasResults = _searchResults.isNotEmpty || _artistSearchResults.isNotEmpty;
+    
+    if (!hasResults) {
       return _buildEmptyResults();
     }
 
-    return ListView.builder(
+    return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final song = _searchResults[index];
-        return _buildSongItem(song, index);
-      },
+      children: [
+        // Artist results section
+        if (_artistSearchResults.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'Artis',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ..._artistSearchResults.map((artist) => _buildArtistItem(artist)),
+          const SizedBox(height: 16),
+        ],
+        
+        // Song results section
+        if (_searchResults.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'Lagu',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          ..._searchResults.asMap().entries.map((entry) {
+            final index = entry.key;
+            final song = entry.value;
+            return _buildSongItem(song, index);
+          }),
+        ],
+      ],
     );
   }
 
@@ -360,8 +419,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildRecentSearchedSongs() {
-    if (_recentSearchedSongs.isEmpty) {
+  Widget _buildRecentSearches() {
+    if (_recentSearches.isEmpty) {
       return _buildEmptyHistory();
     }
 
@@ -382,7 +441,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
               TextButton(
-                onPressed: _clearAllRecentSearchedSongs,
+                onPressed: _clearAllRecentSearches,
                 child: const Text(
                   'Hapus semua',
                   style: TextStyle(color: Colors.grey),
@@ -394,10 +453,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _recentSearchedSongs.length,
+            itemCount: _recentSearches.length,
             itemBuilder: (context, index) {
-              final song = _recentSearchedSongs[index];
-              return _buildRecentSongItem(song);
+              final item = _recentSearches[index];
+              if (item is Song) {
+                return _buildRecentSongItem(item);
+              } else if (item is Artist) {
+                return _buildRecentArtistItem(item);
+              }
+              return const SizedBox.shrink();
             },
           ),
         ),
@@ -465,9 +529,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               else
                 const SizedBox(width: 20),
               const SizedBox(width: 8),
-              IconButton(
+                              IconButton(
                 icon: const Icon(Icons.close, color: Colors.grey),
-                onPressed: () => _removeFromRecentSearchedSongs(song),
+                onPressed: () => _removeFromRecentSearches(song),
               ),
             ],
           ),
@@ -566,6 +630,166 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         ),
         const SizedBox(height: 12),
       ],
+    );
+  }
+
+  Widget _buildArtistItem(Artist artist) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: () => _openArtistDetail(artist),
+        child: Row(
+          children: [
+            // Artist image
+            ClipOval(
+              child: Container(
+                width: 48,
+                height: 48,
+                color: Colors.grey[800],
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: artist.imageUrl,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'DM Sans',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Artist info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artist.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Artis',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontFamily: 'DM Sans',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentArtistItem(Artist artist) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          // Artist image
+          ClipOval(
+            child: Container(
+              width: 48,
+              height: 48,
+              color: Colors.grey[800],
+              child: ImageHelpers.buildSafeNetworkImage(
+                imageUrl: artist.imageUrl,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                fallbackWidget: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'DM Sans',
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Artist info
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _openArtistDetail(artist),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artist.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'Artis',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontFamily: 'DM Sans',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Remove button
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey),
+            onPressed: () => _removeFromRecentSearches(artist),
+          ),
+        ],
+      ),
     );
   }
 } 

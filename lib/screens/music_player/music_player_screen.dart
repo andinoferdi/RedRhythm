@@ -646,16 +646,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             right: 0,
             child: Container(
               height: MediaQuery.of(context).padding.top + 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.8),
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.transparent,
-                  ],
-                ),
+              decoration: const BoxDecoration(
+                color: Colors.transparent,
               ),
               child: SafeArea(
                 child: Padding(
@@ -665,22 +657,13 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Back button
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: Colors.white,
+                          size: 28,
                         ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                          onPressed: () => context.router.maybePop(),
-                          padding: EdgeInsets.zero,
-                        ),
+                        onPressed: () => context.router.maybePop(),
                       ),
 
                       // Now Playing text
@@ -695,24 +678,15 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       ),
 
                       // Three-dot menu button
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          shape: BoxShape.circle,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: Colors.white,
+                          size: 24,
                         ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.more_vert,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          onPressed: () {
-                            // TODO: Show menu options
-                          },
-                          padding: EdgeInsets.zero,
-                        ),
+                        onPressed: () {
+                          // TODO: Show menu options
+                        },
                       ),
                     ],
                   ),

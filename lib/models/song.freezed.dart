@@ -30,6 +30,7 @@ mixin _$Song {
   String? get playlistId => throw _privateConstructorUsedError;
   String? get audioFileUrl => throw _privateConstructorUsedError;
   String? get audioFileName => throw _privateConstructorUsedError;
+  int get playCount => throw _privateConstructorUsedError;
 
   /// Serializes this Song to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -55,7 +56,8 @@ abstract class $SongCopyWith<$Res> {
       String? lyrics,
       String? playlistId,
       String? audioFileUrl,
-      String? audioFileName});
+      String? audioFileName,
+      int playCount});
 }
 
 /// @nodoc
@@ -83,6 +85,7 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
     Object? audioFileName = freezed,
+    Object? playCount = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -125,6 +128,10 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
           ? _value.audioFileName
           : audioFileName // ignore: cast_nullable_to_non_nullable
               as String?,
+      playCount: null == playCount
+          ? _value.playCount
+          : playCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -146,7 +153,8 @@ abstract class _$$SongImplCopyWith<$Res> implements $SongCopyWith<$Res> {
       String? lyrics,
       String? playlistId,
       String? audioFileUrl,
-      String? audioFileName});
+      String? audioFileName,
+      int playCount});
 }
 
 /// @nodoc
@@ -171,6 +179,7 @@ class __$$SongImplCopyWithImpl<$Res>
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
     Object? audioFileName = freezed,
+    Object? playCount = null,
   }) {
     return _then(_$SongImpl(
       id: null == id
@@ -213,6 +222,10 @@ class __$$SongImplCopyWithImpl<$Res>
           ? _value.audioFileName
           : audioFileName // ignore: cast_nullable_to_non_nullable
               as String?,
+      playCount: null == playCount
+          ? _value.playCount
+          : playCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -230,7 +243,8 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       this.lyrics,
       this.playlistId,
       this.audioFileUrl,
-      this.audioFileName});
+      this.audioFileName,
+      this.playCount = 0});
 
   factory _$SongImpl.fromJson(Map<String, dynamic> json) =>
       _$$SongImplFromJson(json);
@@ -255,10 +269,13 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
   final String? audioFileUrl;
   @override
   final String? audioFileName;
+  @override
+  @JsonKey()
+  final int playCount;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName)';
+    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName, playCount: $playCount)';
   }
 
   @override
@@ -275,7 +292,8 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       ..add(DiagnosticsProperty('lyrics', lyrics))
       ..add(DiagnosticsProperty('playlistId', playlistId))
       ..add(DiagnosticsProperty('audioFileUrl', audioFileUrl))
-      ..add(DiagnosticsProperty('audioFileName', audioFileName));
+      ..add(DiagnosticsProperty('audioFileName', audioFileName))
+      ..add(DiagnosticsProperty('playCount', playCount));
   }
 
   @override
@@ -298,7 +316,9 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
             (identical(other.audioFileUrl, audioFileUrl) ||
                 other.audioFileUrl == audioFileUrl) &&
             (identical(other.audioFileName, audioFileName) ||
-                other.audioFileName == audioFileName));
+                other.audioFileName == audioFileName) &&
+            (identical(other.playCount, playCount) ||
+                other.playCount == playCount));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -314,7 +334,8 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       lyrics,
       playlistId,
       audioFileUrl,
-      audioFileName);
+      audioFileName,
+      playCount);
 
   /// Create a copy of Song
   /// with the given fields replaced by the non-null parameter values.
@@ -343,7 +364,8 @@ abstract class _Song implements Song {
       final String? lyrics,
       final String? playlistId,
       final String? audioFileUrl,
-      final String? audioFileName}) = _$SongImpl;
+      final String? audioFileName,
+      final int playCount}) = _$SongImpl;
 
   factory _Song.fromJson(Map<String, dynamic> json) = _$SongImpl.fromJson;
 
@@ -367,6 +389,8 @@ abstract class _Song implements Song {
   String? get audioFileUrl;
   @override
   String? get audioFileName;
+  @override
+  int get playCount;
 
   /// Create a copy of Song
   /// with the given fields replaced by the non-null parameter values.

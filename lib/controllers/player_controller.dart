@@ -25,10 +25,19 @@ class PlayerController extends StateNotifier<PlayerState> {
 
   // Simple skip protection - minimal blocking
   DateTime? _lastSkipTime;
-  static const Duration _minSkipInterval = Duration(milliseconds: 200);
+  static const Duration _minSkipInterval = Duration(milliseconds: 500);
 
   // Track player initialization state
   bool _isInitializing = false;
+
+  // Play count tracking
+  String? _currentPlayCountSongId;
+  DateTime? _playStartTime;
+  bool _playCountCounted = false;
+  Duration _accumulatedListeningTime = Duration.zero;
+  Duration _lastKnownPosition = Duration.zero;
+  static const Duration _minPlayDuration = Duration(seconds: 30); // Minimum 30 seconds
+  static const Duration _maxSeekJump = Duration(seconds: 10); // Max seek without reset
 
   PlayerController(this.ref) : super(PlayerState.initial()) {
     _initializeAudioPlayer();
@@ -82,6 +91,24 @@ class PlayerController extends StateNotifier<PlayerState> {
           isBuffering: false,
         );
 
+        // Reset play count timing when playback actually starts
+        if (isPlaying && state.currentSong != null && _playStartTime == null) {
+          _playStartTime = DateTime.now();
+          _playCountCounted = false;
+          _lastKnownPosition = _audioPlayer.position;
+        }
+        
+        // Reset timing when paused to avoid counting pause time
+        if (!isPlaying && _playStartTime != null && !_playCountCounted) {
+          // Add any remaining time before pause
+          final now = DateTime.now();
+          final timeSinceLastCheck = now.difference(_playStartTime!);
+          if (timeSinceLastCheck <= Duration(seconds: 2)) {
+            _accumulatedListeningTime += timeSinceLastCheck;
+          }
+          _playStartTime = null;
+        }
+
         if (processingState == ProcessingState.completed) {
           _handleSongCompletion();
         }
@@ -114,8 +141,70 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       final position = _audioPlayer.position;
       state = state.copyWith(currentPosition: position);
+      
+      // Check if we should increment play count
+      _checkPlayCountConditions(position);
     } catch (e) {
       // Ignore position update errors
+    }
+  }
+
+  /// Check if conditions are met to increment play count
+  void _checkPlayCountConditions(Duration currentPosition) {
+    if (_isDisposed || state.currentSong == null) return;
+    
+    final currentSong = state.currentSong!;
+    final songId = currentSong.id;
+    
+    // Reset if different song
+    if (_currentPlayCountSongId != songId) {
+      _currentPlayCountSongId = songId;
+      _playStartTime = DateTime.now();
+      _playCountCounted = false;
+      _accumulatedListeningTime = Duration.zero;
+      _lastKnownPosition = currentPosition;
+      return;
+    }
+    
+    // Skip if already counted for this song
+    if (_playCountCounted || _playStartTime == null) return;
+    
+    // Check for major seek/jump
+    final positionDiff = (currentPosition - _lastKnownPosition).abs();
+    if (positionDiff > _maxSeekJump) {
+      // Major seek detected - reset timing but keep accumulated time
+      _playStartTime = DateTime.now();
+      _lastKnownPosition = currentPosition;
+      return;
+    }
+    
+    // Calculate listening time since last check
+    final now = DateTime.now();
+    final timeSinceLastCheck = now.difference(_playStartTime!);
+    
+    // Only add time if it's reasonable (not too long, indicating pause/background)
+    if (timeSinceLastCheck <= Duration(seconds: 2)) {
+      _accumulatedListeningTime += timeSinceLastCheck;
+    }
+    
+    // Update tracking variables
+    _playStartTime = now;
+    _lastKnownPosition = currentPosition;
+    
+    // Check if we've accumulated enough listening time
+    final songDuration = currentSong.duration;
+    
+    // Count as play if:
+    // 1. Accumulated listening time >= 30 seconds, OR
+    // 2. Accumulated listening time >= 25% of song duration (for very short songs)
+    final minDurationForSong = Duration(milliseconds: (songDuration.inMilliseconds * 0.25).round());
+    final effectiveMinDuration = minDurationForSong < _minPlayDuration 
+        ? minDurationForSong 
+        : _minPlayDuration;
+    
+    if (_accumulatedListeningTime >= effectiveMinDuration) {
+      _playCountCounted = true;
+      _incrementPlayCount(songId);
     }
   }
 
@@ -139,6 +228,19 @@ class PlayerController extends StateNotifier<PlayerState> {
       });
     } catch (e) {
       debugPrint('Error updating song duration in database: $e');
+    }
+  }
+
+  /// Increment play count for a song
+  Future<void> _incrementPlayCount(String songId) async {
+    try {
+      final songRepository = GetIt.instance<SongRepository>();
+      await songRepository.incrementPlayCount(songId);
+      
+      debugPrint('Successfully incremented play count for song $songId');
+    } catch (e) {
+      debugPrint('Error incrementing play count for song $songId: $e');
+      // Don't throw error to avoid breaking song playback
     }
   }
 
@@ -203,6 +305,13 @@ class PlayerController extends StateNotifier<PlayerState> {
         currentSong: song,
       );
 
+      // Reset play count tracking for new song
+      _currentPlayCountSongId = song.id;
+      _playStartTime = DateTime.now();
+      _playCountCounted = false;
+      _accumulatedListeningTime = Duration.zero;
+      _lastKnownPosition = Duration.zero;
+
       // Get audio URL
       final audioUrl = await _getSongAudioUrl(song);
 
@@ -232,6 +341,8 @@ class PlayerController extends StateNotifier<PlayerState> {
 
       // Add to play history
       _addToPlayHistory(song.id);
+      
+      // Play count will be handled by _checkPlayCountConditions based on play time
     } catch (e) {
       debugPrint('Error playing song "${song.title}": $e');
 
@@ -397,10 +508,38 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
 
     try {
+      // Handle play count tracking for manual seek
+      if (_playStartTime != null && !_playCountCounted && state.currentSong != null) {
+        final seekDiff = (position - _lastKnownPosition).abs();
+        final songDuration = state.currentSong!.duration;
+        
+        // Check for extreme seeks (to very end or very beginning)
+        final isSeekToEnd = position >= songDuration - Duration(seconds: 5);
+        final isSeekToBeginning = position <= Duration(seconds: 5);
+        
+        if (seekDiff > _maxSeekJump || isSeekToEnd || isSeekToBeginning) {
+          // Major seek - add accumulated time before seek, then reset
+          final now = DateTime.now();
+          final timeSinceLastCheck = now.difference(_playStartTime!);
+          if (timeSinceLastCheck <= Duration(seconds: 2)) {
+            _accumulatedListeningTime += timeSinceLastCheck;
+          }
+          
+          // Reset timing for new position
+          _playStartTime = DateTime.now();
+          _lastKnownPosition = position;
+          
+          // If seeking to very end, don't restart timing
+          if (isSeekToEnd) {
+            _playStartTime = null;
+          }
+        }
+      }
+      
       await _audioPlayer.seek(position);
       state = state.copyWith(currentPosition: position);
     } catch (e) {
-      debugPrint('Error seeking to position: $e');
+      // Ignore seek errors
     }
   }
 
