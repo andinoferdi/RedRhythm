@@ -10,6 +10,7 @@ import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
 import '../../widgets/genre_card.dart';
+import '../../widgets/spotify_search_bar.dart';
 
 @RoutePage()
 class ExploreScreen extends ConsumerWidget {
@@ -114,40 +115,13 @@ class ExploreScreen extends ConsumerWidget {
   }
 
   Widget _buildSearchBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: GestureDetector(
-        onTap: () {
-          // Navigate to search screen
-          context.router.push(const SearchRoute());
-        },
-        child: Container(
-          height: 50,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(25),
-            border: Border.all(color: AppColors.greyDark, width: 1),
-          ),
-          child: Row(
-            children: [
-              const SizedBox(width: 16),
-              Icon(
-                Icons.search,
-                color: AppColors.greyLight,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Songs, Artists, Podcasts & More',
-                style: TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return SpotifySearchBar(
+      hintText: 'Apa yang ingin kamu dengarkan?',
+      readOnly: true,
+      onTap: () {
+        // Navigate to search screen
+        context.router.push(const SearchRoute());
+      },
     );
   }
 

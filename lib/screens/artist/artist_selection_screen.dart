@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../widgets/shimmer_widget.dart';
 import '../../utils/image_helpers.dart';
 import '../../providers/artist_select_provider.dart';
+import '../../widgets/spotify_search_bar.dart';
 
 @RoutePage()
 class ArtistSelectionScreen extends ConsumerStatefulWidget {
@@ -151,37 +152,10 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                   const SizedBox(height: 16),
                   
                   // Search Bar
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF333333),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _onSearchChanged,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'DM Sans',
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Cari',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 16,
-                          fontFamily: 'DM Sans',
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: Colors.grey[400],
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                      ),
-                    ),
+                  SpotifySearchBar(
+                    controller: _searchController,
+                    hintText: 'Cari artis...',
+                    onChanged: _onSearchChanged,
                   ),
                 ],
               ),

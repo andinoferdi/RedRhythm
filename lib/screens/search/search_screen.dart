@@ -20,6 +20,7 @@ import '../../widgets/mini_player.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../widgets/animated_sound_bars.dart';
+import '../../widgets/spotify_search_bar.dart';
 
 
 @RoutePage()
@@ -201,7 +202,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildSearchHeader() {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Row(
           children: [
             IconButton(
@@ -209,49 +210,37 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               onPressed: () => context.router.maybePop(),
             ),
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocusNode,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: 'Cari lagu, artis, atau album',
-                    hintStyle: TextStyle(color: Colors.grey[400]),
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchResults = [];
-                                _artistSearchResults = [];
-                                _hasSearched = false;
-                              });
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) {
-                    setState(() {});
-                    if (value.trim().isNotEmpty) {
-                      _performSearch(value);
-                    } else {
-                      setState(() {
-                        _searchResults = [];
-                        _artistSearchResults = [];
-                        _hasSearched = false;
-                      });
-                    }
-                  },
-                  onSubmitted: _performSearch,
-                ),
+              child: SpotifySearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                hintText: 'Apa yang ingin kamu dengarkan?',
+                autoFocus: true,
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.grey),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchResults = [];
+                            _artistSearchResults = [];
+                            _hasSearched = false;
+                          });
+                        },
+                      )
+                    : null,
+                onChanged: (value) {
+                  setState(() {});
+                  if (value.trim().isNotEmpty) {
+                    _performSearch(value);
+                  } else {
+                    setState(() {
+                      _searchResults = [];
+                      _artistSearchResults = [];
+                      _hasSearched = false;
+                    });
+                  }
+                },
+                onSubmitted: _performSearch,
               ),
             ),
           ],

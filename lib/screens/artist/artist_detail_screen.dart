@@ -13,15 +13,18 @@ import '../../providers/artist_select_provider.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/shimmer_widget.dart';
+import '../../widgets/custom_bottom_nav.dart';
 
 @RoutePage()
 class ArtistDetailScreen extends ConsumerStatefulWidget {
   final String artistId;
   final String? artistName;
+  final int? sourceTabIndex; // 0: Home, 1: Explore, 2: Library
 
   const ArtistDetailScreen({
     required this.artistId,
     this.artistName,
+    this.sourceTabIndex,
     super.key,
   });
 
@@ -60,6 +63,49 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Determine current tab index based on source or navigation stack
+  int _determineCurrentTabIndex() {
+    // If sourceTabIndex is provided, use it
+    if (widget.sourceTabIndex != null) {
+      return widget.sourceTabIndex!;
+    }
+    
+    // Try to determine from route stack
+    final router = context.router;
+    final routeStack = router.stack;
+    
+    // Look for the previous route in the stack
+    if (routeStack.length > 1) {
+      final previousRoute = routeStack[routeStack.length - 2];
+      final routeName = previousRoute.name;
+      
+      switch (routeName) {
+        case 'HomeRoute':
+          return 0;
+        case 'ExploreRoute':
+          return 1;
+        case 'LibraryRoute':
+          return 2;
+        default:
+          // For nested routes or unknown routes, try to find the root
+          for (int i = routeStack.length - 2; i >= 0; i--) {
+            final route = routeStack[i];
+            switch (route.name) {
+              case 'HomeRoute':
+                return 0;
+              case 'ExploreRoute':
+                return 1;
+              case 'LibraryRoute':
+                return 2;
+            }
+          }
+      }
+    }
+    
+    // Default to Home if unable to determine
+    return 0;
   }
 
   Future<void> _loadData() async {
@@ -334,6 +380,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(playerControllerProvider);
+    
+    // Calculate bottom padding for mini player and bottom nav
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212), // Spotify dark background
@@ -348,6 +397,10 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
               child: MiniPlayer(),
             ),
         ],
+      ),
+      bottomNavigationBar: CustomBottomNav(
+        currentIndex: _determineCurrentTabIndex(),
+        bottomPadding: bottomPadding,
       ),
     );
   }
@@ -374,8 +427,8 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
         SliverToBoxAdapter(
           child: SizedBox(
             height: ref.watch(playerControllerProvider).currentSong != null
-                ? 80
-                : 20,
+                ? 160 // 80 (mini player) + 80 (bottom nav)
+                : 100, // 20 (base) + 80 (bottom nav)
           ),
         ),
       ],
