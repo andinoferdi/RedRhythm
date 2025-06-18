@@ -43,53 +43,88 @@ class SongItemWidget extends ConsumerWidget {
             ? false 
             : (isPlaying ?? (actualIsCurrentSong && playerState.isPlaying));
 
-        return ListTile(
-          contentPadding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: ImageHelpers.buildSafeNetworkImage(
-            imageUrl: song.albumArtUrl,
-            width: 48,
-            height: 48,
-            fit: BoxFit.cover,
-            borderRadius: BorderRadius.circular(4),
-            fallbackWidget: Container(
-              width: 48,
-              height: 48,
-              color: Colors.grey[800],
-              child: const Icon(Icons.music_note, color: Colors.white),
-            ),
-          ),
-          title: Text(
-            song.title,
-            style: TextStyle(
-              color: actualIsCurrentSong ? Colors.red : Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          subtitle: Text(
-            subtitle ?? (song.artist.isNotEmpty ? song.artist : 'Unknown Artist'),
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: trailing ?? (actualIsPlaying
-              ? const AnimatedSoundBars(
-                  color: Colors.red,
-                  size: 20.0,
-                  isAnimating: true,
-                )
-              : null),
+        return GestureDetector(
           onTap: isDisabled 
               ? null // Completely disable tap if isDisabled is true
               : (onTap ?? () {
                   // Reduced debug logging for better performance
                   ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
                 }),
+          child: Container(
+            padding: contentPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.transparent,
+            child: Row(
+              children: [
+                // Album art
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: ImageHelpers.buildSafeNetworkImage(
+                    imageUrl: song.albumArtUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    fallbackWidget: Container(
+                      width: 48,
+                      height: 48,
+                      color: Colors.grey[800],
+                      child: const Icon(
+                        Icons.music_note, 
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Song info section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        song.title,
+                        style: TextStyle(
+                          color: actualIsCurrentSong ? Colors.red : Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          fontFamily: 'DM Sans',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle ?? (song.artist.isNotEmpty ? song.artist : 'Unknown Artist'),
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                          fontFamily: 'DM Sans',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Trailing section
+                if (trailing != null || actualIsPlaying)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: trailing ?? (actualIsPlaying
+                        ? const AnimatedSoundBars(
+                            color: Colors.red,
+                            size: 20.0,
+                            isAnimating: true,
+                          )
+                        : null),
+                  ),
+              ],
+            ),
+          ),
         );
       },
     );

@@ -221,11 +221,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        color: Colors.transparent,
         child: Row(
           children: [
             Icon(
@@ -433,12 +433,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       onTap: () => _navigateToPlaylistDetail(playlist),
       onLongPress: () => _showDeleteBottomSheet(playlist),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        color: Colors.transparent,
         child: Row(
           children: [
             PlaylistImageWidget(
@@ -507,12 +503,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       },
       onLongPress: () => _showArtistOptionsBottomSheet(artistSelect),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        color: Colors.transparent,
         child: Row(
           children: [
             // Artist Image - Using ImageHelpers like in artist_selection_screen
@@ -826,7 +818,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.zero,
       itemCount: allItems.length,
       itemBuilder: (context, index) {
         final item = allItems[index];

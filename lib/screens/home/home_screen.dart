@@ -189,9 +189,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       // Use resizeToAvoidBottomInset: false to prevent keyboard from pushing up content
       resizeToAvoidBottomInset: false,
       body: SafeArea(
-        // We'll handle bottom padding ourselves
+        // Ensure proper SafeArea handling for status bar
+        top: true,
         bottom: false,
-                  child: Column(
+        child: Container(
+          // Ensure consistent background color
+          color: AppColors.surfaceDark,
+          child: Column(
             children: [
               Expanded(
                 child: RefreshIndicator(
@@ -218,9 +222,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   ),
                 ),
               ),
-            // Mini Player
-            const MiniPlayer(),
-          ],
+              // Mini Player
+              const MiniPlayer(),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNav(
@@ -274,26 +279,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     context.router.push(const StatsRoute());
                   },
                   child: const Icon(Icons.stacked_line_chart,
-                      color: Colors.white, size: 28), // Match icon size
+                      color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 16),
-                Stack(
-                  children: [
-                    const Icon(Icons.notifications_outlined,
-                        color: Colors.white, size: 28), // Match icon size
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
+                GestureDetector(
+                  onTap: () {
+                    // TODO: Handle notifications
+                  },
+                  child: Stack(
+                    children: [
+                      const Icon(Icons.notifications_outlined,
+                          color: Colors.white, size: 28),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(width: 16),
                 GestureDetector(
@@ -301,7 +311,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     _showProfileMenu(context);
                   },
                   child: const Icon(Icons.settings_outlined,
-                      color: Colors.white, size: 28), // Match icon size
+                      color: Colors.white, size: 28),
                 ),
               ],
             ),
