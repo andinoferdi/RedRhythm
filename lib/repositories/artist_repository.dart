@@ -1,3 +1,4 @@
+
 import '../models/artist.dart';
 import '../services/pocketbase_service.dart';
 import 'dart:io';
@@ -33,7 +34,6 @@ class ArtistRepository {
       
       return Artist.fromRecord(record, pb);
     } catch (e) {
-      print('Error creating artist: $e');
       return null;
     }
   }
@@ -56,7 +56,6 @@ class ArtistRepository {
       
       return null;
     } catch (e) {
-      print('Error getting artist by name: $e');
       return null;
     }
   }
@@ -68,7 +67,6 @@ class ArtistRepository {
       final record = await pb.collection('artists').getOne(artistId);
       return Artist.fromRecord(record, pb);
     } catch (e) {
-      print('Error getting artist by ID: $e');
       return null;
     }
   }
@@ -83,7 +81,6 @@ class ArtistRepository {
       
       return records.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-      print('Error getting all artists: $e');
       return [];
     }
   }
@@ -101,7 +98,6 @@ class ArtistRepository {
       
       return records.items.map((record) => Artist.fromRecord(record, pb)).toList();
     } catch (e) {
-      print('Error searching artists: $e');
       return [];
     }
   }
@@ -127,7 +123,6 @@ class ArtistRepository {
       final record = await pb.collection('artists').update(artistId, body: data);
       return Artist.fromRecord(record, pb);
     } catch (e) {
-      print('Error updating artist: $e');
       return null;
     }
   }
@@ -139,7 +134,6 @@ class ArtistRepository {
       await pb.collection('artists').delete(artistId);
       return true;
     } catch (e) {
-      print('Error deleting artist: $e');
       return false;
     }
   }

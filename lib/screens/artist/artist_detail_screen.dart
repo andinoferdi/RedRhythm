@@ -6,7 +6,7 @@ import '../../models/song.dart';
 import '../../repositories/artist_repository.dart';
 import '../../repositories/song_repository.dart';
 import '../../services/pocketbase_service.dart';
-import '../../utils/app_colors.dart';
+
 import '../../utils/image_helpers.dart';
 import '../../controllers/player_controller.dart';
 import '../../providers/artist_select_provider.dart';
@@ -40,7 +40,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   bool _isLoadingSongs = true;
   String? _errorMessage;
   bool _isFollowing = false;
-  String _selectedTab = 'Musik';
+
 
   @override
   void initState() {
@@ -100,6 +100,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
         } else {
           songs = await _songRepository.getSongsByArtistName(artist.name);
         }
+
+        // Sort songs by play_count (highest to lowest) for popularity order
+        songs.sort((a, b) => b.playCount.compareTo(a.playCount));
 
         setState(() {
           _songs = songs;
@@ -210,38 +213,117 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   void _playSong(Song song) {
     if (_songs.isEmpty) return;
     
-    final songIndex = _songs.indexWhere((s) => s.id == song.id);
-    if (songIndex == -1) return;
-    
-    // Play queue from artist context - exactly like playlist
+    final playerState = ref.read(playerControllerProvider);
+    List<Song> playQueue;
+    int startIndex;
+
+    if (playerState.shuffleMode) {
+      // Create shuffled queue with selected song at index 0
+      playQueue = List.from(_songs);
+      playQueue.shuffle();
+      
+      // Move selected song to first position
+      playQueue.removeWhere((s) => s.id == song.id);
+      playQueue.insert(0, song);
+      startIndex = 0;
+    } else {
+      // Use original order (already sorted by popularity)
+      playQueue = List.from(_songs);
+      startIndex = _songs.indexOf(song);
+    }
+
     ref.read(playerControllerProvider.notifier).playQueueFromArtist(
-      _songs,
-      songIndex,
-      _artist!.id, // Use artist ID as context
+      playQueue,
+      startIndex,
+      _artist!.id,
     );
   }
 
   void _playAllSongs() {
     if (_songs.isEmpty) return;
     
-    // Play first song from artist context
-    ref.read(playerControllerProvider.notifier).playQueueFromArtist(
-      _songs,
-      0,
-      _artist!.id,
-    );
+    final playerState = ref.read(playerControllerProvider);
+    final currentArtistId = playerState.currentArtistId;
+    
+    // If currently playing from this artist, pause/resume
+    if (currentArtistId == _artist?.id) {
+      if (playerState.isPlaying) {
+        // Pause current playback
+        ref.read(playerControllerProvider.notifier).pause();
+      } else {
+        // Resume current playback
+        ref.read(playerControllerProvider.notifier).resume();
+      }
+    } else {
+      // Prepare queue based on shuffle setting
+      List<Song> playQueue;
+      int startIndex;
+
+      if (playerState.shuffleMode) {
+        // Create shuffled queue
+        playQueue = List.from(_songs);
+        playQueue.shuffle();
+        startIndex = 0;
+      } else {
+        // Use original order (sorted by popularity)
+        playQueue = List.from(_songs);
+        startIndex = 0;
+      }
+
+      // Start playing with prepared queue
+      ref.read(playerControllerProvider.notifier).playQueueFromArtist(
+        playQueue,
+        startIndex,
+        _artist!.id,
+      );
+    }
   }
 
-  void _shuffleAllSongs() {
-    if (_songs.isEmpty) return;
+  /// Toggle shuffle mode
+  void _toggleShuffle() {
+    final playerState = ref.read(playerControllerProvider);
     
-    // Shuffle and play from artist context
-    final shuffledSongs = List<Song>.from(_songs)..shuffle();
-    ref.read(playerControllerProvider.notifier).playQueueFromArtist(
-      shuffledSongs,
-      0,
-      _artist!.id,
-    );
+    // Only allow shuffle toggle if playing from this artist or no artist context
+    if (playerState.currentArtistId == null || playerState.currentArtistId == _artist?.id) {
+      ref.read(playerControllerProvider.notifier).toggleShuffle();
+      
+      // If currently playing from this artist, update the queue accordingly
+      if (playerState.currentArtistId == _artist?.id && playerState.currentSong != null) {
+        _updateShuffleForCurrentPlayback();
+      }
+    }
+  }
+
+  /// Update shuffle for current playback
+  void _updateShuffleForCurrentPlayback() {
+    final playerState = ref.read(playerControllerProvider);
+    final currentSong = playerState.currentSong;
+    if (currentSong == null) return;
+
+    // Find current song index in original list
+    final currentIndex = _songs.indexWhere((song) => song.id == currentSong.id);
+    if (currentIndex == -1) return;
+
+    List<Song> newQueue;
+    int newIndex;
+
+    if (playerState.shuffleMode) {
+      // Create shuffled queue with current song at index 0
+      newQueue = List.from(_songs);
+      newQueue.shuffle();
+      
+      // Move current song to first position
+      newQueue.removeWhere((song) => song.id == currentSong.id);
+      newQueue.insert(0, currentSong);
+      newIndex = 0;
+    } else {
+      // Restore original order (sorted by popularity)
+      newQueue = List.from(_songs);
+      newIndex = currentIndex;
+    }
+
+    // Update player queue
+    ref.read(playerControllerProvider.notifier).updateQueue(newQueue, newIndex);
   }
 
   @override
@@ -283,8 +365,6 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       slivers: [
         _buildArtistHeader(),
         SliverToBoxAdapter(child: _buildArtistActions()),
-        SliverToBoxAdapter(child: _buildNewReleaseSection()),
-        SliverToBoxAdapter(child: _buildTabNavigation()),
         SliverToBoxAdapter(child: _buildPopularSongsSection()),
         SliverToBoxAdapter(
           child: SizedBox(
@@ -341,8 +421,8 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
+                                          Colors.black.withValues(alpha: 0.3),
+                      Colors.black.withValues(alpha: 0.7),
                     const Color(0xFF121212),
                   ],
                   stops: const [0.0, 0.4, 0.8, 1.0],
@@ -360,17 +440,17 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.router.pop(),
+                      onPressed: () => context.router.maybePop(),
                     ),
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
+                      color: Colors.black.withValues(alpha: 0.4),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -404,7 +484,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   Text(
                     '9,2 jt pendengar bulanan',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 14,
                     ),
                   ),
@@ -432,11 +512,11 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
               return Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -476,14 +556,19 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             builder: (context, ref, child) {
               final playerState = ref.watch(playerControllerProvider);
               final isPlayingFromThisArtist = playerState.currentArtistId == _artist?.id;
-              final hasShuffleMode = isPlayingFromThisArtist && playerState.shuffleMode;
+              
+              // Only show shuffle as active if playing from this artist AND shuffle is on
+              final showShuffleActive = isPlayingFromThisArtist && playerState.shuffleMode;
               
               return IconButton(
-                onPressed: _songs.isNotEmpty ? _shuffleAllSongs : null,
+                onPressed: _toggleShuffle,
                 icon: Icon(
                   Icons.shuffle, 
-                  color: hasShuffleMode ? Colors.red : Colors.white, 
-                  size: 28
+                  color: showShuffleActive ? Colors.red : Colors.white,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: showShuffleActive ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
+                  padding: const EdgeInsets.all(12),
                 ),
               );
             },
@@ -492,115 +577,36 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           const SizedBox(width: 8),
 
           // Play button
-          Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1DB954), // Spotify green
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              onPressed: _playAllSongs,
-              icon: const Icon(
-                Icons.play_arrow,
-                color: Colors.black,
-                size: 32,
-              ),
-            ),
+          Consumer(
+            builder: (context, ref, child) {
+              final playerState = ref.watch(playerControllerProvider);
+              final isPlayingFromThisArtist = playerState.currentArtistId == _artist?.id;
+              final isPlaying = isPlayingFromThisArtist && playerState.isPlaying;
+              
+              return Container(
+                decoration: const BoxDecoration(
+                  color: Colors.red, // Red color like playlist
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  onPressed: _playAllSongs,
+                  icon: Icon(
+                    isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNewReleaseSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF282828),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF6B6B), Color(0xFF4ECDC4)],
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Center(
-                child: Text(
-                  '🎵',
-                  style: TextStyle(fontSize: 20),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Dengarkan rilis baru',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildTabNavigation() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Row(
-        children: ['Musik', 'Clips', 'Event'].map((tab) {
-          final isSelected = _selectedTab == tab;
-          return Padding(
-            padding: const EdgeInsets.only(right: 32),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedTab = tab;
-                });
-              },
-              child: Column(
-                children: [
-                  Text(
-                    tab,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey,
-                      fontSize: 16,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 2,
-                    width: 20,
-                    color: isSelected
-                        ? const Color(0xFF1DB954)
-                        : Colors.transparent,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+
+
 
   Widget _buildPopularSongsSection() {
     return Padding(
@@ -898,7 +904,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.router.pop(),
+              onPressed: () => context.router.maybePop(),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1DB954),
                 padding:

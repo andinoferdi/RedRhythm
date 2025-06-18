@@ -7,6 +7,8 @@ import 'services/pocketbase_service.dart';
 import 'core/di/service_locator.dart';
 import 'controllers/auth_controller.dart';
 import 'utils/theme.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
 
 // Global navigator key for accessing the navigator from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -15,29 +17,52 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final appRouter = AppRouter(navigatorKey: navigatorKey);
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  // Setup dependency injection
-  await setupServiceLocator();
-  
-  // Initialize PocketBase connection (this will also restore saved auth)
-  await GetIt.I<PocketBaseService>().initialize();
-  
-  // Auto-update song durations on app startup (optional)
-  // _autoUpdateDurationsOnStartup();
-  
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  // Handle async errors that are not caught by Flutter
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    
+    // Set up global error handling to prevent crashes
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.dumpErrorToConsole(details);
+      // Log error but don't crash the app
+      debugPrint('Flutter Error: ${details.exception}');
+      debugPrint('Stack trace: ${details.stack}');
+    };
+
+    // Handle errors outside of Flutter framework
+    ui.PlatformDispatcher.instance.onError = (error, stack) {
+      debugPrint('Platform Error: $error');
+      debugPrint('Stack trace: $stack');
+      return true; // Indicate that the error was handled
+    };
+    
+    // Setup dependency injection
+    await setupServiceLocator();
+    
+    // Initialize PocketBase connection (this will also restore saved auth)
+    await GetIt.I<PocketBaseService>().initialize();
+    
+    // Auto-update song durations on app startup (optional)
+    // _autoUpdateDurationsOnStartup();
+    
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+    
+    runApp(
+      const ProviderScope(
+        child: MyApp(),
+      ),
+    );
+  }, (error, stack) {
+    // Handle any async errors that escape the app
+    debugPrint('Async Error: $error');
+    debugPrint('Stack trace: $stack');
+  });
 }
 
 class MyApp extends ConsumerStatefulWidget {

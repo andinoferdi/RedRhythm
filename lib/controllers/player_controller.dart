@@ -1,34 +1,33 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:just_audio/just_audio.dart' hide PlayerState;
+import 'package:just_audio/just_audio.dart' as just_audio;
 import 'package:get_it/get_it.dart';
 import '../../models/song.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/song_repository.dart';
-import '../states/player_state.dart';
+import '../states/player_state.dart' as app_state;
 import 'play_history_controller.dart';
 
 /// Provider for player controller
 final playerControllerProvider =
-    StateNotifierProvider<PlayerController, PlayerState>(
+    StateNotifierProvider<PlayerController, app_state.PlayerState>(
   (ref) => PlayerController(ref),
 );
 
 /// Controller for handling music playback
-class PlayerController extends StateNotifier<PlayerState> {
-  late final AudioPlayer _audioPlayer;
+class PlayerController extends StateNotifier<app_state.PlayerState> {
+  final just_audio.AudioPlayer _audioPlayer = just_audio.AudioPlayer();
   final Ref ref;
+  
+  // Stream subscriptions for proper disposal
+  StreamSubscription<just_audio.PlayerState>? _playerStateSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
+  
   Timer? _positionTimer;
-  String? _currentAudioUrl;
   bool _isDisposed = false;
-
-  // Simple skip protection - minimal blocking
-  DateTime? _lastSkipTime;
-  static const Duration _minSkipInterval = Duration(milliseconds: 500);
-
-  // Track player initialization state
-  bool _isInitializing = false;
+  final bool _isInitializing = false;
 
   // Play count tracking
   String? _currentPlayCountSongId;
@@ -36,97 +35,105 @@ class PlayerController extends StateNotifier<PlayerState> {
   bool _playCountCounted = false;
   Duration _accumulatedListeningTime = Duration.zero;
   Duration _lastKnownPosition = Duration.zero;
-  static const Duration _minPlayDuration = Duration(seconds: 30); // Minimum 30 seconds
-  static const Duration _maxSeekJump = Duration(seconds: 10); // Max seek without reset
+  
+  // Constants for play count logic
+  static const Duration _minPlayDuration = Duration(seconds: 30);
+  static const Duration _maxSeekJump = Duration(seconds: 10);
+  
+  // Skip protection
+  DateTime? _lastSkipTime;
+  static const Duration _minSkipInterval = Duration(milliseconds: 200);
 
-  PlayerController(this.ref) : super(PlayerState.initial()) {
-    _initializeAudioPlayer();
-  }
+  String? _currentAudioUrl;
 
-  /// Initialize audio player
-  void _initializeAudioPlayer() {
-    try {
-      _isInitializing = true;
-      _audioPlayer = AudioPlayer();
-      _initAudioPlayer();
-      _isInitializing = false;
-    } catch (e) {
-      debugPrint('Error initializing audio player: $e');
-      _isInitializing = false;
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (!_isDisposed) {
-          try {
-            _audioPlayer = AudioPlayer();
-            _initAudioPlayer();
-          } catch (retryError) {
-            debugPrint('Failed to reinitialize audio player: $retryError');
-          }
-        }
-      });
-    }
+  PlayerController(this.ref) : super(app_state.PlayerState.initial()) {
+    _initAudioPlayer();
   }
 
   @override
   void dispose() {
     _isDisposed = true;
+    
+    // Cancel all stream subscriptions
+    _playerStateSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _positionSubscription?.cancel();
     _positionTimer?.cancel();
-    _audioPlayer.dispose();
+    
+    // Dispose audio player safely
+    try {
+      _audioPlayer.dispose();
+    } catch (e) {
+      debugPrint('Error disposing audio player: $e');
+    }
+    
     super.dispose();
   }
 
   void _initAudioPlayer() {
-    // Listen to playback state changes
-    _audioPlayer.playerStateStream.listen((playerState) {
+    // Listen to playback state changes with proper subscription management
+    _playerStateSubscription = _audioPlayer.playerStateStream.listen((playerState) {
       if (_isDisposed) return;
 
-      final isPlaying = playerState.playing;
-      final processingState = playerState.processingState;
+      try {
+        final isPlaying = playerState.playing;
+        final processingState = playerState.processingState;
 
-      if (processingState == ProcessingState.loading ||
-          processingState == ProcessingState.buffering) {
-        state = state.copyWith(isBuffering: true);
-      } else {
-        state = state.copyWith(
-          isPlaying: isPlaying,
-          isBuffering: false,
-        );
+        if (processingState == just_audio.ProcessingState.loading ||
+            processingState == just_audio.ProcessingState.buffering) {
+          state = state.copyWith(isBuffering: true);
+        } else {
+          state = state.copyWith(
+            isPlaying: isPlaying,
+            isBuffering: false,
+          );
 
-        // Reset play count timing when playback actually starts
-        if (isPlaying && state.currentSong != null && _playStartTime == null) {
-          _playStartTime = DateTime.now();
-          _playCountCounted = false;
-          _lastKnownPosition = _audioPlayer.position;
-        }
-        
-        // Reset timing when paused to avoid counting pause time
-        if (!isPlaying && _playStartTime != null && !_playCountCounted) {
-          // Add any remaining time before pause
-          final now = DateTime.now();
-          final timeSinceLastCheck = now.difference(_playStartTime!);
-          if (timeSinceLastCheck <= Duration(seconds: 2)) {
-            _accumulatedListeningTime += timeSinceLastCheck;
+          // Reset play count timing when playback actually starts
+          if (isPlaying && state.currentSong != null && _playStartTime == null) {
+            _playStartTime = DateTime.now();
+            _playCountCounted = false;
+            _lastKnownPosition = _audioPlayer.position;
           }
-          _playStartTime = null;
-        }
+          
+          // Reset timing when paused to avoid counting pause time
+          if (!isPlaying && _playStartTime != null && !_playCountCounted) {
+            // Add any remaining time before pause
+            final now = DateTime.now();
+            final timeSinceLastCheck = now.difference(_playStartTime!);
+            if (timeSinceLastCheck <= Duration(seconds: 2)) {
+              _accumulatedListeningTime += timeSinceLastCheck;
+            }
+            _playStartTime = null;
+          }
 
-        if (processingState == ProcessingState.completed) {
-          _handleSongCompletion();
+          if (processingState == just_audio.ProcessingState.completed) {
+            _handleSongCompletion();
+          }
+        }
+      } catch (e) {
+        debugPrint('Error in playerStateStream listener: $e');
+        if (!_isDisposed) {
+          state = state.copyWith(isBuffering: false, isPlaying: false);
         }
       }
     });
 
-    // Listen to duration changes
-    _audioPlayer.durationStream.listen((duration) {
+    // Listen to duration changes with proper subscription management
+    _durationSubscription = _audioPlayer.durationStream.listen((duration) {
       if (_isDisposed) return;
 
-      if (duration != null && state.currentSong != null) {
-        final updatedSong =
-            _updateSongWithRealDuration(state.currentSong!, duration);
-        state = state.copyWith(currentSong: updatedSong);
+      try {
+        if (duration != null && state.currentSong != null) {
+          final updatedSong =
+              _updateSongWithRealDuration(state.currentSong!, duration);
+          state = state.copyWith(currentSong: updatedSong);
+        }
+      } catch (e) {
+        debugPrint('Error in durationStream listener: $e');
       }
     });
 
-    // Position update timer
+    // Position update timer with enhanced error handling
     _positionTimer = Timer.periodic(const Duration(milliseconds: 200), (_) {
       if (!_isDisposed && _audioPlayer.playing) {
         _updatePosition();
@@ -244,31 +251,69 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
-  /// Handle song completion
+  /// Handle song completion with enhanced crash protection
   Future<void> _handleSongCompletion() async {
     if (_isDisposed) return;
 
-    switch (state.repeatMode) {
-      case RepeatMode.off:
-        if (state.currentIndex < state.queue.length - 1) {
-          await skipNext();
-        } else {
-          state = state.copyWith(
-              isPlaying: false,
-              currentPosition: state.currentSong?.duration ?? Duration.zero);
+    try {
+      // Validate state before proceeding
+      if (state.queue.isEmpty || state.currentIndex < 0) {
+        debugPrint('Invalid state at song completion: queue empty or invalid index');
+        if (!_isDisposed) {
+          state = state.copyWith(isPlaying: false);
         }
-        break;
-      case RepeatMode.all:
-        if (state.currentIndex < state.queue.length - 1) {
-          await skipNext();
-        } else if (state.queue.isNotEmpty) {
-          state = state.copyWith(currentIndex: 0);
-          await _playCurrentSong(autoPlay: true);
-        }
-        break;
-      case RepeatMode.one:
-        await seekTo(Duration.zero);
-        break;
+        return;
+      }
+
+      switch (state.repeatMode) {
+        case app_state.RepeatMode.off:
+          if (state.currentIndex < state.queue.length - 1) {
+            await skipNext();
+          } else {
+            // End of queue - stop playback safely
+            if (!_isDisposed) {
+              state = state.copyWith(
+                isPlaying: false,
+                currentPosition: state.currentSong?.duration ?? Duration.zero,
+              );
+            }
+            debugPrint('Reached end of queue, stopping playback');
+          }
+          break;
+          
+        case app_state.RepeatMode.all:
+          if (state.currentIndex < state.queue.length - 1) {
+            await skipNext();
+          } else if (state.queue.isNotEmpty) {
+            // Loop back to beginning
+            debugPrint('Looping back to start of queue');
+            if (!_isDisposed) {
+              state = state.copyWith(currentIndex: 0);
+              await _playCurrentSong(autoPlay: true);
+            }
+          } else {
+            // Fallback if queue becomes empty
+            if (!_isDisposed) {
+              state = state.copyWith(isPlaying: false);
+            }
+          }
+          break;
+          
+        case app_state.RepeatMode.one:
+          // Repeat current song
+          debugPrint('Repeating current song');
+          await seekTo(Duration.zero);
+          break;
+      }
+    } catch (e) {
+      debugPrint('Error in _handleSongCompletion: $e');
+      // Fail-safe: stop playback on any error
+      if (!_isDisposed) {
+        state = state.copyWith(
+          isPlaying: false,
+          isBuffering: false,
+        );
+      }
     }
   }
 
@@ -401,7 +446,7 @@ class PlayerController extends StateNotifier<PlayerState> {
     }
   }
 
-  /// Skip to next - COMPLETELY SIMPLIFIED
+  /// Skip to next - Enhanced with crash protection
   Future<void> skipNext() async {
     if (_isDisposed || _isInitializing) {
       return;
@@ -419,34 +464,57 @@ class PlayerController extends StateNotifier<PlayerState> {
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
 
-      if (queueLength == 0) return;
+      if (queueLength == 0) {
+        debugPrint('Cannot skip next: queue is empty');
+        return;
+      }
+
+      // Validate current index
+      if (currentIndex < 0 || currentIndex >= queueLength) {
+        debugPrint('Cannot skip next: invalid current index $currentIndex for queue length $queueLength');
+        if (!_isDisposed) {
+          state = state.copyWith(currentIndex: 0, isPlaying: false);
+        }
+        return;
+      }
 
       int nextIndex;
 
-      if (state.repeatMode == RepeatMode.one) {
+      if (state.repeatMode == app_state.RepeatMode.one) {
         nextIndex = currentIndex;
       } else if (currentIndex < queueLength - 1) {
         nextIndex = currentIndex + 1;
-      } else if (state.repeatMode == RepeatMode.all) {
+      } else if (state.repeatMode == app_state.RepeatMode.all) {
         nextIndex = 0;
       } else {
+        debugPrint('Reached end of queue in skip next');
+        if (!_isDisposed) {
+          state = state.copyWith(isPlaying: false);
+        }
         return; // End of queue
       }
 
-      // Update index immediately
-      state = state.copyWith(currentIndex: nextIndex);
+      // Validate next index
+      if (nextIndex < 0 || nextIndex >= queueLength) {
+        debugPrint('Invalid next index calculated: $nextIndex for queue length $queueLength');
+        return;
+      }
 
-      // Play the next song - ALWAYS autoPlay=true for skips
-      await _playCurrentSong(autoPlay: true);
+      // Update index immediately
+      if (!_isDisposed) {
+        state = state.copyWith(currentIndex: nextIndex);
+        // Play the next song - ALWAYS autoPlay=true for skips
+        await _playCurrentSong(autoPlay: true);
+      }
     } catch (e) {
       debugPrint('Error in skipNext: $e');
       if (!_isDisposed) {
-        state = state.copyWith(isBuffering: false);
+        state = state.copyWith(isBuffering: false, isPlaying: false);
       }
     }
   }
 
-  /// Skip to previous - COMPLETELY SIMPLIFIED
+  /// Skip to previous - Enhanced with crash protection
   Future<void> skipPrevious() async {
     if (_isDisposed || _isInitializing) {
       return;
@@ -464,43 +532,98 @@ class PlayerController extends StateNotifier<PlayerState> {
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
 
-      if (queueLength == 0) return;
+      if (queueLength == 0) {
+        debugPrint('Cannot skip previous: queue is empty');
+        return;
+      }
+
+      // Validate current index
+      if (currentIndex < 0 || currentIndex >= queueLength) {
+        debugPrint('Cannot skip previous: invalid current index $currentIndex for queue length $queueLength');
+        if (!_isDisposed) {
+          state = state.copyWith(currentIndex: 0, isPlaying: false);
+        }
+        return;
+      }
 
       int prevIndex;
 
-      if (state.repeatMode == RepeatMode.one) {
+      if (state.repeatMode == app_state.RepeatMode.one) {
         prevIndex = currentIndex;
       } else if (currentIndex > 0) {
         prevIndex = currentIndex - 1;
-      } else if (state.repeatMode == RepeatMode.all) {
+      } else if (state.repeatMode == app_state.RepeatMode.all) {
         prevIndex = queueLength - 1;
       } else {
+        debugPrint('Reached beginning of queue in skip previous');
+        if (!_isDisposed) {
+          state = state.copyWith(isPlaying: false);
+        }
         return; // Beginning of queue
       }
 
-      // Update index immediately
-      state = state.copyWith(currentIndex: prevIndex);
+      // Validate previous index
+      if (prevIndex < 0 || prevIndex >= queueLength) {
+        debugPrint('Invalid previous index calculated: $prevIndex for queue length $queueLength');
+        return;
+      }
 
-      // Play the previous song - ALWAYS autoPlay=true for skips
-      await _playCurrentSong(autoPlay: true);
+      // Update index immediately
+      if (!_isDisposed) {
+        state = state.copyWith(currentIndex: prevIndex);
+        // Play the previous song - ALWAYS autoPlay=true for skips
+        await _playCurrentSong(autoPlay: true);
+      }
     } catch (e) {
       debugPrint('Error in skipPrevious: $e');
       if (!_isDisposed) {
-        state = state.copyWith(isBuffering: false);
+        state = state.copyWith(isBuffering: false, isPlaying: false);
       }
     }
   }
 
-  /// Play the current song in the queue
+  /// Play the current song in the queue with enhanced validation
   Future<void> _playCurrentSong({bool autoPlay = true}) async {
-    if (state.queue.isEmpty ||
-        state.currentIndex < 0 ||
-        state.currentIndex >= state.queue.length) {
-      return;
-    }
+    if (_isDisposed) return;
 
-    final currentSong = state.queue[state.currentIndex];
-    await playSong(currentSong, autoPlay: autoPlay);
+    try {
+      // Validate queue and index
+      if (state.queue.isEmpty) {
+        debugPrint('Cannot play current song: queue is empty');
+        if (!_isDisposed) {
+          state = state.copyWith(isPlaying: false, isBuffering: false);
+        }
+        return;
+      }
+
+      if (state.currentIndex < 0 || state.currentIndex >= state.queue.length) {
+        debugPrint('Cannot play current song: invalid index ${state.currentIndex} for queue length ${state.queue.length}');
+        if (!_isDisposed) {
+          state = state.copyWith(
+            currentIndex: 0,
+            isPlaying: false,
+            isBuffering: false,
+          );
+        }
+        return;
+      }
+
+      final currentSong = state.queue[state.currentIndex];
+      if (currentSong.id.isEmpty) {
+        debugPrint('Cannot play current song: song has empty ID');
+        return;
+      }
+
+      await playSong(currentSong, autoPlay: autoPlay);
+    } catch (e) {
+      debugPrint('Error in _playCurrentSong: $e');
+      if (!_isDisposed) {
+        state = state.copyWith(
+          isPlaying: false,
+          isBuffering: false,
+        );
+      }
+    }
   }
 
   /// Seek to a position
@@ -685,14 +808,14 @@ class PlayerController extends StateNotifier<PlayerState> {
     if (_isDisposed) return;
 
     switch (state.repeatMode) {
-      case RepeatMode.off:
-        state = state.copyWith(repeatMode: RepeatMode.all);
+      case app_state.RepeatMode.off:
+        state = state.copyWith(repeatMode: app_state.RepeatMode.all);
         break;
-      case RepeatMode.all:
-        state = state.copyWith(repeatMode: RepeatMode.one);
+      case app_state.RepeatMode.all:
+        state = state.copyWith(repeatMode: app_state.RepeatMode.one);
         break;
-      case RepeatMode.one:
-        state = state.copyWith(repeatMode: RepeatMode.off);
+      case app_state.RepeatMode.one:
+        state = state.copyWith(repeatMode: app_state.RepeatMode.off);
         break;
     }
   }
@@ -772,11 +895,11 @@ class PlayerController extends StateNotifier<PlayerState> {
     try {
       await _audioPlayer.stop();
       _currentAudioUrl = null;
-      state = PlayerState.initial();
+      state = app_state.PlayerState.initial();
     } catch (e) {
       debugPrint('Error stopping and resetting player: $e');
       _currentAudioUrl = null;
-      state = PlayerState.initial();
+      state = app_state.PlayerState.initial();
     }
   }
 

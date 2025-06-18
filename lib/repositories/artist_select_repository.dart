@@ -1,6 +1,7 @@
+
 import '../models/artist_select.dart';
 import '../services/pocketbase_service.dart';
-import 'package:pocketbase/pocketbase.dart';
+
 
 class ArtistSelectRepository {
   final PocketBaseService _pbService;
@@ -26,7 +27,6 @@ class ArtistSelectRepository {
 
       return records.map((record) => ArtistSelect.fromRecord(record, pb)).toList();
     } catch (e) {
-      print('Error getting user selected artists: $e');
       rethrow;
     }
   }
@@ -69,7 +69,6 @@ class ArtistSelectRepository {
 
       return ArtistSelect.fromRecord(expandedRecord, pb);
     } catch (e) {
-      print('Error adding artist selection: $e');
       return null;
     }
   }
@@ -97,7 +96,6 @@ class ArtistSelectRepository {
       await pb.collection('artist_selects').delete(records.first.id);
       return true;
     } catch (e) {
-      print('Error removing artist selection: $e');
       return false;
     }
   }
@@ -132,7 +130,6 @@ class ArtistSelectRepository {
 
       return records.isNotEmpty;
     } catch (e) {
-      print('Error checking artist selection: $e');
       return false;
     }
   }
@@ -143,7 +140,6 @@ class ArtistSelectRepository {
       final selections = await getUserSelectedArtists();
       return selections.map((selection) => selection.artistId).toList();
     } catch (e) {
-      print('Error getting selected artist IDs: $e');
       return [];
     }
   }

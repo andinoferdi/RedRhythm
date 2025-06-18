@@ -1,3 +1,4 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/artist_select.dart';
 import '../repositories/artist_select_repository.dart';
@@ -33,7 +34,6 @@ class ArtistSelectProvider extends StateNotifier<List<ArtistSelect>> {
       final selections = await _repository.getUserSelectedArtists();
       state = selections;
     } catch (e) {
-      print('Error loading selected artists: $e');
       // Keep current state on error
     }
   }
@@ -49,7 +49,6 @@ class ArtistSelectProvider extends StateNotifier<List<ArtistSelect>> {
       }
       return false;
     } catch (e) {
-      print('Error adding artist selection: $e');
       return false;
     }
   }
@@ -65,7 +64,6 @@ class ArtistSelectProvider extends StateNotifier<List<ArtistSelect>> {
       }
       return false;
     } catch (e) {
-      print('Error removing artist selection: $e');
       return false;
     }
   }
@@ -79,7 +77,7 @@ class ArtistSelectProvider extends StateNotifier<List<ArtistSelect>> {
         state = [...state, ...results];
       }
     } catch (e) {
-      print('Error adding multiple artist selections: $e');
+      // Silently handle error
     }
   }
 

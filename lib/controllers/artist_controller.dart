@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../repositories/artist_repository.dart';
 import '../services/pocketbase_service.dart';
@@ -49,16 +50,13 @@ class ArtistController extends StateNotifier<ArtistState> {
     
     try {
       final artists = await _repository.getAllArtists();
-      print('DEBUG: Loaded ${artists.length} artists');
-      for (var artist in artists) {
-        print('DEBUG: Artist - ID: ${artist.id}, Name: ${artist.name}');
-      }
+      
       state = state.copyWith(
         artists: artists,
         isLoading: false,
       );
     } catch (e) {
-      print('DEBUG: Error loading artists: $e');
+      debugPrint('Error loading artists: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),

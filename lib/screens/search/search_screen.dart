@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+
 import '../../utils/app_colors.dart';
 import '../../utils/search_history_utils.dart';
 import '../../utils/image_helpers.dart';
@@ -11,7 +10,7 @@ import '../../routes/app_router.dart';
 
 import '../../controllers/player_controller.dart';
 import '../../controllers/auth_controller.dart';
-import '../../controllers/artist_controller.dart';
+
 import '../../providers/song_provider.dart';
 import '../../models/artist.dart';
 import '../../repositories/artist_repository.dart';

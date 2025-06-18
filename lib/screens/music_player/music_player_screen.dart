@@ -442,16 +442,26 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 Column(
                   children: [
                     // Slider
-                    Slider(
-                      value: playerState.currentPosition.inSeconds.toDouble(),
-                      max: currentSong.duration.inSeconds.toDouble(),
-                      activeColor: Colors.white,
-                      inactiveColor:
-                          colors.textSecondary.withValues(alpha: 0.3),
-                      onChanged: (value) {
-                        ref.read(playerControllerProvider.notifier).seekTo(
-                              Duration(seconds: value.toInt()),
-                            );
+                    Builder(
+                      builder: (context) {
+                        final maxDuration = currentSong.duration.inSeconds.toDouble();
+                        final currentPosition = playerState.currentPosition.inSeconds.toDouble();
+                        
+                        // Ensure current position doesn't exceed max duration
+                        final clampedPosition = currentPosition.clamp(0.0, maxDuration);
+                        
+                        return Slider(
+                          value: clampedPosition,
+                          max: maxDuration > 0 ? maxDuration : 1.0, // Prevent zero max
+                          activeColor: Colors.white,
+                          inactiveColor:
+                              colors.textSecondary.withValues(alpha: 0.3),
+                          onChanged: (value) {
+                            ref.read(playerControllerProvider.notifier).seekTo(
+                                  Duration(seconds: value.toInt()),
+                                );
+                          },
+                        );
                       },
                     ),
 
@@ -483,20 +493,20 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           builder: (context, ref, child) {
                             final playerState =
                                 ref.watch(playerControllerProvider);
-                            final isPlayingFromPlaylist =
-                                playerState.currentPlaylistId != null;
+                            final hasContext = playerState.currentPlaylistId != null || 
+                                             playerState.currentArtistId != null;
 
                             return IconButton(
                               icon: Icon(
                                 Icons.shuffle,
-                                color: isPlayingFromPlaylist
+                                color: hasContext
                                     ? (playerState.shuffleMode
-                                        ? AppColors.primary
+                                        ? Colors.red
                                         : Colors.white)
                                     : Colors.grey,
                                 size: 24,
                               ),
-                              onPressed: isPlayingFromPlaylist
+                              onPressed: hasContext
                                   ? () {
                                       ref
                                           .read(
