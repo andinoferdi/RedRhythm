@@ -6,7 +6,6 @@ class PlayHistory {
   final String songId;
   final DateTime playedAt;
   final int? playDurationSeconds;
-  final bool completed;
 
   // Tambahan field yang diambil dari relasi
   final String? songTitle;
@@ -19,7 +18,6 @@ class PlayHistory {
     required this.songId,
     required this.playedAt,
     this.playDurationSeconds,
-    required this.completed,
     this.songTitle,
     this.artistName,
     this.albumCoverUrl,
@@ -56,7 +54,6 @@ class PlayHistory {
     final playedAtStr = record.data['played_at'] as String? ?? DateTime.now().toIso8601String();
     final playedAt = DateTime.parse(playedAtStr);
     final playDurationSeconds = record.data['play_duration_seconds'] as int?;
-    final completed = record.data['completed'] as bool? ?? false;
 
     // Ekstrak data dari relasi song jika tersedia
     String? songTitle;
@@ -105,7 +102,6 @@ class PlayHistory {
       songId: songId,
       playedAt: playedAt,
       playDurationSeconds: playDurationSeconds,
-      completed: completed,
       songTitle: songTitle ?? 'Unknown Song',
       artistName: artistName ?? 'Unknown Artist',
       albumCoverUrl: albumCoverUrl,

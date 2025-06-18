@@ -1,4 +1,5 @@
 import 'package:pocketbase/pocketbase.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/play_history.dart';
 
 class PlayHistoryRepository {
@@ -89,9 +90,10 @@ class PlayHistoryRepository {
     required String userId, 
     required String songId,
     int? durationSeconds,
-    bool completed = false,
   }) async {
     try {
+      debugPrint('🔄 Repository: Adding play history for $songId ($durationSeconds seconds)');
+      
       // First, delete any existing history for this song to avoid duplicates
       final existingHistory = await pb.collection('recent_plays').getList(
         page: 1,
@@ -99,24 +101,30 @@ class PlayHistoryRepository {
         filter: 'user_id = "$userId" && song_id = "$songId"',
       );
       
+      debugPrint('🔍 Found ${existingHistory.items.length} existing records for song $songId');
+      
       // Delete all existing records for this song
       for (final record in existingHistory.items) {
         try {
           await pb.collection('recent_plays').delete(record.id);
+          debugPrint('🗑️ Deleted existing record: ${record.id}');
         } catch (e) {
+          debugPrint('⚠️ Failed to delete record ${record.id}: $e');
           // Continue if delete fails
         }
       }
       
       // Now create a new record
-      await pb.collection('recent_plays').create(body: {
+      final newRecord = await pb.collection('recent_plays').create(body: {
         'user_id': userId,
         'song_id': songId,
         'play_duration_seconds': durationSeconds,
-        'completed': completed,
         'played_at': DateTime.now().toIso8601String(),
       });
+      
+      debugPrint('✅ Repository: Created new play history record: ${newRecord.id}');
     } catch (e) {
+      debugPrint('❌ Repository error: $e');
       rethrow;
     }
   }

@@ -84,7 +84,6 @@ class PlayHistoryGlobalController extends StateNotifier<PlayHistoryState> {
   /// Add play history and optionally refresh
   Future<void> addPlayHistory(String songId, {
     int? durationSeconds, 
-    bool completed = false,
     bool shouldRefresh = false,
   }) async {
     try {
@@ -92,7 +91,6 @@ class PlayHistoryGlobalController extends StateNotifier<PlayHistoryState> {
       await _ref.read(playHistoryControllerProvider.notifier).addPlayHistory(
         songId,
         durationSeconds: durationSeconds,
-        completed: completed,
       );
 
       // Refresh if requested

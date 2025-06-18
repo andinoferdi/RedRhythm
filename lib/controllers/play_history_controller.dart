@@ -90,7 +90,7 @@ class PlayHistoryController extends StateNotifier<PlayHistoryState> {
   }
 
   /// Add new play history entry
-  Future<void> addPlayHistory(String songId, {int? durationSeconds, bool completed = false}) async {
+  Future<void> addPlayHistory(String songId, {int? durationSeconds}) async {
     try {
       final authState = _ref.read(authControllerProvider);
       
@@ -102,7 +102,6 @@ class PlayHistoryController extends StateNotifier<PlayHistoryState> {
         userId: authState.user!.id,
         songId: songId,
         durationSeconds: durationSeconds,
-        completed: completed,
       );
       
       // Don't auto-reload to prevent jarring UX in home screen
@@ -115,8 +114,8 @@ class PlayHistoryController extends StateNotifier<PlayHistoryState> {
   }
 
   /// Add new play history entry and refresh data (for cases where immediate refresh is needed)
-  Future<void> addPlayHistoryAndRefresh(String songId, {int? durationSeconds, bool completed = false}) async {
-    await addPlayHistory(songId, durationSeconds: durationSeconds, completed: completed);
+  Future<void> addPlayHistoryAndRefresh(String songId, {int? durationSeconds}) async {
+    await addPlayHistory(songId, durationSeconds: durationSeconds);
     await loadRecentlyPlayed();
   }
 

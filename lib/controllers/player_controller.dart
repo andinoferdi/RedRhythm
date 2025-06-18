@@ -36,9 +36,18 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
   Duration _accumulatedListeningTime = Duration.zero;
   Duration _lastKnownPosition = Duration.zero;
   
+  // Play history tracking
+  String? _lastSavedPlayHistorySongId;
+  DateTime? _lastPlayHistorySaveTime;
+  bool _isSavingPlayHistory = false;
+  Timer? _autoSaveTimer;
+  
   // Constants for play count logic
   static const Duration _minPlayDuration = Duration(seconds: 30);
   static const Duration _maxSeekJump = Duration(seconds: 10);
+  
+  // Constants for play history logic
+  static const int _minPlayHistorySeconds = 15;
   
   // Skip protection
   DateTime? _lastSkipTime;
@@ -54,7 +63,11 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
   void dispose() {
     _isDisposed = true;
     
-    // Cancel all stream subscriptions
+    // Save play history of current song before disposing
+    _saveCurrentSongPlayHistory(force: true);
+    
+    // Cancel all timers and subscriptions
+    _autoSaveTimer?.cancel();
     _playerStateSubscription?.cancel();
     _durationSubscription?.cancel();
     _positionSubscription?.cancel();
@@ -270,6 +283,12 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
           if (state.currentIndex < state.queue.length - 1) {
             await skipNext();
           } else {
+            // Save play history of completed song before stopping
+            _saveCurrentSongPlayHistory(force: true);
+            
+            // Stop auto-save timer when playback ends
+            _stopAutoSaveTimer();
+            
             // End of queue - stop playback safely
             if (!_isDisposed) {
               state = state.copyWith(
@@ -344,6 +363,11 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
       final isCurrentSong = state.currentSong?.id == song.id;
       final shouldForceRestart = forceRestart || isCurrentSong;
 
+      // Save play history of current song before switching to new song
+      if (state.currentSong != null && !isCurrentSong) {
+        _saveCurrentSongPlayHistory(force: true);
+      }
+
       // Update state immediately
       state = state.copyWith(
         isBuffering: true,
@@ -382,12 +406,12 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
       // Always play by default unless autoPlay is explicitly set to false
       if (autoPlay) {
         await _audioPlayer.play();
+        // Start auto-save timer when playback begins
+        _startAutoSaveTimer();
       }
-
-      // Add to play history
-      _addToPlayHistory(song.id);
       
       // Play count will be handled by _checkPlayCountConditions based on play time
+      // Play history will be added when song changes or playback stops with accumulated duration
     } catch (e) {
       debugPrint('Error playing song "${song.title}": $e');
 
@@ -415,10 +439,16 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     }
   }
 
-  /// Pause playback
+  /// Pause playbook
   Future<void> pause() async {
     if (_isDisposed) return;
     try {
+      // Save play history when pausing (but not forced, so it respects throttling)
+      _saveCurrentSongPlayHistory();
+      
+      // Stop auto-save timer when paused
+      _stopAutoSaveTimer();
+      
       await _audioPlayer.pause();
     } catch (e) {
       debugPrint('Error pausing playback: $e');
@@ -430,6 +460,8 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     if (_isDisposed) return;
     try {
       await _audioPlayer.play();
+      // Start auto-save timer when resuming
+      _startAutoSaveTimer();
     } catch (e) {
       debugPrint('Error resuming playback: $e');
     }
@@ -461,6 +493,12 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     _lastSkipTime = now;
 
     try {
+      // Save play history of current song before skipping
+      _saveCurrentSongPlayHistory(force: true);
+      
+      // Stop current auto-save timer (will restart with new song)
+      _stopAutoSaveTimer();
+      
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
 
@@ -529,6 +567,12 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     _lastSkipTime = now;
 
     try {
+      // Save play history of current song before skipping
+      _saveCurrentSongPlayHistory(force: true);
+      
+      // Stop current auto-save timer (will restart with new song)
+      _stopAutoSaveTimer();
+      
       final currentIndex = state.currentIndex;
       final queueLength = state.queue.length;
 
@@ -918,12 +962,93 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
     skipNext();
   }
 
-  /// Add song to play history
-  void _addToPlayHistory(String songId) {
+  /// Add song to play history with duration tracking
+  Future<void> _addToPlayHistory(String songId) async {
     try {
-      ref.read(playHistoryControllerProvider.notifier).addPlayHistory(songId);
+      // Calculate play duration in seconds from accumulated listening time
+      final playDurationSeconds = _accumulatedListeningTime.inSeconds;
+      
+      // Only add to history if user listened for at least the minimum duration
+      if (playDurationSeconds >= _minPlayHistorySeconds) {
+        await ref.read(playHistoryControllerProvider.notifier).addPlayHistory(
+          songId,
+          durationSeconds: playDurationSeconds,
+        );
+        debugPrint('✅ Play history saved: $songId (${playDurationSeconds}s)');
+      }
     } catch (e) {
       debugPrint('Error adding to play history: $e');
+    }
+  }
+
+  /// Start auto-save timer for play history
+  void _startAutoSaveTimer() {
+    _autoSaveTimer?.cancel(); // Cancel existing timer
+    
+    _autoSaveTimer = Timer.periodic(Duration(seconds: _minPlayHistorySeconds), (timer) {
+      if (_isDisposed) {
+        timer.cancel();
+        return;
+      }
+      
+      // Auto-save every 15 seconds if conditions are met
+      if (state.currentSong != null && 
+          _accumulatedListeningTime.inSeconds >= _minPlayHistorySeconds &&
+          state.isPlaying) {
+        debugPrint('⏰ Auto-saving play history after ${_minPlayHistorySeconds}s');
+        _saveCurrentSongPlayHistory();
+      }
+    });
+  }
+  
+  /// Stop auto-save timer
+  void _stopAutoSaveTimer() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+  }
+
+  /// Save current song play history before changing to another song (sync wrapper)
+  void _saveCurrentSongPlayHistory({bool force = false}) {
+    _saveCurrentSongPlayHistoryAsync(force: force);
+  }
+  
+  /// Async implementation of save play history
+  Future<void> _saveCurrentSongPlayHistoryAsync({bool force = false}) async {
+    if (state.currentSong == null || _accumulatedListeningTime.inSeconds < _minPlayHistorySeconds) {
+      return;
+    }
+    
+    final currentSongId = state.currentSong!.id;
+    final now = DateTime.now();
+    
+    debugPrint('🎵 Attempting to save play history: $currentSongId (${_accumulatedListeningTime.inSeconds}s) force=$force');
+    
+    // Prevent race conditions - only one save operation at a time
+    if (_isSavingPlayHistory) {
+      debugPrint('❌ Skipping play history save: already in progress');
+      return;
+    }
+    
+    // Skip if we saved this song recently (within 10 seconds)
+    // Force only bypasses throttling for different songs, not same song
+    if (_lastSavedPlayHistorySongId == currentSongId && 
+        _lastPlayHistorySaveTime != null &&
+        now.difference(_lastPlayHistorySaveTime!) < Duration(seconds: 10)) {
+      debugPrint('❌ Skipping play history save: same song saved too recently (${now.difference(_lastPlayHistorySaveTime!).inSeconds}s ago) force=$force');
+      return;
+    }
+    
+    _isSavingPlayHistory = true;
+    
+    try {
+      await _addToPlayHistory(currentSongId);
+      _lastSavedPlayHistorySongId = currentSongId;
+      _lastPlayHistorySaveTime = now;
+    } catch (e) {
+      debugPrint('Error in _saveCurrentSongPlayHistory: $e');
+    } finally {
+      // Reset flag after save completes
+      _isSavingPlayHistory = false;
     }
   }
 
