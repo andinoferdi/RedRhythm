@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../routes/app_router.dart';
 import '../../utils/app_colors.dart';
@@ -60,12 +60,12 @@ class OnboardingScreen extends StatelessWidget {
                       TextSpan(text: 'From the '),
                       TextSpan(
                         text: 'latest',
-                        style: TextStyle(color: AppColors.primary),
+                        style: TextStyle(color: AppColors.primary, fontFamily: 'Gotham'),
                       ),
                       TextSpan(text: ' to the\n'),
                       TextSpan(
                         text: 'greatest',
-                        style: TextStyle(color: AppColors.primary),
+                        style: TextStyle(color: AppColors.primary, fontFamily: 'Gotham'),
                       ),
                       TextSpan(text: ' hits, play your\nfavorite tracks on '),
                     ],

@@ -205,7 +205,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
               style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
               decoration: InputDecoration(
                 hintText: 'Cari lagu atau artis...',
-                hintStyle: TextStyle(color: Colors.grey[400]),
+                hintStyle: TextStyle(color: Colors.grey[400], fontFamily: 'Gotham'),
                 prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
                 filled: true,
                 fillColor: Colors.grey[800],

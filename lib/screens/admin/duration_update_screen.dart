@@ -491,7 +491,7 @@ class DurationUpdateScreen extends ConsumerWidget {
                       ),
                       child: const Text(
                         'Apply',
-                        style: TextStyle(fontSize: 12),
+                        style: TextStyle(fontSize: 12, fontFamily: 'Gotham'),
                       ),
                     ),
                   ],

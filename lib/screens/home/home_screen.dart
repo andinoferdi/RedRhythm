@@ -96,13 +96,13 @@ final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
   
   try {
     // Verify we can reach the server
-    final isReachable = await isHostReachable('${pb.baseUrl}/api/collections/user_history/records');
+    final isReachable = await isHostReachable('${pb.baseUrl}/api/collections/recent_plays/records');
     if (!isReachable) {
       return [];
     }
     
     // First try direct filter on user_id
-    var recentlyPlayed = await pb.collection('user_history').getList(
+    var recentlyPlayed = await pb.collection('recent_plays').getList(
       page: 1,
       perPage: 3,
       filter: 'user_id = "$userId"',

@@ -55,6 +55,11 @@ class SongPlaylistRepository {
   /// Get playlists containing a specific song
   Future<List<Playlist>> getPlaylistsContainingSong(String songId) async {
     try {
+      // Get current user for security
+      final currentUser = _pb.authStore.model;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
       
       // Use song_playlists collection to find playlists containing the song
       final songPlaylistRecords = await _pb.collection('song_playlists').getList(
@@ -74,6 +79,11 @@ class SongPlaylistRepository {
             // Get the full playlist record
             final playlistRecord = await _pb.collection('playlists').getOne(playlistId);
             final playlist = Playlist.fromRecord(playlistRecord);
+            
+            // Security check: only include playlists owned by current user
+            if (playlist.userId != currentUser.id) {
+              continue;
+            }
             
             // Get all songs for this playlist using song_playlists
             final playlistSongs = await getPlaylistSongs(playlistId);
@@ -107,8 +117,15 @@ class SongPlaylistRepository {
 
   Future<List<Playlist>> getAllPlaylists() async {
     try {
+      // Get current user's playlists only for security
+      final currentUser = _pb.authStore.model;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
       
-      final records = await _pb.collection('playlists').getList();
+      final records = await _pb.collection('playlists').getList(
+        filter: 'user_id = "${currentUser.id}"',
+      );
       
       final List<Playlist> playlists = [];
       
@@ -148,6 +165,18 @@ class SongPlaylistRepository {
   /// Add song to playlist
   Future<void> addSongToPlaylist(String playlistId, String songId) async {
     try {
+      // Security check: verify playlist ownership
+      final currentUser = _pb.authStore.model;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+      
+      final playlistRecord = await _pb.collection('playlists').getOne(playlistId);
+      final playlist = Playlist.fromRecord(playlistRecord);
+      
+      if (playlist.userId != currentUser.id) {
+        throw Exception('Unauthorized: Cannot add songs to other users\' playlists');
+      }
       
       // Check if relationship already exists
       final existingRecords = await _pb.collection('song_playlists').getList(
@@ -191,6 +220,18 @@ class SongPlaylistRepository {
     if (songIds.isEmpty) return;
     
     try {
+      // Security check: verify playlist ownership
+      final currentUser = _pb.authStore.model;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+      
+      final playlistRecord = await _pb.collection('playlists').getOne(playlistId);
+      final playlist = Playlist.fromRecord(playlistRecord);
+      
+      if (playlist.userId != currentUser.id) {
+        throw Exception('Unauthorized: Cannot add songs to other users\' playlists');
+      }
       
       // Get the highest order value in this playlist
       int nextOrder = 1; // Default for empty playlist
@@ -237,6 +278,18 @@ class SongPlaylistRepository {
   /// Remove song from playlist
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
     try {
+      // Security check: verify playlist ownership
+      final currentUser = _pb.authStore.model;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+      
+      final playlistRecord = await _pb.collection('playlists').getOne(playlistId);
+      final playlist = Playlist.fromRecord(playlistRecord);
+      
+      if (playlist.userId != currentUser.id) {
+        throw Exception('Unauthorized: Cannot remove songs from other users\' playlists');
+      }
       
       // Find and delete the song_playlist relationship
       final records = await _pb.collection('song_playlists').getList(

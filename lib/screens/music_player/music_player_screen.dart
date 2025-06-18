@@ -473,11 +473,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         children: [
                           Text(
                             _formatDuration(playerState.currentPosition),
-                            style: TextStyle(color: colors.textSecondary),
+                            style: TextStyle(color: colors.textSecondary, fontFamily: 'Gotham'),
                           ),
                           Text(
                             _formatDuration(currentSong.duration),
-                            style: TextStyle(color: colors.textSecondary),
+                            style: TextStyle(color: colors.textSecondary, fontFamily: 'Gotham'),
                           ),
                         ],
                       ),
@@ -1748,6 +1748,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
     _backgroundFadeController.forward();
   }
 }
+
 
 
 
