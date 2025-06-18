@@ -40,6 +40,17 @@ class Artist {
     );
   }
 
+  factory Artist.fromJson(Map<String, dynamic> json) {
+    return Artist(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      bio: json['bio'] ?? '',
+      imageUrl: json['imageUrl'],
+      created: DateTime.parse(json['created'] ?? DateTime.now().toIso8601String()),
+      updated: DateTime.parse(json['updated'] ?? DateTime.now().toIso8601String()),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

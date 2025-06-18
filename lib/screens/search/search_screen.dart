@@ -86,9 +86,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     
     if (authState.isAuthenticated && authState.user != null) {
       // Load both songs and artists from search history
-      final songs = await SearchHistoryUtils.getUserSearchHistory(authState.user!.id);
-      searches.addAll(songs);
-      // TODO: Add artist history loading when implemented
+      searches = await SearchHistoryUtils.getCombinedUserHistory(authState.user!.id);
     }
     
     setState(() {
@@ -99,10 +97,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _addToRecentSearches(dynamic item) async {
     final authState = ref.read(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
-      if (item is Song) {
-        await SearchHistoryUtils.addSongToUserHistory(authState.user!.id, item);
-      }
-      // TODO: Add artist to history when implemented
+      await SearchHistoryUtils.addSearchItemToUserHistory(authState.user!.id, item);
       await _loadRecentSearches();
     }
   }
@@ -110,10 +105,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Future<void> _removeFromRecentSearches(dynamic item) async {
     final authState = ref.read(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
-      if (item is Song) {
-        await SearchHistoryUtils.removeSongFromUserHistory(authState.user!.id, item);
-      }
-      // TODO: Remove artist from history when implemented
+      await SearchHistoryUtils.removeSearchItemFromUserHistory(authState.user!.id, item);
       await _loadRecentSearches();
     }
   }

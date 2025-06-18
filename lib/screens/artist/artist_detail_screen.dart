@@ -128,6 +128,30 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           setState(() {
             _isFollowing = false;
           });
+          
+          // Show unfollow notification
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Telah berhenti mengikuti "${_artist!.name}"',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
         }
       } else {
         final success = await ref
@@ -138,10 +162,48 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
           setState(() {
             _isFollowing = true;
           });
+          
+          // Show follow notification
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kini mengikuti "${_artist!.name}"',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
         }
       }
     } catch (e) {
-      // Handle error
+      // Show error notification
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isFollowing 
+                  ? 'Gagal berhenti mengikuti artis: $e'
+                  : 'Gagal mengikuti artis: $e'
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
     }
   }
 
@@ -212,7 +274,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
   Widget _buildArtistHeader() {
     return SliverAppBar(
-      expandedHeight: 400,
+      expandedHeight: 280,
       pinned: false,
       floating: false,
       backgroundColor: Colors.transparent,
@@ -225,8 +287,8 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             ImageHelpers.buildSafeNetworkImage(
               imageUrl: _artist!.imageUrl,
               width: double.infinity,
-              height: 400,
-              fit: BoxFit.cover,
+              height: 280,
+              fit: BoxFit.cover, // Fill the entire area
               fallbackWidget: Container(
                 color: const Color(0xFF282828),
                 child: Center(
@@ -306,7 +368,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 48,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900, // Extra bold
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -334,26 +396,42 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       child: Row(
         children: [
           // Follow button
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: TextButton(
-              onPressed: _toggleFollowArtist,
-              style: TextButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              ),
-              child: Text(
-                'Ikuti',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          Consumer(
+            builder: (context, ref, child) {
+              final selectedArtists = ref.watch(artistSelectProvider);
+              final isFollowing = selectedArtists.any((artistSelect) =>
+                  artistSelect.artistId == _artist?.id ||
+                  artistSelect.artistName == _artist?.name);
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+                child: TextButton(
+                  onPressed: _toggleFollowArtist,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  ),
+                  child: Text(
+                    isFollowing ? 'Mengikuti' : 'Ikuti',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'DM Sans',
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           const SizedBox(width: 16),
