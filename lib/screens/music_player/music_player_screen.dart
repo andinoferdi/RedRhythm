@@ -415,14 +415,23 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      currentSong.artist,
-                      style: TextStyle(
-                        color: colors.textSecondary,
-                        fontSize: 18,
-                        fontFamily: 'DM Sans',
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to artist detail screen
+                        context.router.push(ArtistDetailRoute(
+                          artistId: '',
+                          artistName: currentSong.artist,
+                        ));
+                      },
+                      child: Text(
+                        currentSong.artist,
+                        style: TextStyle(
+                          color: colors.textSecondary,
+                          fontSize: 18,
+                          fontFamily: 'DM Sans',
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -1202,13 +1211,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               // "lihat semua" text
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to artist detail page
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Artist detail page coming soon!'),
-                      backgroundColor: AppColors.primary,
-                    ),
-                  );
+                  // Navigate to artist detail page
+                  context.router.push(ArtistDetailRoute(
+                    artistId: artist.id,
+                    artistName: artist.name,
+                  ));
                 },
                 child: const Text(
                   'lihat semua',

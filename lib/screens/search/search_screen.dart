@@ -5,7 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../utils/app_colors.dart';
 import '../../utils/search_history_utils.dart';
+import '../../utils/image_helpers.dart';
 import '../../models/song.dart';
+import '../../routes/app_router.dart';
 
 import '../../controllers/player_controller.dart';
 import '../../controllers/auth_controller.dart';
@@ -476,11 +478,94 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildSongItem(Song song, int index) {
-    return SongItemWidget(
-      song: song,
-      subtitle: song.artist,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-      onTap: () => _playSong(song, index),
+    return Column(
+      children: [
+        Row(
+          children: [
+            // Album art
+            GestureDetector(
+              onTap: () => _playSong(song, index),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: song.albumArtUrl,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    width: 48,
+                    height: 48,
+                    color: Colors.grey[800],
+                    child: const Icon(Icons.music_note, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Song info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () => _playSong(song, index),
+                    child: Text(
+                      song.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to artist detail when tapping artist name
+                      context.router.push(ArtistDetailRoute(
+                        artistId: '',
+                        artistName: song.artist,
+                      ));
+                    },
+                    child: Text(
+                      song.artist,
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 14,
+                        fontFamily: 'DM Sans',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Play indicator or menu
+            Consumer(
+              builder: (context, ref, child) {
+                final playerState = ref.watch(playerControllerProvider);
+                final isCurrentSong = playerState.currentSong?.id == song.id;
+                final isPlaying = isCurrentSong && playerState.isPlaying;
+                
+                if (isPlaying) {
+                  return const AnimatedSoundBars(
+                    color: Colors.red,
+                    size: 20.0,
+                    isAnimating: true,
+                  );
+                }
+                return const SizedBox(width: 20);
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 } 

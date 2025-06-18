@@ -15,6 +15,17 @@ abstract class _$AppRouter extends RootStackRouter {
 
   @override
   final Map<String, PageFactory> pagesMap = {
+    ArtistDetailRoute.name: (routeData) {
+      final args = routeData.argsAs<ArtistDetailRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ArtistDetailScreen(
+          artistId: args.artistId,
+          artistName: args.artistName,
+          key: args.key,
+        ),
+      );
+    },
     ArtistSelectionRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -142,6 +153,49 @@ abstract class _$AppRouter extends RootStackRouter {
       );
     },
   };
+}
+
+/// generated route for
+/// [ArtistDetailScreen]
+class ArtistDetailRoute extends PageRouteInfo<ArtistDetailRouteArgs> {
+  ArtistDetailRoute({
+    required String artistId,
+    String? artistName,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ArtistDetailRoute.name,
+          args: ArtistDetailRouteArgs(
+            artistId: artistId,
+            artistName: artistName,
+            key: key,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ArtistDetailRoute';
+
+  static const PageInfo<ArtistDetailRouteArgs> page =
+      PageInfo<ArtistDetailRouteArgs>(name);
+}
+
+class ArtistDetailRouteArgs {
+  const ArtistDetailRouteArgs({
+    required this.artistId,
+    this.artistName,
+    this.key,
+  });
+
+  final String artistId;
+
+  final String? artistName;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'ArtistDetailRouteArgs{artistId: $artistId, artistName: $artistName, key: $key}';
+  }
 }
 
 /// generated route for

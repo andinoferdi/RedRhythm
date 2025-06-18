@@ -499,13 +499,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget _buildArtistItem(ArtistSelect artistSelect) {
     return GestureDetector(
       onTap: () {
-        // TODO: Navigate to artist detail or implement artist functionality
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Artist ${artistSelect.artistName ?? 'Unknown'} tapped'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        // Navigate to artist detail screen
+        context.router.push(ArtistDetailRoute(
+          artistId: artistSelect.artistId,
+          artistName: artistSelect.artistName,
+        ));
       },
       onLongPress: () => _showArtistOptionsBottomSheet(artistSelect),
       child: Container(
