@@ -661,42 +661,63 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               ),
               child: SafeArea(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Back button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        onPressed: () => context.router.maybePop(),
-                      ),
-
-                      // Now Playing text
-                      const Text(
-                        'Now Playing',
-                        style: TextStyle(
-                          fontFamily: 'DM Sans',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                      // Back button with larger tap area
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () => context.router.maybePop(),
+                          child: const SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
                         ),
                       ),
 
-                      // Three-dot menu button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.more_vert,
-                          color: Colors.white,
-                          size: 24,
+                      // Now Playing text with proper constraints and center alignment
+                      Expanded(
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: const Text(
+                            'Now Playing',
+                            style: TextStyle(
+                              fontFamily: 'DM Sans',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
-                        onPressed: () {
-                          // TODO: Show menu options
-                        },
+                      ),
+
+                      // Three-dot menu button with larger tap area
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(24),
+                          onTap: () {
+                            // TODO: Show menu options
+                          },
+                          child: const SizedBox(
+                            width: 48,
+                            height: 48,
+                            child: Icon(
+                              Icons.more_vert,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
