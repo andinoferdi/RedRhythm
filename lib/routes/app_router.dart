@@ -21,6 +21,7 @@ import '../screens/admin/duration_update_screen.dart';
 import '../screens/artist/artist_selection_screen.dart';
 import '../screens/artist/artist_detail_screen.dart';
 import '../screens/album/album_screen.dart';
+import '../screens/profile/edit_profile_screen.dart';
 import '../widgets/auth_wrapper.dart';
 
 part 'app_router.gr.dart';
@@ -106,6 +107,7 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: ArtistSelectionRoute.page, path: '/artist-selection'),
     AutoRoute(page: ArtistDetailRoute.page),
     AutoRoute(page: AlbumRoute.page),
+    AutoRoute(page: EditProfileRoute.page),
     AutoRoute(page: AuthWrapperRoute.page),
   ];
 }

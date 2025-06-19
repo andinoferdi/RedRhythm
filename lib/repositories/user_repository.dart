@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:pocketbase/pocketbase.dart';
+import 'package:http/http.dart' as http;
 import '../services/pocketbase_service.dart';
 
 /// Repository for handling user-related data
@@ -323,6 +325,76 @@ class UserRepository {
         'success': false,
         'error': 'Gagal reset password: $e'
       };
+    }
+  }
+
+  /// Update user profile with username and/or profile image
+  Future<RecordModel> updateProfile({
+    required String userId,
+    String? username,
+    File? profileImage,
+  }) async {
+    try {
+      // If only username is being updated (no image)
+      if (profileImage == null && username != null && username.trim().isNotEmpty) {
+        return await _pb.collection('users').update(
+          userId,
+          body: {'name': username.trim()},
+        );
+      }
+      
+      // If only image is being updated (no username)
+      if (profileImage != null && (username == null || username.trim().isEmpty)) {
+        return await _pb.collection('users').update(
+          userId,
+          body: {},
+          files: [
+            http.MultipartFile.fromBytes(
+              'avatar',
+              await profileImage.readAsBytes(),
+              filename: 'avatar.jpg',
+            ),
+          ],
+        );
+      }
+      
+      // If both username and image are being updated
+      if (profileImage != null && username != null && username.trim().isNotEmpty) {
+        return await _pb.collection('users').update(
+          userId,
+          body: {'name': username.trim()},
+          files: [
+            http.MultipartFile.fromBytes(
+              'avatar',
+              await profileImage.readAsBytes(),
+              filename: 'avatar.jpg',
+            ),
+          ],
+        );
+      }
+      
+      throw Exception('No data provided to update');
+    } catch (e) {
+      // Check if it's a validation error
+      if (e.toString().contains('validation')) {
+        if (e.toString().contains('username') || e.toString().contains('name')) {
+          throw Exception('Username validation failed. Please use a valid username');
+        }
+        if (e.toString().contains('avatar')) {
+          throw Exception('Profile image upload failed. Please try a different image');
+        }
+        throw Exception('Profile update validation failed');
+      }
+      
+      // Check if it's a network error
+      if (e.toString().contains('SocketException') || 
+          e.toString().contains('Connection') ||
+          e.toString().contains('network')) {
+        throw Exception('Network error. Please check your connection');
+      }
+      
+      // Generic error
+      throw Exception('Failed to update profile: $e');
     }
   }
 }

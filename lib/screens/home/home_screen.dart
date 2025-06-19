@@ -19,7 +19,6 @@ import '../../widgets/song_item_widget.dart';
 
 import '../../utils/app_colors.dart';
 import '../../utils/app_config.dart';
-import '../debug/album_sync_debug_screen.dart';
 
 // Helper function to check if host is reachable
 Future<bool> isHostReachable(String url) async {
@@ -492,32 +491,92 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     // Get the PocketBase URL
     final pocketBaseUrl = ref.watch(pocketBaseInitProvider).valueOrNull?.baseUrl;
     
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (BuildContext context) {
-        return AlertDialog(
-                          backgroundColor: AppColors.surface,
-          title: const Text(
-            'Profile Options',
-            style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Gotham',
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
           ),
-          content: Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // User profile info section
+              // Handle bar
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade600,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              
+              // Title
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    // Avatar
-                    UserAvatar(
-                      user: user,
-                      baseUrl: pocketBaseUrl,
-                      size: 60,
-                      iconSize: 36,
+                    const Text(
+                      'Profile',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Gotham',
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Colors.grey,
+                        size: 24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // User profile card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2A2A),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.shade800,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Avatar with glow effect
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary.withValues(alpha: 0.6),
+                            AppColors.primary.withValues(alpha: 0.2),
+                          ],
+                        ),
+                      ),
+                      child: UserAvatar(
+                        user: user,
+                        baseUrl: pocketBaseUrl,
+                        size: 64,
+                        iconSize: 36,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     // User info
@@ -536,7 +595,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
                             userEmail,
                             style: TextStyle(
@@ -547,65 +606,210 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
+
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-              const Divider(color: Colors.grey),
-              ListTile(
-                leading: const Icon(Icons.account_circle, color: Colors.white),
-                title: const Text(
-                  'View Profile',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Gotham',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  // Add profile view navigation here
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.bug_report, color: Colors.orange),
-                title: const Text(
-                  'Album Sync Tool',
-                  style: TextStyle(
-                    color: Colors.orange,
-                    fontFamily: 'Gotham',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    AppRouter.createConsistentRoute(
-                      const AlbumSyncDebugScreen(),
+              
+              // Action buttons
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Column(
+                  children: [
+                    // View Profile button
+                    _buildProfileAction(
+                      icon: Icons.person_outline,
+                      title: 'View Profile',
+                      subtitle: 'Manage your profile information',
+                      color: AppColors.primary,
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        context.router.push(const EditProfileRoute());
+                      },
                     ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontFamily: 'Gotham',
-                  ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Sign Out button
+                    _buildProfileAction(
+                      icon: Icons.logout_outlined,
+                      title: 'Sign Out',
+                      subtitle: 'Sign out from your account',
+                      color: Colors.red.shade400,
+                      isDestructive: true,
+                      onTap: () async {
+                        Navigator.of(context).pop();
+                        // Show confirmation dialog
+                        _showLogoutConfirmation(context, ref);
+                      },
+                    ),
+                  ],
                 ),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  // Logout logic
-                  await ref.read(authControllerProvider.notifier).logout();
-                  if (context.mounted) {
-                    context.router.replace(const AuthOptionsRoute());
-                  }
-                },
               ),
+              
+              // Bottom safe area
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // Helper method to build profile action buttons
+  Widget _buildProfileAction({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDestructive 
+              ? Colors.red.shade900.withValues(alpha: 0.1)
+              : const Color(0xFF2A2A2A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDestructive 
+                ? Colors.red.shade800.withValues(alpha: 0.3)
+                : Colors.grey.shade800,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDestructive
+                    ? Colors.red.shade800.withValues(alpha: 0.2)
+                    : color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDestructive ? Colors.red.shade400 : Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Gotham',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 13,
+                      fontFamily: 'Gotham',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey.shade600,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to show logout confirmation
+  void _showLogoutConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2A2A2A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Sign Out',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to sign out from your account?',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+              fontFamily: 'Gotham',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gotham',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                // Show loading
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
+                  ),
+                );
+                
+                // Logout logic
+                await ref.read(authControllerProvider.notifier).logout();
+                
+                if (context.mounted) {
+                  Navigator.of(context).pop(); // Dismiss loading
+                  context.router.replace(const AuthOptionsRoute());
+                }
+              },
+              child: const Text(
+                'Sign Out',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Gotham',
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

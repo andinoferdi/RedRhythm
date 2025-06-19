@@ -90,6 +90,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     List<dynamic> searches = [];
     
     if (authState.isAuthenticated && authState.user != null) {
+      // Clean corrupted data first
+      await SearchHistoryUtils.cleanCorruptedUserHistory(authState.user!.id);
+      
       // Load both songs and artists from search history
       searches = await SearchHistoryUtils.getCombinedUserHistory(authState.user!.id);
     }
@@ -829,7 +832,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   child: Center(
                     child: Text(
-                      artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                      artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -852,11 +855,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    artist.name,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    artist.name.isNotEmpty ? artist.name : 'Unknown Artist',
+                    style: TextStyle(
+                      color: artist.name.isNotEmpty ? Colors.white : Colors.grey.shade400,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

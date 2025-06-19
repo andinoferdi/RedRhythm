@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
@@ -234,6 +235,36 @@ class AuthController extends StateNotifier<AuthState> {
       } catch (e) {
         await _initializeAuth();
       }
+    }
+  }
+
+  Future<void> updateProfile({
+    String? username,
+    File? profileImage,
+  }) async {
+    if (!_userRepository.isAuthenticated || _userRepository.currentUser == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      final currentUser = _userRepository.currentUser!;
+      
+      // Update profile via repository
+      final updatedUser = await _userRepository.updateProfile(
+        userId: currentUser.id,
+        username: username,
+        profileImage: profileImage,
+      );
+      
+      // Update state with new user data
+      state = AuthState.authenticated(updatedUser);
+      
+      // Refresh user provider cache
+      _ref.read(userProvider.notifier).clearUserCache();
+      
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      throw Exception('Failed to update profile: $e');
     }
   }
 }

@@ -21,6 +21,42 @@ class SearchHistoryUtils {
     }
   }
   
+  /// Clean corrupted search history entries for a specific user
+  static Future<void> cleanCorruptedUserHistory(String userId) async {
+    try {
+      // Get current history
+      final currentHistory = await getUserSearchHistoryWithTimestamp(userId);
+      
+      // Filter out corrupted or invalid entries
+      final cleanHistory = <Map<String, dynamic>>[];
+      for (final item in currentHistory) {
+        try {
+          if (item['type'] == 'song') {
+            final song = Song.fromJson(Map<String, dynamic>.from(item['data']));
+            if (song.title.isNotEmpty && song.title.trim().isNotEmpty) {
+              cleanHistory.add(item);
+            }
+          } else if (item['type'] == 'artist') {
+            final artist = Artist.fromJson(Map<String, dynamic>.from(item['data']));
+            if (artist.name.isNotEmpty && artist.name.trim().isNotEmpty) {
+              cleanHistory.add(item);
+            }
+          }
+        } catch (e) {
+          // Skip corrupted items
+          continue;
+        }
+      }
+      
+      // Save cleaned history
+      await saveUserSearchHistoryWithTimestamp(userId, cleanHistory);
+      
+    } catch (e) {
+      // If cleaning fails, clear all history for this user
+      await clearUserSearchHistory(userId);
+    }
+  }
+  
   /// Clear search history for a specific user
   static Future<void> clearUserSearchHistory(String userId) async {
     final prefs = await SharedPreferences.getInstance();
@@ -100,7 +136,13 @@ class SearchHistoryUtils {
     return artistsJson.map((jsonStr) {
       try {
         final Map<String, dynamic> artistMap = Map<String, dynamic>.from(jsonDecode(jsonStr));
-        return Artist.fromJson(artistMap);
+        final artist = Artist.fromJson(artistMap);
+        
+        // Validate artist data - only return if it has a valid name
+        if (artist.name.isNotEmpty && artist.name.trim().isNotEmpty) {
+          return artist;
+        }
+        return null;
       } catch (e) {
         return null;
       }
@@ -117,6 +159,11 @@ class SearchHistoryUtils {
   
   /// Add artist to user's search history
   static Future<void> addArtistToUserHistory(String userId, Artist artist) async {
+    // Validate artist data before adding
+    if (artist.name.isEmpty || artist.name.trim().isEmpty) {
+      return; // Don't add invalid artists
+    }
+    
     final currentHistory = await getUserArtistHistory(userId);
     
     // Remove if already exists to avoid duplicates
@@ -165,6 +212,14 @@ class SearchHistoryUtils {
 
   /// Add search item (song or artist) to user's search history with timestamp
   static Future<void> addSearchItemToUserHistory(String userId, dynamic item) async {
+    // Validate data before adding
+    if (item is Artist && (item.name.isEmpty || item.name.trim().isEmpty)) {
+      return; // Don't add invalid artists
+    }
+    if (item is Song && (item.title.isEmpty || item.title.trim().isEmpty)) {
+      return; // Don't add invalid songs
+    }
+    
     final currentHistory = await getUserSearchHistoryWithTimestamp(userId);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     
@@ -217,9 +272,17 @@ class SearchHistoryUtils {
     for (final item in historyWithTimestamp) {
       try {
         if (item['type'] == 'song') {
-          combined.add(Song.fromJson(Map<String, dynamic>.from(item['data'])));
+          final song = Song.fromJson(Map<String, dynamic>.from(item['data']));
+          // Validate song data
+          if (song.title.isNotEmpty && song.title.trim().isNotEmpty) {
+            combined.add(song);
+          }
         } else if (item['type'] == 'artist') {
-          combined.add(Artist.fromJson(Map<String, dynamic>.from(item['data'])));
+          final artist = Artist.fromJson(Map<String, dynamic>.from(item['data']));
+          // Validate artist data
+          if (artist.name.isNotEmpty && artist.name.trim().isNotEmpty) {
+            combined.add(artist);
+          }
         }
       } catch (e) {
         // Skip corrupted items
