@@ -27,18 +27,32 @@ void main() async {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playback,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
         avAudioSessionMode: AVAudioSessionMode.defaultMode,
         avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: AndroidAudioAttributes(
           contentType: AndroidAudioContentType.music,
-          flags: AndroidAudioFlags.audibilityEnforced,
+          flags: AndroidAudioFlags.none,
           usage: AndroidAudioUsage.media,
         ),
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
         androidWillPauseWhenDucked: false,
       ));
+      
+      // Configure session to handle interruptions gracefully
+      session.interruptionEventStream.listen((event) {
+        debugPrint('🎵 Audio interruption: ${event.type}');
+        if (event.type == AudioInterruptionType.duck) {
+          // Continue playing at reduced volume during duck
+          debugPrint('🎵 Audio ducked - continuing playback');
+        }
+      });
+      
+      session.becomingNoisyEventStream.listen((event) {
+        debugPrint('⚠️ Audio becoming noisy - pausing playback');
+        // Handle when headphones are unplugged, etc.
+      });
       debugPrint('✅ Audio session configured successfully');
     } catch (e) {
       debugPrint('⚠️ Error configuring audio session: $e');

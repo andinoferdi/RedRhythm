@@ -17,6 +17,7 @@ import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../widgets/video_thumbnail_widget.dart';
 import '../../utils/font_usage_guide.dart';
+import '../../utils/video_audio_manager.dart';
 
 import '../../utils/app_colors.dart';
 import '../../utils/app_config.dart';
@@ -129,6 +130,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   bool get wantKeepAlive => true; // Keep state alive when switching tabs
   
   bool _hasLoadedInitialData = false;
+  bool _shouldPauseVideos = false; // Track if we should pause videos when music is playing
   
   @override
   void initState() {
@@ -160,6 +162,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     if (state == AppLifecycleState.resumed && _hasLoadedInitialData && mounted) {
       Future.microtask(() {
         ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
+      });
+    }
+    
+    // Update global video audio manager based on app lifecycle
+    if (state == AppLifecycleState.paused) {
+      ref.read(videoAudioManagerProvider.notifier).appPaused();
+      setState(() {
+        _shouldPauseVideos = true;
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      ref.read(videoAudioManagerProvider.notifier).appResumed();
+      setState(() {
+        _shouldPauseVideos = false;
       });
     }
   }
@@ -1039,13 +1054,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
           Container(
             width: 140, // Width tetap
             height: 220, // Height ditambah untuk lebih vertical
-            child: VideoThumbnailWidget(
-              videoUrl: short.videoUrl ?? '',
-              width: 140,
-              height: 220,
-              borderRadius: BorderRadius.circular(8),
-              onTap: onTap,
-            ),
+                                child: Consumer(
+                      builder: (context, ref, child) {
+                        // Use global video audio manager for better coordination
+                        final videoAudioState = ref.watch(videoAudioManagerProvider);
+                        final playerState = ref.watch(playerControllerProvider);
+                        
+                        // Update global state when music playing status changes
+                        if (playerState.isPlaying != videoAudioState.isMusicPlaying) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (playerState.isPlaying) {
+                              ref.read(videoAudioManagerProvider.notifier).musicStarted();
+                            } else {
+                              ref.read(videoAudioManagerProvider.notifier).musicStopped();
+                            }
+                          });
+                        }
+                        
+                        return VideoThumbnailWidget(
+                          videoUrl: short.videoUrl ?? '',
+                          width: 140,
+                          height: 220,
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: onTap,
+                          shouldPause: videoAudioState.shouldPauseVideos,
+                        );
+                      },
+                    ),
           ),
           
           SizedBox(height: 8),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
+import 'package:audio_session/audio_session.dart';
 import '../utils/app_colors.dart';
 
 class VideoThumbnailWidget extends StatefulWidget {
@@ -8,6 +9,7 @@ class VideoThumbnailWidget extends StatefulWidget {
   final double height;
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
+  final bool shouldPause;
 
   const VideoThumbnailWidget({
     super.key,
@@ -16,6 +18,7 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.height = 240,
     this.borderRadius,
     this.onTap,
+    this.shouldPause = false,
   });
 
   @override
@@ -26,6 +29,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _hasError = false;
+  AudioSession? _audioSession;
 
   @override
   void initState() {
@@ -35,11 +39,33 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _disposeController();
     super.dispose();
   }
 
-  void _initializeVideo() {
+  void _disposeController() async {
+    try {
+      // Stop the video first
+      await _controller?.pause();
+      
+      // Properly dispose the controller
+      await _controller?.dispose();
+      _controller = null;
+      
+      // Deactivate audio session if we activated one
+      if (_audioSession != null) {
+        try {
+          await _audioSession!.setActive(false);
+        } catch (e) {
+          debugPrint('Error deactivating audio session: $e');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error disposing video controller: $e');
+    }
+  }
+
+  void _initializeVideo() async {
     if (widget.videoUrl.isEmpty) {
       setState(() {
         _hasError = true;
@@ -48,37 +74,69 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     }
 
     try {
+      // Configure audio session to NOT interrupt main audio
+      await _configureAudioSession();
+      
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
+        videoPlayerOptions: VideoPlayerOptions(
+          // Allow video to play in background without claiming audio focus
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
       );
 
-      _controller!.initialize().then((_) {
-        if (mounted) {
-          setState(() {
-            _isInitialized = true;
-          });
-          
-          // Start playing with muted sound and loop
-          _controller!.setVolume(0.0); // Muted
-          _controller!.setLooping(true);
-          _controller!.play();
-          
-          // Stop after 3 seconds and restart (for preview effect)
-          _startPreviewLoop();
-        }
-      }).catchError((error) {
-        debugPrint('Error initializing video thumbnail: $error');
-        if (mounted) {
-          setState(() {
-            _hasError = true;
-          });
-        }
-      });
+      await _controller!.initialize();
+      
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        
+        // CRITICAL: Set volume to 0 BEFORE playing to prevent audio conflicts
+        await _controller!.setVolume(0.0);
+        _controller!.setLooping(true);
+        
+        // Start playing silently
+        await _controller!.play();
+        
+        // Start preview loop
+        _startPreviewLoop();
+      }
+    } catch (error) {
+      debugPrint('Error initializing video thumbnail: $error');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _configureAudioSession() async {
+    try {
+      _audioSession = await AudioSession.instance;
+      
+      // Configure audio session to mix with others and not gain focus
+      await _audioSession!.configure(AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.ambient, // Key: Use ambient category
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.movie, // Video content
+          flags: AndroidAudioFlags.none,
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck, // Key: Use transient duck to avoid interruption
+        androidWillPauseWhenDucked: false,
+      ));
+      
+      debugPrint('✅ Video audio session configured for mixing');
     } catch (e) {
-      debugPrint('Error creating video controller: $e');
-      setState(() {
-        _hasError = true;
-      });
+      debugPrint('⚠️ Error configuring video audio session: $e');
+      // Continue without audio session configuration
     }
   }
 
@@ -92,12 +150,49 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       await Future.delayed(const Duration(seconds: 3));
       
       if (mounted && _controller != null && _controller!.value.isInitialized) {
+        // Ensure volume stays at 0 throughout playback
+        await _controller!.setVolume(0.0);
         await _controller!.seekTo(Duration.zero);
-        _controller!.play();
+        await _controller!.play();
       }
       
       return mounted && _controller != null;
     });
+  }
+
+  @override
+  void didUpdateWidget(VideoThumbnailWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Reinitialize if URL changes
+    if (widget.videoUrl != oldWidget.videoUrl) {
+      _disposeController();
+      _initializeVideo();
+    }
+    
+    // Handle pause/resume based on shouldPause parameter
+    if (widget.shouldPause != oldWidget.shouldPause) {
+      _handlePauseState();
+    }
+  }
+  
+  void _handlePauseState() async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    
+    try {
+      if (widget.shouldPause) {
+        // Pause the video to avoid audio conflicts
+        await _controller!.pause();
+        debugPrint('🎥 Video paused to avoid audio conflict');
+      } else {
+        // Resume the video with volume still at 0
+        await _controller!.setVolume(0.0);
+        await _controller!.play();
+        debugPrint('🎥 Video resumed silently');
+      }
+    } catch (e) {
+      debugPrint('Error handling video pause state: $e');
+    }
   }
 
   @override

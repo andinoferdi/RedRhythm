@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as just_audio;
+import 'package:audio_session/audio_session.dart';
 import 'package:get_it/get_it.dart';
 import '../../models/song.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/song_repository.dart';
 import '../states/player_state.dart' as app_state;
+import '../utils/video_audio_manager.dart';
 import 'play_history_controller.dart';
 
 /// Provider for player controller
@@ -17,7 +19,12 @@ final playerControllerProvider =
 
 /// Controller for handling music playback
 class PlayerController extends StateNotifier<app_state.PlayerState> {
-  final just_audio.AudioPlayer _audioPlayer = just_audio.AudioPlayer();
+  final just_audio.AudioPlayer _audioPlayer = just_audio.AudioPlayer(
+    // Ensure proper audio session handling for system volume
+    handleInterruptions: true,
+    androidApplyAudioAttributes: true,
+    handleAudioSessionActivation: true,
+  );
   final Ref ref;
 
   // Stream subscriptions for proper disposal
@@ -54,6 +61,7 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
   static const Duration _minSkipInterval = Duration(milliseconds: 200);
 
   String? _currentAudioUrl;
+  AudioSession? _audioSession;
 
   PlayerController(this.ref) : super(app_state.PlayerState.initial()) {
     _initAudioPlayer();
@@ -101,6 +109,25 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
             isPlaying: isPlaying,
             isBuffering: false,
           );
+
+          // Update global video audio manager when music playing state changes
+          if (isPlaying) {
+            // Ensure we have proper audio focus when music starts
+            _ensureMusicAudioFocus();
+            // Notify global manager that music started
+            try {
+              ref.read(videoAudioManagerProvider.notifier).musicStarted();
+            } catch (e) {
+              debugPrint('Error notifying video audio manager: $e');
+            }
+          } else {
+            // Notify global manager that music stopped
+            try {
+              ref.read(videoAudioManagerProvider.notifier).musicStopped();
+            } catch (e) {
+              debugPrint('Error notifying video audio manager: $e');
+            }
+          }
 
           // Reset play count timing when playback actually starts
           if (isPlaying &&
@@ -155,6 +182,35 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
         _updatePosition();
       }
     });
+  }
+
+  /// Ensure music player has proper audio focus
+  Future<void> _ensureMusicAudioFocus() async {
+    try {
+      _audioSession ??= await AudioSession.instance;
+      
+      // Reconfigure for music playback with system volume control enabled
+      await _audioSession!.configure(const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.music,
+          flags: AndroidAudioFlags.none, // Remove audibilityEnforced to allow system volume control
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: false,
+      ));
+      
+      // Activate the session
+      await _audioSession!.setActive(true);
+      debugPrint('🎵 Music audio focus ensured with system volume control');
+    } catch (e) {
+      debugPrint('⚠️ Error ensuring music audio focus: $e');
+    }
   }
 
   /// Update current position

@@ -15,6 +15,7 @@ import '../../providers/dynamic_color_provider.dart';
 import '../../routes/app_router.dart';
 import '../../providers/artist_select_provider.dart';
 import '../../utils/font_usage_guide.dart';
+import '../../utils/responsive_helper.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   bool _isLoadingArtist = false;
   List<Song> _artistSongs = [];
   bool _isLoadingArtistSongs = false;
+  Map<String, List<Song>> _artistSongsCache = {}; // Cache untuk avoid loading flicker
   late ArtistRepository _artistRepository;
   late SongRepository _songRepository;
 
@@ -140,9 +142,23 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
   Future<void> _loadArtistSongs(String artistName, String currentSongId) async {
     if (_isLoadingArtistSongs) return;
 
+    // Check cache first untuk avoid flickering
+    final cacheKey = '${artistName}_$currentSongId';
+    if (_artistSongsCache.containsKey(cacheKey)) {
+      setState(() {
+        _artistSongs = _artistSongsCache[cacheKey]!;
+        _isLoadingArtistSongs = false;
+      });
+      return;
+    }
+
+    // Show loading only if no cached data
     setState(() {
       _isLoadingArtistSongs = true;
-      _artistSongs = []; // Clear previous songs
+      // Don't clear _artistSongs if we have data to avoid flicker
+      if (_artistSongs.isEmpty) {
+        _artistSongs = [];
+      }
     });
 
     try {
@@ -151,6 +167,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         excludeSongId: currentSongId,
       );
       if (mounted) {
+        // Cache the result
+        _artistSongsCache[cacheKey] = songs;
+        
         setState(() {
           _artistSongs = songs;
           _isLoadingArtistSongs = false;
@@ -281,10 +300,13 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
       _originalSong = currentSong;
       _originalArtistName = currentSong.artist;
 
-      // Reload artist info and songs for new song
+      // Reload artist info and songs for new song only if artist changed
       if (_originalArtistName != null) {
         _loadArtistInfo(_originalArtistName!);
-        _loadArtistSongs(_originalArtistName!, currentSong.id);
+        // Only reload artist songs if artist actually changed
+        if (_currentArtist?.name != _originalArtistName) {
+          _loadArtistSongs(_originalArtistName!, currentSong.id);
+        }
       }
     }
 
@@ -343,11 +365,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
           // Scrollable Content with top padding for fixed header
           SingleChildScrollView(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top +
-                  80, // Space for fixed header
-              left: 20.0,
-              right: 20.0,
-              bottom: 40.0, // Increased bottom padding to prevent overflow
+              top: ResponsiveHelper.getHeaderHeight(context) + 10, // Responsive header height with spacing
+              left: ResponsiveHelper.getResponsiveSpacing(context, 20.0),
+              right: ResponsiveHelper.getResponsiveSpacing(context, 20.0),
+              bottom: ResponsiveHelper.getSafeBottomPadding(context) + 40.0,
             ),
             child: Column(
               children: [
@@ -656,51 +677,64 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             ),
           ),
 
-          // Fixed Header at the top
+          // Fixed Header at the top using ResponsiveHelper
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: Container(
-              height: MediaQuery.of(context).padding.top + 60,
-              decoration: const BoxDecoration(
-                color: Colors.transparent,
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Back button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        onPressed: () => context.router.maybePop(),
+            child: ResponsiveHelper.buildSafeHeader(
+              context: context,
+              gradientColors: [
+                Colors.black.withValues(alpha: 0.8),
+                Colors.black.withValues(alpha: 0.6),
+                Colors.transparent,
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back button with proper touch target
+                    ResponsiveHelper.buildTouchableButton(
+                      onTap: () => context.router.maybePop(),
+                      margin: const EdgeInsets.only(left: 4),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.white,
+                        size: 28,
                       ),
+                    ),
 
-                      // Now Playing text
-                      Text(
-                        'Now Playing',
-                        style: FontUsageGuide.appBarTitle,
-                      ),
-
-                      // Three-dot menu button
-                      IconButton(
-                        icon: const Icon(
-                          Icons.more_vert,
-                          color: Colors.white,
-                          size: 24,
+                    // Now Playing text with proper constraints
+                    Expanded(
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: Text(
+                          'Now Playing',
+                          style: FontUsageGuide.appBarTitle.copyWith(
+                            fontSize: ResponsiveHelper.getResponsiveFontSize(context, 18),
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        onPressed: () {
-                          // TODO: Show menu options
-                        },
                       ),
-                    ],
-                  ),
+                    ),
+
+                    // Three-dot menu button with proper touch target
+                    ResponsiveHelper.buildTouchableButton(
+                      onTap: () {
+                        // TODO: Show menu options
+                      },
+                      margin: const EdgeInsets.only(right: 4),
+                      child: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1337,19 +1371,44 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         // Horizontal scrollable song list
         SizedBox(
           height: 200, // Fixed height for horizontal scroll
-          child: _isLoadingArtistSongs
+          child: _isLoadingArtistSongs && _artistSongs.isEmpty
               ? _buildLoadingArtistSongs()
               : _artistSongs.isEmpty
                   ? _buildEmptyArtistSongs(displayArtistName)
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      itemCount: _artistSongs.length,
-                      itemBuilder: (context, index) {
-                        final song = _artistSongs[index];
-                        return _buildArtistSongCard(
-                            song, index == 0, index == _artistSongs.length - 1);
-                      },
+                  : Stack(
+                      children: [
+                        ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          itemCount: _artistSongs.length,
+                          itemBuilder: (context, index) {
+                            final song = _artistSongs[index];
+                            return _buildArtistSongCard(
+                                song, index == 0, index == _artistSongs.length - 1);
+                          },
+                        ),
+                        // Show subtle loading indicator on top if refreshing
+                        if (_isLoadingArtistSongs && _artistSongs.isNotEmpty)
+                          Positioned(
+                            top: 8,
+                            right: 16,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
         ),
 
