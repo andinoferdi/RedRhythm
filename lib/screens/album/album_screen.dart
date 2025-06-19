@@ -11,6 +11,10 @@ import '../../widgets/song_item_widget.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/shimmer_widget.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../utils/app_colors.dart';
+import '../../models/playlist.dart';
+import '../../repositories/song_playlist_repository.dart';
+import '../../widgets/playlist_selection_modal.dart';
 
 @RoutePage()
 class AlbumScreen extends ConsumerStatefulWidget {
@@ -32,6 +36,7 @@ class AlbumScreen extends ConsumerStatefulWidget {
 class _AlbumScreenState extends ConsumerState<AlbumScreen> {
   late ScrollController _scrollController;
   late AlbumRepository _albumRepository;
+  late SongPlaylistRepository _playlistRepository;
 
   Album? _album;
   List<Song> _songs = [];
@@ -39,11 +44,21 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
   bool _isLoadingSongs = true;
   String? _errorMessage;
 
+  // Playlist status tracking
+  Map<String, bool> _songPlaylistStatus = {};
+  bool _isLoadingPlaylistStatus = false;
+
+  // Cache for playlist data to reduce database calls
+  static List<Playlist>? _cachedPlaylists;
+  static DateTime? _cacheTimestamp;
+  static const Duration _cacheValidDuration = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _albumRepository = AlbumRepository(PocketBaseService());
+    _playlistRepository = SongPlaylistRepository(PocketBaseService());
     _loadData();
     
     // Reset shuffle mode when entering album screen (context change)
@@ -127,16 +142,44 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
       });
 
       if (album != null) {
-        List<Song> songs;
-        if (album.id.isNotEmpty) {
-          songs = await _albumRepository.getAlbumSongs(album.id);
-        } else {
-          // Fallback: search by album name
-          songs = [];
+        List<Song> songs = [];
+        
+        try {
+          if (album.id.isNotEmpty) {
+            songs = await _albumRepository.getAlbumSongs(album.id);
+          }
+          
+          // If no songs found but we have album title, try searching by name
+          if (songs.isEmpty && album.title.isNotEmpty) {
+            songs = await _albumRepository.getSongsByAlbumName(album.title);
+          }
+        } catch (songsError) {
+          // Don't fail the whole screen if songs can't be loaded
+          print('Warning: Could not load songs for album: $songsError');
+          
+          // Try fallback search by album name
+          try {
+            if (album.title.isNotEmpty) {
+              songs = await _albumRepository.getSongsByAlbumName(album.title);
+            }
+          } catch (fallbackError) {
+            print('Warning: Fallback search also failed: $fallbackError');
+            songs = [];
+          }
         }
 
         setState(() {
           _songs = songs;
+          _isLoadingSongs = false;
+        });
+
+        // Load playlist status for all songs
+        if (songs.isNotEmpty) {
+          _checkSongsPlaylistStatus(songs);
+        }
+      } else {
+        setState(() {
+          _songs = [];
           _isLoadingSongs = false;
         });
       }
@@ -147,6 +190,80 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         _isLoadingSongs = false;
       });
     }
+  }
+
+  Future<void> _checkSongsPlaylistStatus(List<Song> songs) async {
+    if (songs.isEmpty) return;
+
+    setState(() {
+      _isLoadingPlaylistStatus = true;
+    });
+
+    try {
+      List<Playlist> allPlaylists;
+
+      // Use cache if available and valid
+      final now = DateTime.now();
+      if (_cachedPlaylists != null &&
+          _cacheTimestamp != null &&
+          now.difference(_cacheTimestamp!).compareTo(_cacheValidDuration) < 0) {
+        allPlaylists = _cachedPlaylists!;
+      } else {
+        allPlaylists = await _playlistRepository.getAllPlaylists();
+        // Update cache
+        _cachedPlaylists = allPlaylists;
+        _cacheTimestamp = now;
+      }
+
+      Map<String, bool> statusMap = {};
+
+      for (final song in songs) {
+        bool foundInAnyPlaylist = false;
+        for (final playlist in allPlaylists) {
+          if (playlist.songs.contains(song.id)) {
+            foundInAnyPlaylist = true;
+            break;
+          }
+        }
+        statusMap[song.id] = foundInAnyPlaylist;
+      }
+
+      if (mounted) {
+        setState(() {
+          _songPlaylistStatus = statusMap;
+          _isLoadingPlaylistStatus = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingPlaylistStatus = false;
+          // Default all to false on error
+          for (final song in songs) {
+            _songPlaylistStatus[song.id] = false;
+          }
+        });
+      }
+    }
+  }
+
+  // Clear cache when playlists are modified
+  static void _clearPlaylistCache() {
+    _cachedPlaylists = null;
+    _cacheTimestamp = null;
+  }
+
+  Future<void> _showPlaylistModal(BuildContext context, Song song) async {
+    await showPlaylistSelectionModal(
+      context,
+      song,
+      onPlaylistsChanged: () {
+        // Clear cache to force refresh
+        _clearPlaylistCache();
+        // Refresh playlist status for all songs
+        _checkSongsPlaylistStatus(_songs);
+      },
+    );
   }
 
   void _playSong(Song song) {
@@ -270,7 +387,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           _buildMainContent(),
@@ -306,9 +423,10 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     return CustomScrollView(
       controller: _scrollController,
       slivers: [
-        _buildAlbumHeader(),
+        _buildSliverAppBar(),
+        SliverToBoxAdapter(child: _buildAlbumInfo()),
         SliverToBoxAdapter(child: _buildAlbumActions()),
-        SliverToBoxAdapter(child: _buildTracksSection()),
+        _buildSongsList(),
         SliverToBoxAdapter(
           child: SizedBox(
             height: ref.watch(playerControllerProvider).currentSong != null
@@ -320,167 +438,147 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     );
   }
 
-  Widget _buildAlbumHeader() {
+  Widget _buildSliverAppBar() {
     return SliverAppBar(
-      expandedHeight: 320,
-      pinned: false,
-      floating: false,
+      expandedHeight: 300,
+      pinned: true,
       backgroundColor: Colors.transparent,
-      automaticallyImplyLeading: false,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Album cover
-            ImageHelpers.buildSafeNetworkImage(
-              imageUrl: _album!.coverImageUrl ?? '',
-              width: double.infinity,
-              height: 320,
-              fit: BoxFit.cover,
-              fallbackWidget: Container(
-                color: const Color(0xFF282828),
-                child: const Center(
-                  child: Icon(
-                    Icons.album,
-                    size: 120,
-                    color: Colors.white54,
-                  ),
-                ),
-              ),
-            ),
-
-            // Gradient overlay
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.black.withValues(alpha: 0.7),
-                    const Color(0xFF121212),
-                  ],
-                  stops: const [0.0, 0.4, 0.8, 1.0],
-                ),
-              ),
-            ),
-
-            // Header controls
-            Positioned(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 16,
-              right: 16,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.router.maybePop(),
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Album info
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _album!.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Gotham',
-                      letterSpacing: 0.8,
-                      height: 1.1,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Color(0xFF282828),
-                        child: Icon(Icons.person, size: 16, color: Colors.white),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _album!.artistName,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Gotham',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Album • ${_album!.releaseYear > 0 ? _album!.releaseYear : 'Unknown Year'}',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.6),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Gotham',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => context.router.maybePop(),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.more_vert, color: Colors.white),
+          onPressed: () {},
         ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          color: AppColors.background,
+          child: Center(
+            child: Container(
+              width: 200,
+              height: 200,
+              margin: const EdgeInsets.only(top: 60),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: _album!.coverImageUrl ?? '',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    color: const Color(0xFF282828),
+                    child: const Center(
+                      child: Icon(
+                        Icons.album,
+                        size: 80,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAlbumInfo() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _album!.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const CircleAvatar(
+                radius: 12,
+                backgroundColor: Color(0xFF282828),
+                child: Icon(Icons.person, size: 16, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _album!.artistName,
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Album • ${_album!.releaseYear > 0 ? _album!.releaseYear : 'Unknown Year'}',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildAlbumActions() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Row(
         children: [
-          // Download button (placeholder)
+          // Add to library button
           Container(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
+              border: Border.all(color: Colors.grey[600]!, width: 1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: IconButton(
               onPressed: () {},
-              icon: const Icon(Icons.download, color: Colors.white),
+              icon: const Icon(Icons.add, color: Colors.white),
+              iconSize: 20,
             ),
           ),
-
-          const SizedBox(width: 16),
-
+          const SizedBox(width: 12),
+          
+          // Download button
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.download, color: Colors.white),
+            iconSize: 24,
+          ),
+          
+          const SizedBox(width: 12),
+          
           // More options
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.more_vert, color: Colors.white),
+            iconSize: 24,
           ),
 
           const Spacer(),
@@ -496,10 +594,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                   Icons.shuffle, 
                   color: playerState.shuffleMode ? Colors.red : Colors.white,
                 ),
-                style: IconButton.styleFrom(
-                  backgroundColor: playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
-                  padding: const EdgeInsets.all(12),
-                ),
+                iconSize: 24,
               );
             },
           ),
@@ -524,7 +619,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                   icon: Icon(
                     isPlaying ? Icons.pause : Icons.play_arrow,
                     color: Colors.white,
-                    size: 32,
+                    size: 28,
                   ),
                 ),
               );
@@ -535,141 +630,170 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     );
   }
 
-  Widget _buildTracksSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _isLoadingSongs
-              ? _buildLoadingSongs()
-              : _songs.isEmpty
-                  ? _buildNoSongsMessage()
-                  : _buildSongsList(),
-        ],
+  Widget _buildSongsList() {
+    if (_isLoadingSongs) {
+      return SliverToBoxAdapter(child: _buildLoadingSongs());
+    }
+
+    if (_songs.isEmpty) {
+      return SliverToBoxAdapter(child: _buildNoSongsMessage());
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final song = _songs[index];
+
+          return Consumer(
+            builder: (context, ref, child) {
+              final playerState = ref.watch(playerControllerProvider);
+              final albumContextId = _album!.artistId.isNotEmpty ? _album!.artistId : 'album_${_album!.id}';
+              
+              final isCurrentSong = playerState.currentSong?.id == song.id;
+              final isPlayingFromThisAlbum = playerState.currentArtistId == albumContextId;
+              
+              final shouldShowAsPlaying = isCurrentSong && 
+                                        isPlayingFromThisAlbum && 
+                                        playerState.isPlaying;
+              
+              bool isActuallyPlayingFromQueue = false;
+              if (shouldShowAsPlaying && playerState.queue.isNotEmpty) {
+                final currentIndex = playerState.currentIndex;
+                if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
+                  final queueSong = playerState.queue[currentIndex];
+                  isActuallyPlayingFromQueue = queueSong.id == song.id;
+                }
+              }
+              
+              final isPlaying = shouldShowAsPlaying && isActuallyPlayingFromQueue;
+              final isInPlaylist = _songPlaylistStatus[song.id] ?? false;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                child: Row(
+                  children: [
+                    // Track number or play indicator
+                    SizedBox(
+                      width: 24,
+                      child: isPlaying
+                          ? const Icon(
+                              Icons.volume_up,
+                              color: Colors.red,
+                              size: 16,
+                            )
+                          : Text(
+                              song.order > 0 ? '${song.order}' : '${index + 1}',
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Use SongItemWidget for consistency
+                    Expanded(
+                      child: SongItemWidget(
+                        song: song,
+                        subtitle: song.formattedPlayCount,
+                        isCurrentSong: isCurrentSong && isPlayingFromThisAlbum,
+                        isPlaying: isPlaying,
+                        onTap: () => _playSong(song),
+                        contentPadding: EdgeInsets.zero,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Playlist status indicator
+                            if (_isLoadingPlaylistStatus)
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+                                ),
+                              )
+                            else
+                              GestureDetector(
+                                onTap: () => _showPlaylistModal(context, song),
+                                child: Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    color: isInPlaylist ? Colors.red : Colors.transparent,
+                                    shape: BoxShape.circle,
+                                    border: isInPlaylist 
+                                        ? null 
+                                        : Border.all(color: Colors.grey[600]!, width: 1),
+                                  ),
+                                  child: Icon(
+                                    isInPlaylist ? Icons.check : Icons.add,
+                                    color: isInPlaylist ? Colors.white : Colors.grey[400],
+                                    size: 12,
+                                  ),
+                                ),
+                              ),
+                            
+                            const SizedBox(width: 8),
+
+                            // More options
+                            IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.more_vert,
+                                color: Colors.grey[400],
+                                size: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+        childCount: _songs.length,
       ),
     );
   }
 
-  Widget _buildSongsList() {
-    return Column(
-      children: _songs.asMap().entries.map((entry) {
-        final index = entry.key;
-        final song = entry.value;
-
-        return Consumer(
-          builder: (context, ref, child) {
-            final playerState = ref.watch(playerControllerProvider);
-            final albumContextId = _album!.artistId.isNotEmpty ? _album!.artistId : 'album_${_album!.id}';
-            
-            final isCurrentSong = playerState.currentSong?.id == song.id;
-            final isPlayingFromThisAlbum = playerState.currentArtistId == albumContextId;
-            
-            final shouldShowAsPlaying = isCurrentSong && 
-                                      isPlayingFromThisAlbum && 
-                                      playerState.isPlaying;
-            
-            bool isActuallyPlayingFromQueue = false;
-            if (shouldShowAsPlaying && playerState.queue.isNotEmpty) {
-              final currentIndex = playerState.currentIndex;
-              if (currentIndex >= 0 && currentIndex < playerState.queue.length) {
-                final queueSong = playerState.queue[currentIndex];
-                isActuallyPlayingFromQueue = queueSong.id == song.id;
-              }
-            }
-            
-            final isPlaying = shouldShowAsPlaying && isActuallyPlayingFromQueue;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  // Track number with play indicator
-                  SizedBox(
-                    width: 24,
-                    child: isPlaying
-                        ? const Icon(
-                            Icons.volume_up,
-                            color: Colors.red,
-                            size: 16,
-                          )
-                        : Text(
-                            '${index + 1}',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Use SongItemWidget for consistency
-                  Expanded(
-                    child: SongItemWidget(
-                      song: song,
-                      subtitle: song.formattedPlayCount,
-                      isCurrentSong: isCurrentSong && isPlayingFromThisAlbum,
-                      isPlaying: isPlaying,
-                      onTap: () => _playSong(song),
-                      contentPadding: EdgeInsets.zero,
-                      trailing: isPlaying 
-                          ? null
-                          : IconButton(
-                              onPressed: () {},
-                              icon: const Icon(
-                                Icons.more_vert,
-                                color: Colors.grey,
-                                size: 20,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      }).toList(),
-    );
-  }
-
   Widget _buildLoadingSongs() {
-    return Column(
-      children: List.generate(
-        6,
-        (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              const SizedBox(width: 24),
-              const SizedBox(width: 16),
-              ShimmerImagePlaceholder(
-                width: 50,
-                height: 50,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ShimmerImagePlaceholder(
-                      width: 120,
-                      height: 16,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    const SizedBox(height: 8),
-                    ShimmerImagePlaceholder(
-                      width: 80,
-                      height: 12,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: List.generate(
+          6,
+          (index) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                const SizedBox(width: 24),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ShimmerImagePlaceholder(
+                        width: 120,
+                        height: 16,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      const SizedBox(height: 8),
+                      ShimmerImagePlaceholder(
+                        width: 80,
+                        height: 12,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

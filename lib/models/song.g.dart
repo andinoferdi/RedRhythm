@@ -19,6 +19,7 @@ _$SongImpl _$$SongImplFromJson(Map<String, dynamic> json) => _$SongImpl(
       audioFileUrl: json['audioFileUrl'] as String?,
       audioFileName: json['audioFileName'] as String?,
       playCount: (json['playCount'] as num?)?.toInt() ?? 0,
+      order: (json['order'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
@@ -35,4 +36,5 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'audioFileUrl': instance.audioFileUrl,
       'audioFileName': instance.audioFileName,
       'playCount': instance.playCount,
+      'order': instance.order,
     };

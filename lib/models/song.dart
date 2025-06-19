@@ -21,6 +21,7 @@ class Song with _$Song {
     String? audioFileUrl,
     String? audioFileName,
     @Default(0) int playCount, // Track how many times this song has been played
+    @Default(0) int order, // Order/position in album
   }) = _Song;
 
   factory Song.fromJson(Map<String, dynamic> json) => _$SongFromJson(json);
@@ -31,15 +32,26 @@ class Song with _$Song {
     final artistRecord = record.expand['artist_id']?[0];
     final albumRecord = record.expand['album_id']?[0];
     
-    // Extract artist name
-    final artistName = artistRecord?.data['name'] as String? ?? 'Unknown Artist';
+    // Extract artist name - try expand first, then fallback to direct field
+    String artistName = 'Unknown Artist';
+    if (artistRecord != null) {
+      artistName = artistRecord.data['name'] as String? ?? 'Unknown Artist';
+    } else if (record.data.containsKey('artist_name')) {
+      artistName = record.data['artist_name'] as String? ?? 'Unknown Artist';
+    } else if (record.data.containsKey('artist')) {
+      artistName = record.data['artist'] as String? ?? 'Unknown Artist';
+    }
     
-    // Extract album name - try 'title' first, then 'name'
+    // Extract album name - try expand first, then fallback to direct field
     String albumName = 'Unknown Album';
     if (albumRecord != null) {
       albumName = albumRecord.data['title'] as String? ?? 
                   albumRecord.data['name'] as String? ?? 
                   'Unknown Album';
+    } else if (record.data.containsKey('album_name')) {
+      albumName = record.data['album_name'] as String? ?? 'Unknown Album';
+    } else if (record.data.containsKey('album')) {
+      albumName = record.data['album'] as String? ?? 'Unknown Album';
     }
     
     // Extract album cover URL with enhanced error handling
@@ -113,6 +125,20 @@ class Song with _$Song {
         audioFileName = audioFileValue;
       }
     }
+
+    // Extract order from database - prioritize 'order' field
+    int order = 0;
+    if (record.data.containsKey('order')) {
+      order = record.data['order'] as int? ?? 0;
+    } else if (record.data.containsKey('track_number')) {
+      order = record.data['track_number'] as int? ?? 0;
+    } else if (record.data.containsKey('track')) {
+      order = record.data['track'] as int? ?? 0;
+    } else if (record.data.containsKey('number')) {
+      order = record.data['number'] as int? ?? 0;
+    } else if (record.data.containsKey('position')) {
+      order = record.data['position'] as int? ?? 0;
+    }
     
     return Song(
       id: record.id,
@@ -127,6 +153,7 @@ class Song with _$Song {
       audioFileName: audioFileName,
       audioFileUrl: null, // URL akan dibuat di PlayerController
       playCount: record.data['play_count'] as int? ?? 0, // Get play count from PocketBase
+      order: order, // Order from database
     );
   }
   

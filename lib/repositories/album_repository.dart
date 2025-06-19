@@ -111,17 +111,71 @@ class AlbumRepository {
     try {
       await _pbService.initialize();
       
+      // Validate album ID
+      if (albumId.isEmpty) {
+        return [];
+      }
+      
+      print('DEBUG: Loading songs for album ID: $albumId');
+      
+      // Use simple query without sorting - let client handle order
       final result = await _pbService.pb.collection('songs').getList(
         page: 1,
         perPage: 100,
         filter: 'album_id = "$albumId"',
         expand: 'artist_id,album_id',
-        sort: 'track_number,title',
       );
-
-      return result.items.map((record) => Song.fromRecord(record)).toList();
+      
+      print('DEBUG: Found ${result.items.length} songs');
+      
+      final songs = result.items.map((record) {
+        print('DEBUG: Song record data: ${record.data}');
+        print('DEBUG: Song expand data: ${record.expand}');
+        return Song.fromRecord(record);
+      }).toList();
+      
+      // Sort by order if available, otherwise keep database order
+      songs.sort((a, b) {
+        if (a.order > 0 && b.order > 0) {
+          return a.order.compareTo(b.order);
+        }
+        // If order is not available, maintain original order
+        return 0;
+      });
+      
+      print('DEBUG: Processed songs: ${songs.map((s) => '${s.title} by ${s.artist} (order: ${s.order})').toList()}');
+      
+      return songs;
     } catch (e) {
-      throw Exception('Failed to get album songs: $e');
+      print('DEBUG: Overall error in getAlbumSongs: $e');
+      // Return empty list instead of throwing to prevent app crash
+      return [];
+    }
+  }
+
+  /// Get songs by album name (fallback method)
+  Future<List<Song>> getSongsByAlbumName(String albumName) async {
+    try {
+      await _pbService.initialize();
+      
+      if (albumName.isEmpty) {
+        return [];
+      }
+      
+      // Try to search songs that contain the album name
+      try {
+        final result = await _pbService.pb.collection('songs').getList(
+          page: 1,
+          perPage: 100,
+          filter: 'album_name ~ "$albumName"',
+          sort: 'created',
+        );
+        return result.items.map((record) => Song.fromRecord(record)).toList();
+      } catch (e) {
+        return [];
+      }
+    } catch (e) {
+      return [];
     }
   }
 
