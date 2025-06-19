@@ -94,7 +94,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ),
               const SizedBox(height: 20),
                             Text(
-                'Admin Options',
+                            'Admin Options',
                 style: FontUsageGuide.modalTitle,
               ),
               const SizedBox(height: 20),
@@ -167,7 +167,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                                          playlist.data['name'] ?? 'Playlist Tanpa Judul',
                         style: FontUsageGuide.modalTitle,
                       ),
                       Text(
@@ -363,10 +363,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 Expanded(
                   child: Text(
                     'Playlist "${playlist.data['name']}" berhasil dihapus',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                   ),
                 ),
               ],
@@ -644,7 +641,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       Text(
                         artistSelect.artistName ?? 'Unknown Artist',
                         style: FontUsageGuide.modalTitle,
-                      ),
+                        ),
                       Text(
                         'Artis',
                         style: FontUsageGuide.metadata,
@@ -792,10 +789,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 Expanded(
                   child: Text(
                     'Telah berhenti mengikuti "${artistSelect.artistName}"',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                   ),
                 ),
               ],
@@ -834,10 +828,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 Expanded(
                   child: Text(
                     'Album "${albumSelect.albumTitle}" dihapus dari library',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                   ),
                 ),
               ],
@@ -1290,13 +1281,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                                       const Icon(Icons.check_circle,
                                                           color: Colors.black),
                                                       const SizedBox(width: 8),
-                                                      Text(
-                                                        'Playlist "$name" berhasil dibuat!',
-                                                        style: const TextStyle(
-                                                          color: Colors.black,
-                                                          fontWeight: FontWeight.w700,
-                                                        ),
-                                                      ),
+                                                                                            Text(
+                                        'Playlist "$name" berhasil dibuat!',
+                                        style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
+                                      ),
                                                     ],
                                                   ),
                                                   backgroundColor: Colors.white,

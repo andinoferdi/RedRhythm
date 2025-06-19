@@ -8,6 +8,7 @@ import '../../widgets/shimmer_widget.dart';
 import '../../utils/image_helpers.dart';
 import '../../providers/artist_select_provider.dart';
 import '../../widgets/spotify_search_bar.dart';
+import '../../utils/font_usage_guide.dart';
 
 @RoutePage()
 class ArtistSelectionScreen extends ConsumerStatefulWidget {
@@ -139,13 +140,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                       const Expanded(
                         child: Text(
                           'Pilih artis lain yang kamu suka.',
-                          style: TextStyle(
-                            color: Colors.white,
-                                                      fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.homeGreeting,
                         ),
                       ),
                     ],
@@ -189,12 +184,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
                     ),
                     child: Text(
                       'Selesai (${_selectedArtists.length})',
-                      style: const TextStyle(
-                                              fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                        fontFamily: 'Gotham',
-                      ),
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                     ),
                   ),
                 ),
@@ -275,11 +265,9 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
               Flexible( // Use Flexible to allow text to shrink if needed
                 child: Text(
                   artist.name,
-                  style: const TextStyle(
+                  style: FontUsageGuide.listArtistName.copyWith(
                     color: Colors.white,
-                    fontSize: 12, // Reduced from 14 to fit better
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Gotham',
+                    fontSize: 12,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
@@ -304,12 +292,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
       child: Center(
         child: Text(
           artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20, // Reduced from 24 to match smaller image
-            fontWeight: FontWeight.w900,
-            fontFamily: 'Gotham',
-          ),
+          style: FontUsageGuide.playerMainSongTitle.copyWith(fontSize: 20),
         ),
       ),
     );
@@ -363,11 +346,7 @@ class _ArtistSelectionScreenState extends ConsumerState<ArtistSelectionScreen> {
             _searchController.text.isNotEmpty
                 ? 'Tidak ada artist yang ditemukan'
                 : 'Belum ada artist',
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 16,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.emptyStateMessage,
           ),
 
         ],

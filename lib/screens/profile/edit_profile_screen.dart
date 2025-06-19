@@ -166,9 +166,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
                           Text(
-              'New Profile Picture',
+                'New Profile Picture',
               style: FontUsageGuide.modalTitle,
-            ),
+              ),
               const SizedBox(height: 20),
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
@@ -274,13 +274,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             const SizedBox(width: 8),
             Text(
               message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-                height: 1.4,
-              ),
+              style: FontUsageGuide.authButtonText.copyWith(color: Colors.white),
             ),
           ],
         ),
@@ -322,13 +316,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             const SizedBox(width: 8),
             Text(
               message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-                height: 1.4,
-              ),
+              style: FontUsageGuide.authButtonText.copyWith(color: Colors.white),
             ),
           ],
         ),
@@ -668,7 +656,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   child:                   Text(
                     'Modified',
                     style: FontUsageGuide.navigationLabel.copyWith(
-                      color: AppColors.primary, 
+                      color: AppColors.primary,
                       fontSize: 10,
                     ),
                   ),

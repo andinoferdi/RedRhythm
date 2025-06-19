@@ -7,6 +7,7 @@ import '../../services/pocketbase_service.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../models/song.dart';
 import '../../widgets/playlist_image_widget.dart';
+import '../../utils/font_usage_guide.dart';
 
 import 'add_songs_screen.dart';
 import 'edit_playlist_screen.dart';
@@ -350,10 +351,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                 Expanded(
                   child: Text(
                     '${song.title} berhasil ditambahkan',
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                   ),
                 ),
               ],
@@ -667,13 +665,9 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
 
   Widget _buildCreatorText() {
     if (_isLoadingCreator) {
-      return Text(
+      return       Text(
         'Loading...',
-        style: TextStyle(
-          color: Colors.grey[400],
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
+        style: FontUsageGuide.metadata.copyWith(color: Colors.grey[400]),
       );
     }
 
@@ -688,11 +682,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
 
     return Text(
       'Dibuat oleh $displayName',
-      style: TextStyle(
-        color: Colors.grey[400],
-        fontSize: 14,
-        fontWeight: FontWeight.w700,
-      ),
+      style: FontUsageGuide.metadata.copyWith(color: Colors.grey[400]),
     );
   }
 
@@ -705,15 +695,13 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  _currentPlaylist.data['name'] ?? 'Playlist Tanpa Judul',
-                  style: const TextStyle(
-                    color: Colors.white,
-                                      fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.4,
+                child:                   Text(
+                    _currentPlaylist.data['name'] ?? 'Playlist Tanpa Judul',
+                    style: FontUsageGuide.homeGreeting.copyWith(
+                      color: Colors.white,
+                      letterSpacing: 0.4,
+                    ),
                   ),
-                ),
               ),
               IconButton(
                 onPressed: _showEditPlaylistDialog,
@@ -790,11 +778,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                   ),
                   label: Text(
                     isPlaylistPlaying && playerState.isPlaying ? 'Jeda' : 'Putar',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.white),
                     overflow: TextOverflow.visible, // Prevent text cutoff
                   ),
                   style: ElevatedButton.styleFrom(
@@ -857,7 +841,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
               children: [
                 Text(
                   _errorMessage!,
-                  style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.modalBody.copyWith(color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -888,7 +872,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Playlist masih kosong',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+                  style: FontUsageGuide.emptyStateMessage.copyWith(color: Colors.grey[400]),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -903,9 +887,9 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                 ElevatedButton.icon(
                   onPressed: _navigateToAddSongs,
                   icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text(
+                  label: Text(
                     'Tambah Lagu',
-                    style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+                    style: FontUsageGuide.authButtonText.copyWith(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -976,15 +960,14 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                               color: Colors.red,
                               size: 16,
                             )
-                          : Text(
-                              '${song.order > 0 ? song.order : index + 1}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                          :                               Text(
+                                '${song.order > 0 ? song.order : index + 1}',
+                                style: FontUsageGuide.metadata.copyWith(
+                                  color: Colors.grey,
+                                  fontSize: 16,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
                     ),
                     const SizedBox(width: 16),
 
@@ -1021,13 +1004,11 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Lagu yang Direkomendasikan',
-                  style: TextStyle(
+                  style: FontUsageGuide.homeSectionHeader.copyWith(
                     color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
                   ),
                 ),
@@ -1045,12 +1026,11 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                         ),
                       )
                     : const Icon(Icons.refresh, color: Colors.black, size: 18),
-                label: const Text(
+                label: Text(
                   'Muat ulang',
-                  style: TextStyle(
+                  style: FontUsageGuide.authButtonText.copyWith(
                     color: Colors.black,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(

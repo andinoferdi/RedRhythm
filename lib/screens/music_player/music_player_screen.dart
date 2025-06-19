@@ -14,6 +14,7 @@ import '../../utils/color_extractor.dart';
 import '../../providers/dynamic_color_provider.dart';
 import '../../routes/app_router.dart';
 import '../../providers/artist_select_provider.dart';
+import '../../utils/font_usage_guide.dart';
 
 @RoutePage()
 class MusicPlayerScreen extends ConsumerStatefulWidget {
@@ -180,10 +181,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   Expanded(
                     child: Text(
                       'Telah berhenti mengikuti "${artist.name}"',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                     ),
                   ),
                 ],
@@ -208,10 +206,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   Expanded(
                     child: Text(
                       'Kini mengikuti "${artist.name}"',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                     ),
                   ),
                 ],
@@ -253,7 +248,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
         body: Center(
           child: Text(
             'No song is currently playing',
-            style: TextStyle(color: AppColors.text, fontFamily: 'Gotham'),
+            style: FontUsageGuide.emptyStateMessage,
           ),
         ),
       );
@@ -422,11 +417,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       },
                       child: Text(
                         currentSong.title,
-                        style: TextStyle(
+                        style: FontUsageGuide.playerMainSongTitle.copyWith(
                           color: colors.textPrimary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Gotham',
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -442,10 +434,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       },
                       child: Text(
                         currentSong.artist,
-                        style: TextStyle(
+                        style: FontUsageGuide.playerMainArtistName.copyWith(
                           color: colors.textSecondary,
-                          fontSize: 18,
-                          fontFamily: 'Gotham',
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -490,11 +480,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         children: [
                           Text(
                             _formatDuration(playerState.currentPosition),
-                            style: TextStyle(color: colors.textSecondary, fontFamily: 'Gotham'),
+                            style: FontUsageGuide.playerDuration.copyWith(color: colors.textSecondary),
                           ),
                           Text(
                             _formatDuration(currentSong.duration),
-                            style: TextStyle(color: colors.textSecondary, fontFamily: 'Gotham'),
+                            style: FontUsageGuide.playerDuration.copyWith(color: colors.textSecondary),
                           ),
                         ],
                       ),
@@ -693,14 +683,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       ),
 
                       // Now Playing text
-                      const Text(
+                      Text(
                         'Now Playing',
-                        style: TextStyle(
-                          fontFamily: 'Gotham',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
+                        style: FontUsageGuide.appBarTitle,
                       ),
 
                       // Three-dot menu button
@@ -783,18 +768,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
       child: Stack(
         children: [
           // "Lyrics" text overlay
-          const Positioned(
+          Positioned(
             top: 16,
             left: 20,
             child: Text(
               'Lyrics',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Gotham',
+              style: FontUsageGuide.modalTitle.copyWith(
                 shadows: [
-                  Shadow(
+                  const Shadow(
                     color: Colors.black26,
                     offset: Offset(1, 1),
                     blurRadius: 2,
@@ -831,14 +812,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   blendMode: BlendMode.dstIn,
                   child: Text(
                     previewText,
-                    style: const TextStyle(
+                    style: FontUsageGuide.modalBody.copyWith(
                       color: Colors.white,
-                      fontSize: 16,
-                      height: 1.6,
-                      fontFamily: 'Gotham',
-                      fontWeight: FontWeight.bold,
                       shadows: [
-                        Shadow(
+                        const Shadow(
                           color: Colors.black26,
                           offset: Offset(1, 1),
                           blurRadius: 2,
@@ -875,11 +852,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         children: [
                           Text(
                             'Tampilkan Lirik',
-                            style: TextStyle(
+                            style: FontUsageGuide.modalButton.copyWith(
                               color: colors.primary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Gotham',
                             ),
                           ),
                           const SizedBox(width: 6),
@@ -937,20 +911,18 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 color: AppColors.greyDark,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Lihat Detail',
-                    style: TextStyle(
+                    style: FontUsageGuide.navigationLabel.copyWith(
                       color: AppColors.greyLight,
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
                     ),
                   ),
-                  SizedBox(width: 4),
-                  Icon(
+                  const SizedBox(width: 4),
+                  const Icon(
                     Icons.arrow_forward_ios,
                     color: AppColors.greyLight,
                     size: 12,
@@ -1091,18 +1063,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               ),
 
               // "Tentang artis" text overlay
-              const Positioned(
+              Positioned(
                 top: 16,
                 left: 16,
                 child: Text(
                   'Tentang artis',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Gotham',
+                  style: FontUsageGuide.modalTitle.copyWith(
                     shadows: [
-                      Shadow(
+                      const Shadow(
                         color: Colors.black54,
                         offset: Offset(1, 1),
                         blurRadius: 3,
@@ -1129,23 +1097,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       children: [
                         Text(
                           artist.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.homeSectionHeader,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '9,3 jt pendengar bulanan', // Static for now
-                          style: const TextStyle(
-                            color: AppColors.greyLight,
-                            fontSize: 14,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.metadata,
                         ),
                       ],
                     ),
@@ -1175,11 +1134,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                           ),
                           child: Text(
                             isFollowing ? 'Mengikuti' : 'Ikuti',
-                            style: const TextStyle(
+                            style: FontUsageGuide.navigationLabel.copyWith(
                               color: Colors.black,
                               fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Gotham',
                             ),
                           ),
                         ),
@@ -1217,14 +1174,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     artistName: artist.name,
                   ));
                 },
-                child: const Text(
+                child: Text(
                   'lihat semua',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Gotham',
-                  ),
+                  style: FontUsageGuide.linkText,
                 ),
               ),
             ],
@@ -1273,18 +1225,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               ),
 
               // "Tentang artis" text overlay
-              const Positioned(
+              Positioned(
                 top: 16,
                 left: 16,
                 child: Text(
                   'Tentang artis',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Gotham',
+                  style: FontUsageGuide.modalTitle.copyWith(
                     shadows: [
-                      Shadow(
+                      const Shadow(
                         color: Colors.black54,
                         offset: Offset(1, 1),
                         blurRadius: 3,
@@ -1311,12 +1259,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       children: [
                         Text(
                           currentSong.artist,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.homeSectionHeader,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1340,13 +1283,11 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                       color: Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Ikuti',
-                      style: TextStyle(
+                      style: FontUsageGuide.navigationLabel.copyWith(
                         color: Colors.black54,
                         fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Gotham',
                       ),
                     ),
                   ),
@@ -1386,22 +1327,14 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Jelajahi ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Gotham',
-                ),
+                style: FontUsageGuide.homeSectionHeader,
               ),
               Text(
                 displayArtistName,
-                style: const TextStyle(
+                style: FontUsageGuide.homeSectionHeader.copyWith(
                   color: AppColors.primary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Gotham',
                 ),
               ),
             ],
@@ -1527,11 +1460,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             const SizedBox(height: 2),
             Text(
               artistName,
-              style: const TextStyle(
-                color: Colors.white,
+              style: FontUsageGuide.authFieldLabel.copyWith(
                 fontSize: 15,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
@@ -1680,11 +1610,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             // Song title
             Text(
               song.title,
-              style: TextStyle(
+              style: FontUsageGuide.listSongTitle.copyWith(
                 color: isCurrentSong ? AppColors.primary : Colors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1724,22 +1652,20 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
           ],
         ),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.music_note,
             size: 80,
             color: AppColors.primary,
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'No Album Art',
-            style: TextStyle(
+            style: FontUsageGuide.authFieldLabel.copyWith(
               color: AppColors.greyLight,
               fontSize: 16,
-              fontFamily: 'Gotham',
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],

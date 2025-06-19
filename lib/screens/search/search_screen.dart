@@ -425,9 +425,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
+            children: [
               Text(
-                'Pencarian terkini',
+                            'Pencarian terkini',
                 style: FontUsageGuide.homeSectionHeader,
               ),
               TextButton(

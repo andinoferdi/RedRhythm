@@ -14,6 +14,7 @@ import '../../widgets/song_item_widget.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/shimmer_widget.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../utils/font_usage_guide.dart';
 
 @RoutePage()
 class ArtistDetailScreen extends ConsumerStatefulWidget {
@@ -193,10 +194,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   Expanded(
                     child: Text(
                       'Telah berhenti mengikuti "${_artist!.name}"',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                     ),
                   ),
                 ],
@@ -227,10 +225,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   Expanded(
                     child: Text(
                       'Kini mengikuti "${_artist!.name}"',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
                     ),
                   ),
                 ],
@@ -461,10 +456,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     _artist!.name.isNotEmpty
                         ? _artist!.name[0].toUpperCase()
                         : 'A',
-                    style: const TextStyle(
+                    style: FontUsageGuide.homeGreeting.copyWith(
                       color: Colors.white,
                       fontSize: 80,
-                      fontWeight: FontWeight.w900,
                     ),
                   ),
                 ),
@@ -530,11 +524,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                 children: [
                   Text(
                     _artist!.name,
-                    style: const TextStyle(
+                    style: FontUsageGuide.homeGreeting.copyWith(
                       color: Colors.white,
                       fontSize: 44,
-                      fontWeight: FontWeight.w900,
-                      fontFamily: 'Gotham',
                       letterSpacing: 0.8,
                       height: 1.1,
                     ),
@@ -544,11 +536,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   const SizedBox(height: 6),
                   Text(
                     '9,2 jt pendengar bulanan',
-                    style: TextStyle(
+                    style: FontUsageGuide.metadata.copyWith(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 15,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Gotham',
                       letterSpacing: 0.3,
                       height: 1.2,
                     ),
@@ -594,11 +584,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                   ),
                   child: Text(
                     isFollowing ? 'Mengikuti' : 'Ikuti',
-                    style: const TextStyle(
+                    style: FontUsageGuide.authButtonText.copyWith(
                       color: Colors.black,
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -676,13 +664,11 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Populer',
-            style: TextStyle(
+            style: FontUsageGuide.homeSectionHeader.copyWith(
               color: Colors.white,
               fontSize: 22,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
               letterSpacing: 0.4,
               height: 1.2,
             ),
@@ -755,10 +741,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                           )
                         : Text(
                             '${index + 1}',
-                            style: const TextStyle(
+                            style: FontUsageGuide.metadata.copyWith(
                               color: Colors.grey,
                               fontSize: 16,
-                              fontWeight: FontWeight.w700,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -898,18 +883,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             const SizedBox(height: 16),
             Text(
               'Terjadi kesalahan',
-              style: TextStyle(
+              style: FontUsageGuide.emptyStateMessage.copyWith(
                 color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
                 letterSpacing: 0.3,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage ?? 'Tidak dapat memuat data artist',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
+              style: FontUsageGuide.modalBody.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -951,18 +933,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             const SizedBox(height: 16),
             Text(
               'Artist tidak ditemukan',
-              style: TextStyle(
+              style: FontUsageGuide.emptyStateMessage.copyWith(
                 color: Colors.grey[400],
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
                 letterSpacing: 0.3,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Informasi artist yang Anda cari tidak tersedia',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
+              style: FontUsageGuide.modalBody.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
