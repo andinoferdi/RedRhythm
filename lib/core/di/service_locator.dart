@@ -6,6 +6,7 @@ import '../../repositories/user_repository.dart';
 import '../../repositories/genre_repository.dart';
 import '../../repositories/album_repository.dart';
 import '../../repositories/user_stats_repository.dart';
+import '../../repositories/shorts_repository.dart';
 
 /// Sets up dependency injection using GetIt
 Future<void> setupServiceLocator() async {
@@ -33,6 +34,10 @@ Future<void> setupServiceLocator() async {
   ));
   
   getIt.registerLazySingleton<UserStatsRepository>(() => UserStatsRepository());
+  
+  getIt.registerLazySingleton<ShortsRepository>(() => ShortsRepository(
+    getIt<PocketBaseService>(),
+  ));
   
   // Controllers are now managed by Riverpod, not GetIt
   // AuthController and PlayerController use Riverpod providers

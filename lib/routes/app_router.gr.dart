@@ -159,6 +159,12 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const SearchScreen(),
       );
     },
+    ShortsRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const ShortsScreen(),
+      );
+    },
     SplashRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -597,6 +603,20 @@ class SearchRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'SearchRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [ShortsScreen]
+class ShortsRoute extends PageRouteInfo<void> {
+  const ShortsRoute({List<PageRouteInfo>? children})
+      : super(
+          ShortsRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'ShortsRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }

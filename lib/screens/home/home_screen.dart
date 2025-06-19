@@ -11,9 +11,11 @@ import '../../controllers/player_controller.dart';
 import '../../utils/image_helpers.dart';
 import '../../providers/play_history_provider.dart';
 import '../../providers/genre_provider.dart';
+import '../../providers/shorts_provider.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
+import '../../widgets/video_thumbnail_widget.dart';
 import '../../utils/font_usage_guide.dart';
 
 import '../../utils/app_colors.dart';
@@ -138,6 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
       if (!_hasLoadedInitialData) {
         ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
         ref.read(genreProvider.notifier).loadGenres();
+        ref.read(shortsProvider.notifier).loadShorts();
         _hasLoadedInitialData = true;
       }
     });
@@ -166,6 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     await Future.wait([
       ref.read(playHistoryProvider.notifier).loadRecentlyPlayed(),
       ref.read(genreProvider.notifier).loadGenres(),
+      ref.read(shortsProvider.notifier).refreshShorts(),
     ]);
   }
 
@@ -746,63 +750,152 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
 
   // Remaining method implementations would follow...
   Widget _buildYourTopMixes(BuildContext context) {
-    // Implementation would be here
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Your Top Mixes',
+            'Shorts',
             style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 240,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildMixCard(
-                'Pop Mix',
-                Colors.red.shade400,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black87],
+        Consumer(
+          builder: (context, ref, child) {
+            final shortsState = ref.watch(shortsProvider);
+            
+            // Show loading state
+            if (shortsState.isLoading) {
+              return const SizedBox(
+                height: 240,
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
-              ),
-              const SizedBox(width: 16),
-              _buildMixCard(
-                'Chill Mix',
-                Colors.amber.shade400,
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black87],
-                ),
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: () {
-                  context.router.push(const LibraryRoute());
-                },
-                child: _buildMixCard(
-                  'Lofi Mix',
-                  Colors.blue.shade400,
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black87],
+              );
+            }
+            
+            // Show error state
+            if (shortsState.error != null) {
+              return SizedBox(
+                height: 240,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.grey.shade600,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Failed to load shorts',
+                        style: FontUsageGuide.authErrorText,
+                      ),
+                    ],
                   ),
                 ),
+              );
+            }
+            
+            // Show empty state
+            if (shortsState.shorts.isEmpty) {
+              return SizedBox(
+                height: 240,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.video_library_outlined,
+                        color: Colors.grey.shade600,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No shorts available',
+                        style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            
+            // Group shorts by genre to avoid duplicates
+            final shortsGroupedByGenre = <String, List<dynamic>>{};
+            
+            for (final short in shortsState.shorts) {
+              // Get genre name from expanded data
+              final genreName = _getGenreNameFromShort(short);
+              
+              if (!shortsGroupedByGenre.containsKey(genreName)) {
+                shortsGroupedByGenre[genreName] = [];
+              }
+              shortsGroupedByGenre[genreName]!.add(short);
+            }
+            
+            // Convert to list and take up to 6 genre categories
+            final genreEntries = shortsGroupedByGenre.entries.take(6).toList();
+            
+            return SizedBox(
+              height: 260,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                scrollDirection: Axis.horizontal,
+                itemCount: genreEntries.length,
+                itemBuilder: (context, index) {
+                  final entry = genreEntries[index];
+                  final genreName = entry.key;
+                  final genreShorts = entry.value;
+                  final firstShort = genreShorts.first;
+                  
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: index < genreEntries.length - 1 ? 12 : 0,
+                    ),
+                    child: _buildShortsVideoCard(
+                      context,
+                      genreName,
+                      firstShort,
+                      () {
+                        // Navigate to shorts screen with specific genre
+                        context.router.push(const ShortsRoute());
+                      },
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );
+  }
+  
+  /// Extract genre name from short data
+  String _getGenreNameFromShort(dynamic short) {
+    try {
+      // Try to get genre name from hashtags first
+      if (short.hashtags != null && short.hashtags.isNotEmpty) {
+        final hashtag = short.hashtags as String;
+        if (hashtag.startsWith('#')) {
+          return hashtag.substring(1).split(' ').first.toLowerCase();
+        }
+      }
+      
+      // Fallback to default categories based on genre ID or other data
+      if (short.genresId != null) {
+        // You can map genre IDs to names here
+        // For now, return a generic name
+        return 'Music';
+      }
+      
+      return 'Shorts';
+    } catch (e) {
+      return 'Shorts';
+    }
   }
 
   Widget _buildRecentListening(BuildContext context) {
@@ -929,43 +1022,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
 
-  Widget _buildMixCard(
-    String title,
-    Color color, {
-    required Gradient gradient,
-  }) {
-    return Container(
-      width: 160,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: color,
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
+  Widget _buildShortsVideoCard(
+    BuildContext context,
+    String genreName,
+    dynamic short,
+    VoidCallback onTap,
+  ) {
+    final String title = '${genreName.substring(0, 1).toUpperCase()}${genreName.substring(1)} Shorts';
+    
+    return SizedBox(
+      width: 140, // Increased back to larger size
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: gradient,
-              ),
+          // Video thumbnail with fixed aspect ratio for portrait videos - FULL coverage
+          Container(
+            width: 140, // Width tetap
+            height: 220, // Height ditambah untuk lebih vertical
+            child: VideoThumbnailWidget(
+              videoUrl: short.videoUrl ?? '',
+              width: 140,
+              height: 220,
+              borderRadius: BorderRadius.circular(8),
+              onTap: onTap,
             ),
           ),
+          
+          SizedBox(height: 8),
+          
+          // Genre title only
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  title,
-                  style: FontUsageGuide.modalTitle,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Based on your listening',
-                  style: FontUsageGuide.listMetadata.copyWith(color: Colors.white70),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              title,
+              style: FontUsageGuide.modalTitle.copyWith(
+                fontSize: 13,
+                color: Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

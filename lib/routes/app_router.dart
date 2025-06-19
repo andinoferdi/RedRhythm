@@ -21,6 +21,7 @@ import '../screens/artist/artist_selection_screen.dart';
 import '../screens/artist/artist_detail_screen.dart';
 import '../screens/album/album_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
+import '../screens/shorts/shorts_screen.dart';
 import '../widgets/auth_wrapper.dart';
 
 part 'app_router.gr.dart';
@@ -82,6 +83,14 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: ExploreRoute.page),
     AutoRoute(page: SearchRoute.page),
     AutoRoute(page: LibraryRoute.page),
+    AutoRoute(
+      page: ShortsRoute.page, 
+      fullscreenDialog: true,
+      type: RouteType.custom(
+        transitionsBuilder: _buildConsistentTransition,
+        durationInMilliseconds: 200,
+      ),
+    ),
     // Use consistent transition for fullscreen dialogs
     AutoRoute(
       page: MusicPlayerRoute.page, 
