@@ -19,6 +19,7 @@ import '../../repositories/song_playlist_repository.dart';
 import '../../widgets/playlist_selection_modal.dart';
 import '../../routes/app_router.dart';
 import '../../providers/album_select_provider.dart';
+import '../../utils/font_usage_guide.dart';
 
 @RoutePage()
 class AlbumScreen extends ConsumerStatefulWidget {
@@ -198,9 +199,8 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                   Expanded(
                     child: Text(
                       'Album "${_album!.title}" dihapus dari library',
-                      style: const TextStyle(
+                      style: FontUsageGuide.authButtonText.copyWith(
                         color: Colors.black,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -228,9 +228,8 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                   Expanded(
                     child: Text(
                       'Album "${_album!.title}" ditambahkan ke library',
-                      style: const TextStyle(
+                      style: FontUsageGuide.authButtonText.copyWith(
                         color: Colors.black,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -674,10 +673,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         children: [
           Text(
             _album!.title,
-            style: const TextStyle(
+            style: FontUsageGuide.homeSectionHeader.copyWith(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.w700,
               letterSpacing: 0.4,
             ),
           ),
@@ -717,10 +715,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                 const SizedBox(width: 8),
                 Text(
                   _album!.artistName,
-                  style: TextStyle(
+                  style: FontUsageGuide.listArtistName.copyWith(
                     color: Colors.grey[400],
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -878,10 +875,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                           )
                         : Text(
                             song.order > 0 ? '${song.order}' : '${index + 1}',
-                            style: TextStyle(
+                            style: FontUsageGuide.metadata.copyWith(
                               color: Colors.grey[400],
                               fontSize: 16,
-                              fontWeight: FontWeight.w700,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -1051,11 +1047,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
             const SizedBox(height: 16),
             Text(
               'Terjadi kesalahan',
-              style: TextStyle(
+              style: FontUsageGuide.emptyStateMessage.copyWith(
                 color: Colors.grey[400],
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
               ),
             ),
             const SizedBox(height: 8),
@@ -1095,11 +1089,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
             const SizedBox(height: 16),
             Text(
               'Album tidak ditemukan',
-              style: TextStyle(
+              style: FontUsageGuide.emptyStateMessage.copyWith(
                 color: Colors.grey[400],
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
               ),
             ),
             const SizedBox(height: 8),

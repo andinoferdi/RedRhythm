@@ -524,19 +524,14 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                 children: [
                   Text(
                     _artist!.name,
-                    style: FontUsageGuide.homeGreeting.copyWith(
-                      color: Colors.white,
-                      fontSize: 44,
-                      letterSpacing: 0.8,
-                      height: 1.1,
-                    ),
+                    style: FontUsageGuide.artistDetailHeaderName,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '9,2 jt pendengar bulanan',
-                    style: FontUsageGuide.metadata.copyWith(
+                    style: FontUsageGuide.artistDetailHeaderStats.copyWith(
                       color: Colors.white.withValues(alpha: 0.8),
                       fontSize: 15,
                       letterSpacing: 0.3,

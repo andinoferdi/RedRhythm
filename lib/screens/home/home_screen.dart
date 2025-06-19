@@ -269,14 +269,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               children: [
                 GestureDetector(
                   onTap: () {
-                    context.router.push(const StatsRoute());
-                  },
-                  child: const Icon(Icons.stacked_line_chart,
-                      color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 16),
-                GestureDetector(
-                  onTap: () {
                     // TODO: Handle notifications
                   },
                   child: Stack(

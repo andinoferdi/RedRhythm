@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/font_usage_guide.dart';
 
 class SpotifyStyleButton extends StatelessWidget {
   final String title;
@@ -40,11 +41,9 @@ class SpotifyStyleButton extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: FontUsageGuide.authButtonText.copyWith(
                   color: Colors.white,
                   fontSize: 18, // Increased from 16
-                  fontWeight: FontWeight.w700, // Using Gotham bold weight
-                  fontFamily: 'Gotham',
                 ),
               ),
             ),

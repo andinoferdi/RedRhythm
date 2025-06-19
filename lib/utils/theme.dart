@@ -3,6 +3,7 @@ import 'app_colors.dart';
 import 'constants.dart';
 import 'custom_page_transitions.dart';
 import 'typography.dart';
+import 'font_usage_guide.dart';
 
 class AppTheme {
   // Private constructor to prevent instantiation
@@ -75,14 +76,12 @@ class AppTheme {
       );
 
   // AppBar theme
-  static AppBarTheme get _appBarTheme => const AppBarTheme(
+  static AppBarTheme get _appBarTheme => AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(
-          fontFamily: 'Gotham',
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: FontUsageGuide.appBarTitle.copyWith(
           fontSize: 20,
-          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
       );
@@ -97,10 +96,8 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Gotham',
+          textStyle: FontUsageGuide.authButtonText.copyWith(
             fontSize: AppConstants.largeFontSize,
-            fontWeight: FontWeight.w700,
           ),
           padding: const EdgeInsets.symmetric(vertical: 16),
           elevation: 0,
@@ -111,10 +108,8 @@ class AppTheme {
   static TextButtonThemeData get _textButtonTheme => TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(
-            fontFamily: 'Gotham',
+          textStyle: FontUsageGuide.modalButton.copyWith(
             fontSize: AppConstants.mediumFontSize,
-            fontWeight: FontWeight.w700,
           ),
         ),
       );
@@ -143,8 +138,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.textFieldRadius),
           borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
-        hintStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        hintStyle: FontUsageGuide.searchPlaceholder.copyWith(
           color: AppColors.textDisabled,
         ),
         prefixIconColor: AppColors.textDisabled,
@@ -177,15 +171,11 @@ class AppTheme {
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
-        selectedLabelStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        selectedLabelStyle: FontUsageGuide.navigationLabel.copyWith(
           fontSize: 12,
-          fontWeight: FontWeight.w700,
         ),
-        unselectedLabelStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        unselectedLabelStyle: FontUsageGuide.navigationLabel.copyWith(
           fontSize: 12,
-          fontWeight: FontWeight.w400,
         ),
       );
 
@@ -197,10 +187,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
-        textStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        textStyle: FontUsageGuide.authButtonText.copyWith(
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w700,
         ),
       );
 
@@ -211,10 +199,8 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
-        textStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        textStyle: FontUsageGuide.authButtonText.copyWith(
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w700,
         ),
       );
 
@@ -225,46 +211,34 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
         ),
-        textStyle: const TextStyle(
-          fontFamily: 'Gotham',
+        textStyle: FontUsageGuide.authButtonText.copyWith(
           fontSize: AppConstants.largeFontSize,
-          fontWeight: FontWeight.w700,
         ),
       );
 
   // Custom text styles
-  static TextStyle get headingStyle => const TextStyle(
-        fontFamily: 'Gotham',
+  static TextStyle get headingStyle => FontUsageGuide.homeSectionHeader.copyWith(
         fontSize: AppConstants.titleFontSize,
-        fontWeight: FontWeight.w700,
         color: AppColors.text,
       );
 
-  static TextStyle get subheadingStyle => const TextStyle(
-        fontFamily: 'Gotham',
+  static TextStyle get subheadingStyle => FontUsageGuide.listSongTitle.copyWith(
         fontSize: AppConstants.extraLargeFontSize,
-        fontWeight: FontWeight.w700,
         color: AppColors.text,
       );
 
-  static TextStyle get bodyStyle => const TextStyle(
-        fontFamily: 'Gotham',
+  static TextStyle get bodyStyle => FontUsageGuide.modalBody.copyWith(
         fontSize: AppConstants.mediumFontSize,
-        fontWeight: FontWeight.w400,
         color: AppColors.text,
       );
 
-  static TextStyle get captionStyle => const TextStyle(
-        fontFamily: 'Gotham',
+  static TextStyle get captionStyle => FontUsageGuide.metadata.copyWith(
         fontSize: AppConstants.smallFontSize,
-        fontWeight: FontWeight.w400,
         color: AppColors.textSecondary,
       );
 
-  static TextStyle get linkStyle => const TextStyle(
-        fontFamily: 'Gotham',
+  static TextStyle get linkStyle => FontUsageGuide.linkText.copyWith(
         fontSize: AppConstants.mediumFontSize,
-        fontWeight: FontWeight.w700,
         color: AppColors.primary,
       );
 }

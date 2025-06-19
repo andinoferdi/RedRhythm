@@ -12,7 +12,6 @@ import '../screens/home/home_screen.dart';
 import '../screens/explore/explore_screen.dart';
 import '../screens/search/search_screen.dart';
 import '../screens/library/library_screen.dart';
-import '../screens/stats/stats_screen.dart';
 import '../screens/music_player/music_player_screen.dart';
 import '../screens/music_player/lyrics_screen.dart';
 import '../screens/playlist/playlist_screen.dart';
@@ -83,7 +82,6 @@ class AppRouter extends _$AppRouter {
     AutoRoute(page: ExploreRoute.page),
     AutoRoute(page: SearchRoute.page),
     AutoRoute(page: LibraryRoute.page),
-    AutoRoute(page: StatsRoute.page),
     // Use consistent transition for fullscreen dialogs
     AutoRoute(
       page: MusicPlayerRoute.page, 

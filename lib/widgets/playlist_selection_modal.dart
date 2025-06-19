@@ -5,6 +5,7 @@ import '../models/playlist.dart';
 import '../services/pocketbase_service.dart';
 import '../repositories/song_playlist_repository.dart';
 import '../utils/app_colors.dart';
+import '../utils/font_usage_guide.dart';
 import 'playlist_image_widget.dart';
 
 // Import the provider from mini_player
@@ -157,7 +158,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             SnackBar(
               content: Text(
                 message,
-                style: TextStyle(color: Colors.black, fontFamily: 'Gotham'),
+                style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
               ),
               backgroundColor: Colors.white,
               duration: Duration(seconds: 2),
@@ -233,9 +234,8 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                     children: [
                       Text(
                         'Add to playlist',
-                        style: TextStyle(
+                        style: FontUsageGuide.modalTitle.copyWith(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
                           color: AppColors.text,
                         ),
                       ),
@@ -267,9 +267,8 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                       )
                     : Text(
                         'Done',
-                        style: TextStyle(
+                        style: FontUsageGuide.modalButton.copyWith(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
                       ),
@@ -292,10 +291,9 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                 children: [
                   Text(
                     'Recently created',
-                    style: TextStyle(
+                    style: FontUsageGuide.homeSectionHeader.copyWith(
                       color: AppColors.textSecondary,
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   Spacer(),
@@ -337,10 +335,9 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                         SizedBox(height: 16),
                         Text(
                           'No playlists yet',
-                          style: TextStyle(
+                          style: FontUsageGuide.emptyStateTitle.copyWith(
                             color: AppColors.textSecondary,
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(height: 8),
@@ -386,10 +383,9 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
                                     children: [
                                       Text(
                                         playlist.name,
-                                        style: TextStyle(
+                                        style: FontUsageGuide.listSongTitle.copyWith(
                                           color: AppColors.text,
                                           fontSize: 16,
-                                          fontWeight: FontWeight.w700,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,

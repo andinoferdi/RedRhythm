@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import '../utils/font_usage_guide.dart';
 
 class GenreCard extends StatelessWidget {
   final String title;
@@ -58,10 +59,9 @@ class GenreCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: FontUsageGuide.listSongTitle.copyWith(
                       color: AppColors.textOnPrimary,
                       fontSize: 16,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   Icon(

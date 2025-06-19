@@ -102,6 +102,21 @@ class FontUsageGuide {
   /// Metadata text (duration, album info, etc.)
   static const TextStyle metadata = AppTypography.metadata;
 
+  // ==== ARTIST DETAIL SCREEN ====
+  
+  /// Large artist name in header - extra bold for prominence
+  static const TextStyle artistDetailHeaderName = TextStyle(
+    fontFamily: 'Gotham',
+    fontSize: 44.0,
+    fontWeight: FontWeight.w900, // Extra bold for maximum impact
+    height: 1.1,
+    letterSpacing: -0.5, // Tighter letter spacing for impact
+    color: Colors.white,
+  );
+  
+  /// Artist monthly listeners in header
+  static const TextStyle artistDetailHeaderStats = AppTypography.metadata;
+
   // ==== ERROR & EMPTY STATES ====
   
   /// Error state titles ("Oops! Terjadi kesalahan")
@@ -230,45 +245,9 @@ class FontUsageGuide {
     );
   }
 
-  /// ACCESSIBILITY CONSIDERATIONS
-  /// 
-  /// All text styles include proper line heights and letter spacing for:
-  /// - Better readability on small screens
-  /// - Improved accessibility for users with visual impairments
-  /// - Consistent text rhythm and visual hierarchy
-  /// 
-  /// Font weights are used strategically:
-  /// - FontWeight.w900 (Black): Only for hero text
-  /// - FontWeight.w700 (Bold): Headlines, buttons, emphasis
-  /// - FontWeight.w500 (Medium): Subtitles, secondary emphasis
-  /// - FontWeight.w400 (Regular): Body text, descriptions
-  /// 
-  /// Line heights follow accessibility guidelines:
-  /// - 1.1-1.2: Display text (large sizes)
-  /// - 1.25-1.35: Headlines
-  /// - 1.4-1.5: Body text (comfortable reading)
-
-  /// MIGRATION TIPS
-  /// 
-  /// To migrate existing code:
-  /// 
-  /// 1. Replace direct TextStyles with FontUsageGuide constants:
-  ///    OLD: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: 'Gotham')
-  ///    NEW: FontUsageGuide.listSongTitle
-  /// 
-  /// 2. Use semantic names instead of sizes:
-  ///    OLD: fontSize: 24, fontWeight: FontWeight.bold
-  ///    NEW: FontUsageGuide.homeSectionHeader
-  /// 
-  /// 3. Leverage color variations:
-  ///    OLD: TextStyle(color: Colors.red) when playing
-  ///    NEW: FontUsageGuide.playingSongTitle
-  /// 
-  /// 4. Add responsive sizing where needed:
-  ///    NEW: FontUsageGuide.getResponsiveSongTitle(context)
+  
 }
 
-/// Extension methods for easier usage
 extension TextStyleExtensions on TextStyle {
   /// Make text style red for playing state
   TextStyle get asPlaying => AppTypography.withColor(this, const Color(0xFFE71E27));

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/font_usage_guide.dart';
 
 class SpotifySearchBar extends StatelessWidget {
   final TextEditingController? controller;
@@ -46,19 +47,15 @@ class SpotifySearchBar extends StatelessWidget {
         autofocus: autoFocus,
         readOnly: readOnly,
         onTap: onTap,
-        style: const TextStyle(
+        style: FontUsageGuide.authFieldInput.copyWith(
           color: Colors.black87,
           fontSize: 16,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Gotham',
         ),
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(
+          hintStyle: FontUsageGuide.searchPlaceholder.copyWith(
             color: Colors.grey,
             fontSize: 16,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'Gotham',
           ),
           prefixIcon: const Icon(
             Icons.search,

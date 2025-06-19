@@ -7,6 +7,7 @@ import '../routes/app_router.dart';
 import '../utils/app_colors.dart';
 import '../utils/image_helpers.dart';
 import '../utils/color_extractor.dart';
+import '../utils/font_usage_guide.dart';
 import '../providers/dynamic_color_provider.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
@@ -422,10 +423,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                           children: [
                             Text(
                               currentSong.title,
-                              style: TextStyle(
+                              style: FontUsageGuide.listSongTitle.copyWith(
                                 color: colors.textPrimary,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -433,10 +433,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                             const SizedBox(height: 2),
                             Text(
                               currentSong.artist,
-                              style: TextStyle(
+                              style: FontUsageGuide.listArtistName.copyWith(
                                 color: colors.textSecondary,
                                 fontSize: 12,
-                                fontWeight: FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

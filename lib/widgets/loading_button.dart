@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/app_colors.dart';
+import '../utils/font_usage_guide.dart';
 
 class LoadingButton extends StatefulWidget {
   final String text;
@@ -11,7 +12,6 @@ class LoadingButton extends StatefulWidget {
   final Color? textColor;
   final Color? loadingColor;
   final double fontSize;
-  final FontWeight fontWeight;
   final BorderRadius? borderRadius;
 
   const LoadingButton({
@@ -25,7 +25,6 @@ class LoadingButton extends StatefulWidget {
     this.textColor,
     this.loadingColor,
     this.fontSize = 18,
-    this.fontWeight = FontWeight.w700,
     this.borderRadius,
   });
 
@@ -94,12 +93,10 @@ class _LoadingButtonState extends State<LoadingButton>
         ),
         child: widget.isLoading
             ? _buildLoadingIndicator()
-            : Text(
+            :                 Text(
                 widget.text,
-                style: TextStyle(
-                  fontFamily: 'Gotham',
+                style: FontUsageGuide.authButtonText.copyWith(
                   fontSize: widget.fontSize,
-                  fontWeight: widget.fontWeight,
                   color: widget.textColor ?? Colors.white,
                 ),
               ),

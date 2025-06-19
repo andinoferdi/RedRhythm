@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import '../routes/app_router.dart';
 import '../utils/app_colors.dart';
+import '../utils/font_usage_guide.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -100,10 +101,9 @@ class CustomBottomNav extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
+              style: FontUsageGuide.authButtonText.copyWith(
                 color: isSelected ? AppColors.navSelected : AppColors.grey,
                 fontSize: 12,
-                fontWeight: FontWeight.w700,
               ),
             ),
           ],
