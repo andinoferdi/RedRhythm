@@ -4,10 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:video_player/video_player.dart';
 import '../../providers/shorts_provider.dart';
+import '../../providers/artist_select_provider.dart';
+import '../../repositories/song_repository.dart';
+import '../../repositories/artist_repository.dart';
+import '../../repositories/song_playlist_repository.dart';
+import '../../services/pocketbase_service.dart';
 import '../../models/shorts.dart';
+import '../../models/song.dart';
+import '../../models/artist.dart';
+import '../../models/playlist.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/font_usage_guide.dart';
-import '../../widgets/video_thumbnail_widget.dart';
+import '../../utils/image_helpers.dart';
+import '../../widgets/playlist_selection_modal.dart';
+import '../../controllers/player_controller.dart';
+import '../../routes/app_router.dart';
 
 @RoutePage()
 class ShortsScreen extends ConsumerStatefulWidget {
@@ -29,11 +40,20 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
   late PageController _pageController;
   int _currentIndex = 0;
   bool _isVisible = true;
+  
+  // Repositories
+  late SongRepository _songRepository;
+  late ArtistRepository _artistRepository;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize repositories
+    final pbService = PocketBaseService();
+    _songRepository = SongRepository(pbService);
+    _artistRepository = ArtistRepository(pbService);
     
     _currentIndex = widget.initialIndex ?? 0;
     _pageController = PageController(initialPage: _currentIndex);
@@ -97,12 +117,6 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
           style: FontUsageGuide.appBarTitle.copyWith(color: Colors.white),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              // TODO: Implement search
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: () {
@@ -198,9 +212,8 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                   return ShortsVideoPlayer(
                     short: short,
                     isActive: isActive && _isVisible,
-                    onLike: () => _onLikeShort(short),
-                    onShare: () => _onShareShort(short),
-                    onComment: () => _onCommentShort(short),
+                    songRepository: _songRepository,
+                    artistRepository: _artistRepository,
                   );
                 },
               ),
@@ -246,37 +259,6 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
     );
   }
 
-  void _onLikeShort(Shorts short) {
-    ref.read(shortsProvider.notifier).toggleLike(short.id);
-    
-    // Show heart animation
-    _showHeartAnimation();
-  }
-
-  void _onShareShort(Shorts short) {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sharing: ${short.displayTitle}'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-  }
-
-  void _onCommentShort(Shorts short) {
-    // TODO: Implement comments
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Comments coming soon!'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
-  }
-
-  void _showHeartAnimation() {
-    // TODO: Implement heart animation overlay
-  }
-
   void _showMoreOptions() {
     showModalBottomSheet(
       context: context,
@@ -310,14 +292,6 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                 ref.read(shortsProvider.notifier).refreshShorts();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.report, color: Colors.white),
-              title: const Text('Report', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Implement report functionality
-              },
-            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -327,35 +301,45 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
 }
 
 /// Individual video player widget for shorts
-class ShortsVideoPlayer extends StatefulWidget {
+class ShortsVideoPlayer extends ConsumerStatefulWidget {
   final Shorts short;
   final bool isActive;
-  final VoidCallback onLike;
-  final VoidCallback onShare;
-  final VoidCallback onComment;
+  final SongRepository songRepository;
+  final ArtistRepository artistRepository;
 
   const ShortsVideoPlayer({
     super.key,
     required this.short,
     required this.isActive,
-    required this.onLike,
-    required this.onShare,
-    required this.onComment,
+    required this.songRepository,
+    required this.artistRepository,
   });
 
   @override
-  State<ShortsVideoPlayer> createState() => _ShortsVideoPlayerState();
+  ConsumerState<ShortsVideoPlayer> createState() => _ShortsVideoPlayerState();
 }
 
-class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
+class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _isPlaying = false;
+  bool _isMuted = false;
+  
+  // Song and Artist data
+  Song? _song;
+  Artist? _artist;
+  bool _isLoadingData = true;
+  
+  // Add to playlist button state (matching mini player pattern)
+  bool _isLoadingPlaylists = false;
+  bool _isInPlaylist = false;
+  String? _lastCheckedSongId;
 
   @override
   void initState() {
     super.initState();
     _initializeVideo();
+    _loadSongAndArtistData();
   }
 
   @override
@@ -384,14 +368,14 @@ class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.short.videoUrl),
         videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: false, // Take audio focus for full-screen
+          mixWithOthers: false,
           allowBackgroundPlayback: false,
         ),
       );
 
       await _controller!.initialize();
       await _controller!.setLooping(true);
-      await _controller!.setVolume(1.0); // Full volume for full-screen
+      await _controller!.setVolume(_isMuted ? 0.0 : 1.0);
 
       if (mounted) {
         setState(() {
@@ -404,6 +388,85 @@ class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
       }
     } catch (e) {
       debugPrint('Error initializing video: $e');
+    }
+  }
+
+  Future<void> _loadSongAndArtistData() async {
+    try {
+      // Load song data
+      if (widget.short.songId.isNotEmpty) {
+        final song = await widget.songRepository.getSongById(widget.short.songId);
+        if (mounted) {
+          setState(() {
+            _song = song;
+          });
+          // Check playlist status after song is loaded
+          _checkIfSongInPlaylist();
+        }
+      }
+
+      // Load artist data
+      if (widget.short.artistId.isNotEmpty) {
+        final artist = await widget.artistRepository.getArtistById(widget.short.artistId);
+        if (mounted) {
+          setState(() {
+            _artist = artist;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading song/artist data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+    }
+  }
+
+  // Check if song is in playlist (matching mini player pattern)
+  Future<void> _checkIfSongInPlaylist() async {
+    if (_song == null) return;
+    
+    // Avoid duplicate checks for the same song
+    if (_lastCheckedSongId == _song!.id) return;
+
+    try {
+      setState(() {
+        _isLoadingPlaylists = true;
+      });
+
+      final pbService = PocketBaseService();
+      await pbService.initialize();
+      final repository = SongPlaylistRepository(pbService);
+      final allPlaylists = await repository.getAllPlaylists();
+
+      bool foundInAnyPlaylist = false;
+
+      for (final playlist in allPlaylists) {
+        final containsSong = playlist.songs.contains(_song!.id);
+        if (containsSong) {
+          foundInAnyPlaylist = true;
+          break;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _isInPlaylist = foundInAnyPlaylist;
+          _lastCheckedSongId = _song!.id;
+          _isLoadingPlaylists = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isInPlaylist = false;
+          _lastCheckedSongId = _song!.id;
+          _isLoadingPlaylists = false;
+        });
+      }
     }
   }
 
@@ -431,6 +494,123 @@ class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
     } else {
       _playVideo();
     }
+  }
+
+  void _toggleMute() {
+    if (_controller != null && _isInitialized) {
+      setState(() {
+        _isMuted = !_isMuted;
+        _controller!.setVolume(_isMuted ? 0.0 : 1.0);
+      });
+    }
+  }
+
+  Future<void> _toggleFollowArtist() async {
+    if (_artist == null) return;
+
+    try {
+      final selectedArtists = ref.read(artistSelectProvider);
+      final isCurrentlyFollowing = selectedArtists.any((artistSelect) => 
+          artistSelect.artistId == _artist!.id);
+
+      if (isCurrentlyFollowing) {
+        // Unfollow artist
+        final success = await ref.read(artistSelectProvider.notifier).removeArtistSelection(_artist!.id);
+        
+        if (mounted && success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Telah berhenti mengikuti "${_artist!.name}"',
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        // Follow artist
+        final success = await ref.read(artistSelectProvider.notifier).addArtistSelection(_artist!.id);
+        
+        if (mounted && success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kini mengikuti "${_artist!.name}"',
+                      style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengubah status mengikuti: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPlaylistModal() async {
+    if (_song == null) return;
+
+    await showPlaylistSelectionModal(
+      context,
+      _song!,
+      onPlaylistsChanged: () {
+        // Refresh playlist status after changes
+        _lastCheckedSongId = null;
+        _checkIfSongInPlaylist();
+      },
+    );
+  }
+
+  // Navigate to music player (following home screen pattern)
+  void _navigateToMusicPlayer() {
+    if (_song == null) return;
+    
+    // Use the same logic as home screen for queue handling
+    ref.read(playerControllerProvider.notifier).playSongByIdWithoutPlaylist(_song!.id);
+    
+    // Navigate to music player screen
+    context.router.push(MusicPlayerRoute(song: _song!));
+  }
+
+  // Navigate to artist detail
+  void _navigateToArtistDetail() {
+    if (_artist == null) return;
+    
+    context.router.push(ArtistDetailRoute(
+      artistId: _artist!.id,
+      artistName: _artist!.name,
+    ));
   }
 
   @override
@@ -479,67 +659,222 @@ class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
             ),
           ),
 
-        // Right side controls
+        // Right side controls (only volume)
         Positioned(
           right: 16,
-          bottom: 100,
+          bottom: 200,
           child: Column(
             children: [
-              // Like button
+              // Volume control
               _buildActionButton(
-                icon: Icons.favorite_border,
-                label: widget.short.formattedLikes,
-                onTap: widget.onLike,
-              ),
-              const SizedBox(height: 20),
-              
-              // Comment button
-              _buildActionButton(
-                icon: Icons.comment_outlined,
-                label: 'Comments',
-                onTap: widget.onComment,
-              ),
-              const SizedBox(height: 20),
-              
-              // Share button
-              _buildActionButton(
-                icon: Icons.share_outlined,
-                label: 'Share',
-                onTap: widget.onShare,
+                icon: _isMuted ? Icons.volume_off : Icons.volume_up,
+                onTap: _toggleMute,
               ),
             ],
           ),
         ),
 
-        // Bottom info
+        // Bottom info section
         Positioned(
           left: 16,
           right: 80,
-          bottom: 100,
+          bottom: 60,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Artist name
-              Text(
-                widget.short.displayArtist,
-                style: FontUsageGuide.authButtonText.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              // Artist section
+              if (_artist != null) ...[
+                Row(
+                  children: [
+                    // Artist avatar - clickable to navigate to artist detail
+                    GestureDetector(
+                      onTap: _navigateToArtistDetail,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: ClipOval(
+                          child: _artist!.imageUrl != null && _artist!.imageUrl!.isNotEmpty
+                              ? Image.network(
+                                  _artist!.imageUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => 
+                                      const Icon(Icons.person, color: Colors.white),
+                                )
+                              : const Icon(Icons.person, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Artist name - also clickable
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _navigateToArtistDetail,
+                        child: Text(
+                          _artist!.name,
+                          style: FontUsageGuide.authButtonText.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    
+                    // Follow button
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final selectedArtists = ref.watch(artistSelectProvider);
+                        final isFollowing = selectedArtists.any((artistSelect) => 
+                            artistSelect.artistId == _artist!.id);
+                        
+                        return GestureDetector(
+                          onTap: _toggleFollowArtist,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isFollowing 
+                                  ? Colors.white.withOpacity(0.2)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              isFollowing ? 'Mengikuti' : 'Ikuti',
+                              style: FontUsageGuide.navigationLabel.copyWith(
+                                color: isFollowing ? Colors.white : Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 4),
+                const SizedBox(height: 16),
+              ],
               
-              // Title
+              // Song section with border and clickable area
+              if (_song != null) ...[
+                GestureDetector(
+                  onTap: _navigateToMusicPlayer,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.black.withOpacity(0.3),
+                    ),
+                    child: Row(
+                      children: [
+                        // Song thumbnail
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: _song!.albumArtUrl.isNotEmpty
+                                ? Image.network(
+                                    _song!.albumArtUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => 
+                                        const Icon(Icons.music_note, color: Colors.white),
+                                  )
+                                : const Icon(Icons.music_note, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        
+                        // Song info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _song!.title,
+                                style: FontUsageGuide.modalBody.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _song!.artist,
+                                style: FontUsageGuide.listMetadata.copyWith(
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        // Add to playlist button (matching mini player style)
+                        IconButton(
+                          onPressed: _isLoadingPlaylists ? null : _showPlaylistModal,
+                          icon: _isLoadingPlaylists
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Icon(
+                                  _isInPlaylist
+                                      ? Icons.check_circle
+                                      : Icons.add_circle_outline,
+                                  color: _isInPlaylist
+                                      ? Colors.red
+                                      : Colors.white,
+                                  size: 24,
+                                ),
+                          tooltip: _isLoadingPlaylists
+                              ? 'Checking playlists...'
+                              : (_isInPlaylist
+                                  ? 'In playlist'
+                                  : 'Add to playlist'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              
+              // Video title/description
               Text(
                 widget.short.displayTitle,
                 style: FontUsageGuide.modalBody.copyWith(color: Colors.white),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
               
               // Hashtags
-              if (widget.short.hashtagsList.isNotEmpty)
+              if (widget.short.hashtagsList.isNotEmpty) ...[
+                const SizedBox(height: 8),
                 Wrap(
                   children: widget.short.hashtagsList.take(3).map((tag) {
                     return Padding(
@@ -553,43 +888,64 @@ class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
                     );
                   }).toList(),
                 ),
+              ],
             ],
           ),
         ),
+        
+        // Loading overlay
+        if (_isLoadingData)
+          Positioned(
+            bottom: 80,
+            left: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
 
   Widget _buildActionButton({
     required IconData icon,
-    required String label,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
-          ),
-        ],
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.3),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white.withOpacity(0.5)),
+        ),
+        child: Icon(
+          icon,
+          color: Colors.white,
+          size: 24,
+        ),
       ),
     );
   }

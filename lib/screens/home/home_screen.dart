@@ -1111,7 +1111,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                           borderRadius: BorderRadius.circular(8),
                           onTap: onTap,
                           shouldPause: videoAudioState.shouldPauseVideos,
-                          previewDurationSeconds: 7, // Optimized 7-second preview
+                          autoPlay: true,
+                          enableLooping: true,
+                          showPlayIcon: false, // No play icon for auto-playing preview
                         );
                       },
                     ),

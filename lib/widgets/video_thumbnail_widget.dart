@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:async';
 
-/// Advanced video thumbnail widget with seamless looping for shorts
-/// Implements best practices from TikTok/Instagram Reels/Spotify
+/// Simple video thumbnail widget with stable looping (following shorts_screen.dart pattern)
+/// Uses the same reliable logic as shorts screen for consistent behavior
 class VideoThumbnailWidget extends StatefulWidget {
   final String videoUrl;
   final double width;
@@ -11,7 +10,6 @@ class VideoThumbnailWidget extends StatefulWidget {
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
   final bool shouldPause;
-  final int previewDurationSeconds;
   final bool autoPlay;
   final bool enableLooping;
   final bool showPlayIcon;
@@ -24,7 +22,6 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.borderRadius,
     this.onTap,
     this.shouldPause = false,
-    this.previewDurationSeconds = 7,
     this.autoPlay = true,
     this.enableLooping = true,
     this.showPlayIcon = true,
@@ -39,9 +36,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
   VideoPlayerController? _controller;
   bool _isInitialized = false;
   bool _isPlaying = false;
-  Timer? _loopTimer;
-  Duration? _previewEndPosition;
-  bool _hasStartedPreview = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -56,8 +50,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _disposeController();
-    _loopTimer?.cancel();
+    _controller?.dispose();
     super.dispose();
   }
 
@@ -76,7 +69,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
     
     // Handle video URL changes
     if (oldWidget.videoUrl != widget.videoUrl) {
-      _disposeController();
+      _controller?.dispose();
       _initializeController();
     }
   }
@@ -100,6 +93,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
     }
   }
 
+  // Following shorts_screen.dart initialization pattern
   Future<void> _initializeController() async {
     if (widget.videoUrl.isEmpty) return;
 
@@ -107,33 +101,23 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
         videoPlayerOptions: VideoPlayerOptions(
-          mixWithOthers: true,
+          mixWithOthers: true, // Allow mixing with other audio (like shorts screen)
           allowBackgroundPlayback: false,
         ),
       );
 
       await _controller!.initialize();
+      await _controller!.setLooping(widget.enableLooping); // Simple setLooping like shorts screen
+      await _controller!.setVolume(0.0); // Muted by default for preview
 
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
 
-        // Set up video properties
-        await _controller!.setVolume(0.0); // Muted by default for preview
-        await _controller!.setLooping(widget.enableLooping);
-
-        // Calculate preview duration
-        final videoDuration = _controller!.value.duration;
-        final previewDuration = Duration(seconds: widget.previewDurationSeconds);
-        _previewEndPosition = previewDuration > videoDuration ? videoDuration : previewDuration;
-
-        // Add listener for seamless looping
-        _controller!.addListener(_onVideoProgress);
-
-        // Auto-play if enabled
+        // Auto-play if enabled (following shorts screen pattern)
         if (widget.autoPlay && !widget.shouldPause) {
-          _startPreview();
+          _playVideo();
         }
       }
     } catch (e) {
@@ -146,100 +130,39 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
     }
   }
 
-  void _disposeController() {
-    _controller?.removeListener(_onVideoProgress);
-    _controller?.dispose();
-    _controller = null;
-    _isInitialized = false;
-    _isPlaying = false;
-    _hasStartedPreview = false;
-  }
-
-  void _onVideoProgress() {
-    if (!mounted || _controller == null || !widget.enableLooping) return;
-
-    final position = _controller!.value.position;
-    final duration = _controller!.value.duration;
-
-    // Seamless looping logic - restart when reaching preview end or video end
-    if (_previewEndPosition != null && position >= _previewEndPosition!) {
-      _restartPreview();
-    } else if (position >= duration && duration > Duration.zero) {
-      _restartPreview();
-    }
-  }
-
-  Future<void> _startPreview() async {
-    if (_controller == null || !_isInitialized || _hasStartedPreview) return;
-
-    try {
-      await _controller!.seekTo(Duration.zero);
-      await _controller!.play();
-      
-      if (mounted) {
-        setState(() {
-          _isPlaying = true;
-          _hasStartedPreview = true;
-        });
-      }
-      
-      debugPrint('🎥 Started seamless video preview: ${widget.previewDurationSeconds}s loop');
-    } catch (e) {
-      debugPrint('Error starting video preview: $e');
-    }
-  }
-
-  Future<void> _restartPreview() async {
-    if (_controller == null || !mounted) return;
-
-    try {
-      await _controller!.seekTo(Duration.zero);
-      if (_isPlaying && !widget.shouldPause) {
-        await _controller!.play();
-      }
-    } catch (e) {
-      debugPrint('Error restarting video preview: $e');
-    }
-  }
-
+  // Simple play/pause methods like shorts screen
   Future<void> _playVideo() async {
-    if (_controller == null || !_isInitialized || _isPlaying) return;
-
-    try {
+    if (_controller != null && _isInitialized && !_isPlaying) {
       await _controller!.play();
       if (mounted) {
         setState(() {
           _isPlaying = true;
         });
       }
-    } catch (e) {
-      debugPrint('Error playing video: $e');
     }
   }
 
   Future<void> _pauseVideo() async {
-    if (_controller == null || !_isInitialized || !_isPlaying) return;
-
-    try {
+    if (_controller != null && _isInitialized && _isPlaying) {
       await _controller!.pause();
       if (mounted) {
         setState(() {
           _isPlaying = false;
         });
       }
-    } catch (e) {
-      debugPrint('Error pausing video: $e');
+    }
+  }
+
+  void _togglePlayPause() {
+    if (_isPlaying) {
+      _pauseVideo();
+    } else {
+      _playVideo();
     }
   }
 
   void _onTap() {
-    if (_controller != null && _isInitialized) {
-      if (_isPlaying) {
-        _pauseVideo();
-      } else {
-        _playVideo();
-      }
-    }
+    _togglePlayPause();
     widget.onTap?.call();
   }
 
@@ -259,7 +182,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video player
+            // Video player (same pattern as shorts screen)
             if (_isInitialized && _controller != null)
               FittedBox(
                 fit: BoxFit.cover,
@@ -280,7 +203,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
                 ),
               ),
 
-            // Play/Pause overlay
+            // Play/Pause overlay (similar to shorts screen)
             if (widget.showPlayIcon)
               Positioned.fill(
                 child: GestureDetector(
@@ -314,25 +237,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
                 child: GestureDetector(
                   onTap: _onTap,
                   child: Container(color: Colors.transparent),
-                ),
-              ),
-
-            // Looping indicator (small dot)
-            if (widget.enableLooping && _isPlaying)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.loop,
-                    color: Colors.white,
-                    size: 12,
-                  ),
                 ),
               ),
           ],
