@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 
@@ -309,7 +309,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 8),
             Text(
               _errorMessage!,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -321,7 +321,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              child: const Text('Coba Lagi', style: TextStyle(color: Colors.white, fontFamily: 'Gotham')),
+              child: const Text('Coba Lagi', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham')),
             ),
           ],
         ),
@@ -419,7 +419,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 8),
             Text(
               'Coba kata kunci yang berbeda',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
             ),
           ],
         ),
@@ -453,7 +453,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 onPressed: _clearAllRecentSearches,
                 child: const Text(
                   'Hapus semua',
-                  style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
+                  style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham'),
                 ),
               ),
             ],
@@ -500,7 +500,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 8),
             Text(
               'Mulai cari lagu, artis, atau album favoritmu',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontFamily: 'Gotham',),
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
               textAlign: TextAlign.center,
             ),
           ],
@@ -627,7 +627,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Album • ${album.artistName}',
+                    'Album � ${album.artistName}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 14,
@@ -676,7 +676,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           fontFamily: 'Gotham',
                         ),
                       ),
@@ -783,7 +783,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Album • ${album.artistName}',
+                    'Album � ${album.artistName}',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 14,
@@ -836,7 +836,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         fontFamily: 'Gotham',
                       ),
                     ),
