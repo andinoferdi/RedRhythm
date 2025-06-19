@@ -29,13 +29,18 @@ class VideoThumbnailWidget extends StatefulWidget {
 }
 
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
-  VideoPlayerController? _controller;
+  VideoPlayerController? _controller1;
+  VideoPlayerController? _controller2;
   bool _isInitialized = false;
   bool _hasError = false;
   AudioSession? _audioSession;
-  Duration? _previewEndPosition; // Track where preview should end
-  bool _isPlayingPreview = false; // Track if we're in preview mode
-  Timer? _loopTimer; // Timer for seamless looping
+  Duration? _previewEndPosition;
+  bool _isPlayingPreview = false;
+  Timer? _loopTimer;
+  
+  // Dual player control
+  bool _useController1 = true; // Which controller is currently active
+  bool _isPreparingNext = false; // Prevent multiple preparations
 
   @override
   void initState() {
@@ -45,28 +50,29 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   @override
   void dispose() {
-    _disposeController();
+    _disposeControllers();
     super.dispose();
   }
 
-  void _disposeController() async {
+  void _disposeControllers() async {
     try {
-      // Stop preview monitoring
       _isPlayingPreview = false;
+      _isPreparingNext = false;
       _previewEndPosition = null;
       
-      // Cancel loop timer
       _loopTimer?.cancel();
       _loopTimer = null;
       
-      // Stop the video first
-      await _controller?.pause();
+      // Dispose both controllers
+      await _controller1?.pause();
+      await _controller1?.dispose();
+      _controller1 = null;
       
-      // Properly dispose the controller
-      await _controller?.dispose();
-      _controller = null;
+      await _controller2?.pause();
+      await _controller2?.dispose();
+      _controller2 = null;
       
-      // Deactivate audio session if we activated one
+      // Deactivate audio session
       if (_audioSession != null) {
         try {
           await _audioSession!.setActive(false);
@@ -75,7 +81,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         }
       }
     } catch (e) {
-      debugPrint('Error disposing video controller: $e');
+      debugPrint('Error disposing video controllers: $e');
     }
   }
 
@@ -88,45 +94,20 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     }
 
     try {
-      // Configure audio session to NOT interrupt main audio
       await _configureAudioSession();
       
-      _controller = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-        videoPlayerOptions: VideoPlayerOptions(
-          // Allow video to play in background without claiming audio focus
-          mixWithOthers: true,
-          allowBackgroundPlayback: false,
-        ),
-      );
-
-      await _controller!.initialize();
+      // Initialize BOTH controllers simultaneously
+      await _initializeDualControllers();
       
       if (mounted) {
-        // Set preview end position (only load/play first X seconds)
-        final videoDuration = _controller!.value.duration;
-        final previewDuration = Duration(seconds: widget.previewDurationSeconds);
-        _previewEndPosition = videoDuration.compareTo(previewDuration) < 0 
-            ? videoDuration 
-            : previewDuration;
+        _previewEndPosition = Duration(seconds: widget.previewDurationSeconds);
         
         setState(() {
           _isInitialized = true;
         });
         
-        // CRITICAL: Set volume to 0 BEFORE playing to prevent audio conflicts
-        await _controller!.setVolume(0.0);
-        _controller!.setLooping(false); // Don't loop the entire video
-        
-        // Start playing silently from beginning
-        await _controller!.seekTo(Duration.zero);
-        await _controller!.play();
-        
-        // Start monitoring video position for preview control
-        _startPositionMonitoring();
-        
-        // Start optimized preview loop
-        _startOptimizedPreviewLoop();
+        // Start with controller1
+        await _startSeamlessLoop();
       }
     } catch (error) {
       debugPrint('Error initializing video thumbnail: $error');
@@ -138,122 +119,188 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     }
   }
 
+  Future<void> _initializeDualControllers() async {
+    // Create two identical controllers
+    _controller1 = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+    
+    _controller2 = VideoPlayerController.networkUrl(
+      Uri.parse(widget.videoUrl),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+
+    // Initialize both controllers in parallel
+    await Future.wait([
+      _controller1!.initialize(),
+      _controller2!.initialize(),
+    ]);
+    
+    // Configure both controllers
+    await Future.wait([
+      _controller1!.setVolume(0.0),
+      _controller2!.setVolume(0.0),
+      _controller1!.seekTo(Duration.zero),
+      _controller2!.seekTo(Duration.zero),
+    ]);
+    
+    // Disable native looping on both
+    _controller1!.setLooping(false);
+    _controller2!.setLooping(false);
+    
+    debugPrint('🎥 Dual controllers initialized successfully');
+  }
+
   Future<void> _configureAudioSession() async {
     try {
       _audioSession = await AudioSession.instance;
       
-      // Configure audio session to mix with others and not gain focus
       await _audioSession!.configure(AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.ambient, // Key: Use ambient category
+        avAudioSessionCategory: AVAudioSessionCategory.ambient,
         avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
         avAudioSessionMode: AVAudioSessionMode.defaultMode,
         avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.movie, // Video content
+          contentType: AndroidAudioContentType.movie,
           flags: AndroidAudioFlags.none,
           usage: AndroidAudioUsage.media,
         ),
-        androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck, // Key: Use transient duck to avoid interruption
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck,
         androidWillPauseWhenDucked: false,
       ));
       
       debugPrint('✅ Video audio session configured for mixing');
     } catch (e) {
       debugPrint('⚠️ Error configuring video audio session: $e');
-      // Continue without audio session configuration
     }
   }
 
-  void _startPositionMonitoring() {
-    if (_controller == null || !mounted || _previewEndPosition == null) return;
+  Future<void> _startSeamlessLoop() async {
+    if (_controller1 == null || _controller2 == null || !mounted) return;
     
-    // Use precise timer for seamless looping without jeda
-    _loopTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (!mounted || _controller == null || _previewEndPosition == null || !_isPlayingPreview) {
-        timer.cancel();
+    _isPlayingPreview = true;
+    
+    // Start playing with controller1
+    await _controller1!.play();
+    debugPrint('🎥 Starting SEAMLESS dual-controller loop: ${_previewEndPosition!.inSeconds}s');
+    
+    // Start monitoring for seamless switching
+    _loopTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted || !_isPlayingPreview || _previewEndPosition == null) {
         return;
       }
       
-      final currentPosition = _controller!.value.position;
+      final activeController = _useController1 ? _controller1! : _controller2!;
+      final currentPosition = activeController.value.position;
       
-      // Check if we're approaching the end (with 100ms buffer for smooth transition)
-      final remainingTime = _previewEndPosition! - currentPosition;
+      // When we're 200ms before the end, prepare the next controller
+      final timeUntilEnd = _previewEndPosition! - currentPosition;
+      if (timeUntilEnd <= const Duration(milliseconds: 200) && timeUntilEnd > Duration.zero && !_isPreparingNext) {
+        _prepareNextController();
+      }
       
-      if (remainingTime <= const Duration(milliseconds: 150) && remainingTime >= Duration.zero) {
-        _seamlessRestart();
+      // When we reach the end, switch controllers instantly
+      if (currentPosition >= _previewEndPosition!) {
+        _switchControllers();
       }
     });
   }
-  
-  void _seamlessRestart() async {
-    if (_controller == null || !mounted || !_isPlayingPreview) return;
+
+  void _prepareNextController() async {
+    if (_isPreparingNext) return;
+    _isPreparingNext = true;
     
     try {
-      // Immediately seek to beginning without pausing for seamless loop
-      await _controller!.seekTo(Duration.zero);
+      final nextController = _useController1 ? _controller2! : _controller1!;
       
-      // Ensure volume stays at 0 and keep playing
-      await _controller!.setVolume(0.0);
+      // Prepare the next controller to start from beginning
+      await nextController.seekTo(Duration.zero);
+      await nextController.setVolume(0.0);
       
-      debugPrint('🎥 Seamless video loop: ${_previewEndPosition!.inSeconds}s');
+      debugPrint('🎥 Next controller prepared and ready');
     } catch (e) {
-      debugPrint('Error in seamless restart: $e');
+      debugPrint('Error preparing next controller: $e');
     }
   }
 
-  void _startOptimizedPreviewLoop() {
-    if (_controller == null || !mounted || _previewEndPosition == null) return;
+  void _switchControllers() async {
+    if (!mounted || !_isPlayingPreview) return;
     
-    // Start the preview playback
-    _isPlayingPreview = true;
-    debugPrint('🎥 Starting optimized video preview: ${_previewEndPosition!.inSeconds}s duration');
-  }
-
-  void _startPreviewLoop() {
-    // Legacy method - kept for compatibility
-    _startOptimizedPreviewLoop();
+    try {
+      final currentController = _useController1 ? _controller1! : _controller2!;
+      final nextController = _useController1 ? _controller2! : _controller1!;
+      
+      // INSTANT switch - no delay
+      await Future.wait([
+        currentController.pause(), // Stop current
+        nextController.play(),     // Start next
+      ]);
+      
+      // Switch the active controller flag
+      _useController1 = !_useController1;
+      _isPreparingNext = false;
+      
+      debugPrint('🎥 INSTANT controller switch: Controller${_useController1 ? "1" : "2"} now active');
+    } catch (e) {
+      debugPrint('Error switching controllers: $e');
+    }
   }
 
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Reinitialize if URL or duration changes
     if (widget.videoUrl != oldWidget.videoUrl || 
         widget.previewDurationSeconds != oldWidget.previewDurationSeconds) {
-      _disposeController();
+      _disposeControllers();
       _initializeVideo();
     }
     
-    // Handle pause/resume based on shouldPause parameter
     if (widget.shouldPause != oldWidget.shouldPause) {
       _handlePauseState();
     }
   }
   
   void _handlePauseState() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
+    if (_controller1 == null || _controller2 == null) return;
     
     try {
       if (widget.shouldPause) {
-        // Pause the video to avoid audio conflicts
         _isPlayingPreview = false;
         _loopTimer?.cancel();
-        await _controller!.pause();
-        debugPrint('🎥 Video paused to avoid audio conflict');
+        
+        // Pause both controllers
+        await Future.wait([
+          _controller1!.pause(),
+          _controller2!.pause(),
+        ]);
+        
+        debugPrint('🎥 Both controllers paused');
       } else {
-        // Resume the video with volume still at 0, start from beginning of preview
-        await _controller!.setVolume(0.0);
-        await _controller!.seekTo(Duration.zero);
-        await _controller!.play();
-        _isPlayingPreview = true;
-        // Restart seamless loop monitoring
-        _startPositionMonitoring();
-        debugPrint('🎥 Video resumed silently with seamless loop');
+        // Resume with fresh start
+        await Future.wait([
+          _controller1!.seekTo(Duration.zero),
+          _controller2!.seekTo(Duration.zero),
+          _controller1!.setVolume(0.0),
+          _controller2!.setVolume(0.0),
+        ]);
+        
+        _useController1 = true; // Reset to controller1
+        _isPreparingNext = false;
+        await _startSeamlessLoop();
+        
+        debugPrint('🎥 Controllers resumed with dual-loop');
       }
     } catch (e) {
-      debugPrint('Error handling video pause state: $e');
+      debugPrint('Error handling pause state: $e');
     }
   }
 
@@ -272,15 +319,19 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video player - FULL COVERAGE without gaps
-            if (_isInitialized && _controller != null)
+            // Dual video players - show active one
+            if (_isInitialized && _controller1 != null && _controller2 != null)
               Positioned.fill(
-                child: FittedBox(
-                  fit: BoxFit.cover, // This ensures video fills the entire container
-                  child: SizedBox(
-                    width: _controller!.value.size.width,
-                    height: _controller!.value.size.height,
-                    child: VideoPlayer(_controller!),
+                child: AnimatedSwitcher(
+                  duration: Duration.zero, // Instant switch
+                  child: FittedBox(
+                    key: ValueKey(_useController1 ? 'controller1' : 'controller2'),
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: (_useController1 ? _controller1! : _controller2!).value.size.width,
+                      height: (_useController1 ? _controller1! : _controller2!).value.size.height,
+                      child: VideoPlayer(_useController1 ? _controller1! : _controller2!),
+                    ),
                   ),
                 ),
               ),
@@ -303,7 +354,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
                 ),
               ),
             
-            // Gradient overlay for better text readability
+            // Gradient overlay
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -319,7 +370,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
               ),
             ),
             
-            // Play indicator overlay
+            // Play indicator
             if (_isInitialized && !_hasError)
               Positioned(
                 bottom: 8,
