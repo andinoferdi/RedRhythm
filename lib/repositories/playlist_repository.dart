@@ -120,12 +120,16 @@ class PlaylistRepository {
   }
   
   /// Generate playlist cover image URL
-  String? generatePlaylistCoverUrl(Map<String, dynamic> playlistData) {
+  String? generatePlaylistCoverUrl(Map<String, dynamic> playlistData, [String? playlistId]) {
     try {
       final coverImage = playlistData['cover_image'];
       if (coverImage != null && coverImage.isNotEmpty) {
-        final url = '${_pocketBaseService.pb.baseUrl}/api/files/playlists/${playlistData['id']}/$coverImage';
-        return url;
+        // Use provided playlist ID or try to get from data
+        final id = playlistId ?? playlistData['id'];
+        if (id != null && id.isNotEmpty) {
+          final url = '${_pocketBaseService.pb.baseUrl}/api/files/playlists/$id/$coverImage';
+          return url;
+        }
       }
       return null;
     } catch (e) {

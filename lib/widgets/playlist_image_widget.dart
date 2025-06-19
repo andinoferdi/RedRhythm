@@ -9,6 +9,14 @@ import '../utils/image_helpers.dart';
 import 'shimmer_widget.dart';
 
 /// A unified widget for displaying playlist images consistently across the app
+/// 
+/// PRIORITY LOGIC:
+/// 1. FIRST PRIORITY: Display playlist's custom cover_image if available
+/// 2. SECOND PRIORITY: If no custom cover_image, fallback to mosaic from songs
+/// 3. THIRD PRIORITY: If no songs or showMosaicForEmptyPlaylists=false, show placeholder
+/// 
+/// This ensures playlist owners can set custom covers while maintaining
+/// automatic mosaic generation for playlists without custom covers.
 class PlaylistImageWidget extends StatefulWidget {
   final dynamic playlist; // Support both RecordModel and fake records
   final double size;
@@ -70,8 +78,6 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     final playlistChanged = oldWidget.playlist.id != widget.playlist.id;
     
     if (playlistChanged) {
-
-      
       _currentPlaylistId = widget.playlist.id;
       _lastBuiltCacheKey = null; // Reset cache key
       
@@ -80,7 +86,6 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
       // If only key changed (forced update), just rebuild without clearing cache
       final keyChanged = oldWidget.key != widget.key;
       if (keyChanged) {
-
         _lastBuiltCacheKey = null; // Reset cache key to force mosaic rebuild
         if (mounted) {
           setState(() {
@@ -115,7 +120,6 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
 
     // Only show loading if we don't have any data yet
     if (_songs == null) {
-
       if (mounted) {
         setState(() {
           _isLoading = true;
@@ -124,7 +128,6 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     }
 
     _getPlaylistSongs(playlistId).then((songs) {
-      
       if (mounted && _currentPlaylistId == playlistId) {
         setState(() {
           _songs = songs;
@@ -132,7 +135,6 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         });
       }
     }).catchError((error) {
-      
       if (mounted && _currentPlaylistId == playlistId) {
         setState(() {
           _songs = [];
@@ -159,33 +161,30 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
   }
 
   Widget _buildPlaylistImage() {
-    // First, check if playlist has a custom cover image
+    // FIRST PRIORITY: Check if playlist has a custom cover image
     String customImageUrl = '';
+    final playlistId = widget.playlist.id;
     
     try {
       // Handle both RecordModel and fake records
       if (widget.playlist is RecordModel) {
         final pbService = PocketBaseService();
         final repository = PlaylistRepository(pbService);
-        customImageUrl = repository.generatePlaylistCoverUrl(widget.playlist.data) ?? '';
-        // Only log if there's actually a custom image
-        if (customImageUrl.isNotEmpty) {
-  
-        }
+        customImageUrl = repository.generatePlaylistCoverUrl(widget.playlist.data, playlistId) ?? '';
+
       } else {
         // Handle fake record from playlist selection modal
         final coverImage = widget.playlist.data['cover_image'] as String?;
         if (coverImage != null && coverImage.isNotEmpty) {
           customImageUrl = coverImage;
-
         }
       }
     } catch (e) {
-      // Silently handle image URL generation errors and fallback to placeholder
+      // Continue to fallback options
     }
 
+    // If custom cover image exists and is valid, use it
     if (customImageUrl.isNotEmpty && ImageHelpers.isValidImageUrl(customImageUrl)) {
-      
       return ImageHelpers.buildSafeNetworkImage(
         imageUrl: customImageUrl,
         width: widget.size,
@@ -193,16 +192,21 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
         fit: BoxFit.cover,
         borderRadius: BorderRadius.circular(widget.borderRadius),
         showLoadingIndicator: true,
-        fallbackWidget: _buildFallbackImage(),
+        fallbackWidget: _buildMosaicOrFallbackImage(),
       );
     }
 
-    // If no custom image and we should show mosaic, try to build mosaic from songs
+    // SECOND PRIORITY: If no custom image, use mosaic from songs or fallback
+    return _buildMosaicOrFallbackImage();
+  }
+
+  Widget _buildMosaicOrFallbackImage() {
+    // If we should show mosaic, try to build it from songs
     if (widget.showMosaicForEmptyPlaylists) {
       return _buildMosaicOrPlaceholder();
     }
 
-    // Fallback to placeholder
+    // Otherwise, show placeholder
     return _buildPlaceholderImage();
   }
 
@@ -219,12 +223,7 @@ class _PlaylistImageWidgetState extends State<PlaylistImageWidget> {
     return _buildPlaceholderImage();
   }
 
-  Widget _buildFallbackImage() {
-    if (widget.showMosaicForEmptyPlaylists) {
-      return _buildMosaicOrPlaceholder();
-    }
-    return _buildPlaceholderImage();
-  }
+
 
   Widget _buildMosaicArtwork(List<Song> songs) {
     if (songs.isEmpty) {
