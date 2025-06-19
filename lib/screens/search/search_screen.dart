@@ -6,6 +6,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/search_history_utils.dart';
 import '../../utils/image_helpers.dart';
 import '../../models/song.dart';
+import '../../models/album.dart';
 import '../../routes/app_router.dart';
 
 import '../../controllers/player_controller.dart';
@@ -14,6 +15,7 @@ import '../../controllers/auth_controller.dart';
 import '../../providers/song_provider.dart';
 import '../../models/artist.dart';
 import '../../repositories/artist_repository.dart';
+import '../../repositories/album_repository.dart';
 import '../../services/pocketbase_service.dart';
 
 import '../../widgets/mini_player.dart';
@@ -37,17 +39,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   
   List<Song> _searchResults = [];
   List<Artist> _artistSearchResults = [];
-  List<dynamic> _recentSearches = []; // Changed to dynamic to support both songs and artists
+  List<Album> _albumSearchResults = [];
+  List<dynamic> _recentSearches = []; // Changed to dynamic to support both songs, artists, and albums
   bool _isLoading = false;
   bool _hasSearched = false;
   String? _errorMessage;
   String? _currentUserId;
   late ArtistRepository _artistRepository;
+  late AlbumRepository _albumRepository;
 
   @override
   void initState() {
     super.initState();
     _artistRepository = ArtistRepository(PocketBaseService());
+    _albumRepository = AlbumRepository(PocketBaseService());
     _loadRecentSearches();
     _searchFocusNode.requestFocus();
     
@@ -130,15 +135,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     });
 
     try {
-      // Search both songs and artists
+      // Search songs, artists, and albums
       final songController = ref.read(songProvider.notifier);
       final songResults = songController.searchSongs(query);
       
       final artistResults = await _artistRepository.searchArtists(query);
+      final albumResults = await _albumRepository.searchAlbums(query);
 
       setState(() {
         _searchResults = songResults;
         _artistSearchResults = artistResults;
+        _albumSearchResults = albumResults;
         _isLoading = false;
       });
     } catch (e) {
@@ -165,6 +172,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     context.router.push(ArtistDetailRoute(
       artistId: artist.id,
       artistName: artist.name,
+    ));
+  }
+
+  void _openAlbumDetail(Album album) {
+    // Add album to recent searches
+    _addToRecentSearches(album);
+    // Navigate to album screen
+    context.router.push(AlbumRoute(
+      albumId: album.id,
+      albumTitle: album.title,
     ));
   }
 
@@ -223,6 +240,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           setState(() {
                             _searchResults = [];
                             _artistSearchResults = [];
+                            _albumSearchResults = [];
                             _hasSearched = false;
                           });
                         },
@@ -236,6 +254,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     setState(() {
                       _searchResults = [];
                       _artistSearchResults = [];
+                      _albumSearchResults = [];
                       _hasSearched = false;
                     });
                   }
@@ -308,7 +327,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildSearchResults() {
-    final hasResults = _searchResults.isNotEmpty || _artistSearchResults.isNotEmpty;
+    final hasResults = _searchResults.isNotEmpty || _artistSearchResults.isNotEmpty || _albumSearchResults.isNotEmpty;
     
     if (!hasResults) {
       return _buildEmptyResults();
@@ -317,6 +336,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
+        // Album results section
+        if (_albumSearchResults.isNotEmpty) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'Album',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+          ..._albumSearchResults.map((album) => _buildAlbumItem(album)),
+          const SizedBox(height: 16),
+        ],
+        
         // Artist results section
         if (_artistSearchResults.isNotEmpty) ...[
           const Padding(
@@ -429,6 +466,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 return _buildRecentSongItem(item);
               } else if (item is Artist) {
                 return _buildRecentArtistItem(item);
+              } else if (item is Album) {
+                return _buildRecentAlbumItem(item);
               }
               return const SizedBox.shrink();
             },
@@ -506,11 +545,99 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildSongItem(Song song, int index) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: SongItemWidget(
-        song: song,
-        subtitle: song.artist,
-        contentPadding: EdgeInsets.zero,
-        onTap: () => _playSong(song, index),
+      child: Consumer(
+        builder: (context, ref, child) {
+          final playerState = ref.watch(playerControllerProvider);
+          final isCurrentSong = playerState.currentSong?.id == song.id;
+          final isPlaying = isCurrentSong && playerState.isPlaying;
+          
+          return SongItemWidget(
+            song: song,
+            subtitle: song.artist,
+            contentPadding: EdgeInsets.zero,
+            isCurrentSong: isCurrentSong,
+            isPlaying: isPlaying,
+            onTap: () => _playSong(song, index),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildAlbumItem(Album album) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: GestureDetector(
+        onTap: () => _openAlbumDetail(album),
+        child: Row(
+          children: [
+            // Album cover
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: album.coverImageUrl ?? '',
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[800],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.album,
+                        color: Colors.white54,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            
+            // Album info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Album • ${album.artistName}',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontFamily: 'Gotham',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -589,6 +716,90 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRecentAlbumItem(Album album) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          // Album cover
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: ImageHelpers.buildSafeNetworkImage(
+                imageUrl: album.coverImageUrl ?? '',
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                fallbackWidget: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.album,
+                      color: Colors.white54,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Album info
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _openAlbumDetail(album),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Gotham',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Album • ${album.artistName}',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 14,
+                      fontFamily: 'Gotham',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Remove button
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey),
+            onPressed: () => _removeFromRecentSearches(album),
+          ),
+        ],
       ),
     );
   }

@@ -15,6 +15,7 @@ class Song with _$Song {
     required String albumArtUrl,
     required int durationInSeconds,
     required String albumName,
+    String? albumId, // ID of the album for navigation
     String? lyrics,
     String? playlistId,
     String? audioFileUrl,
@@ -120,6 +121,7 @@ class Song with _$Song {
       albumArtUrl: albumArtUrl,
       durationInSeconds: record.data['duration'] as int? ?? 0,
       albumName: albumName,
+      albumId: albumRecord?.id, // Store album ID for navigation
       lyrics: lyrics,
       playlistId: record.data['playlist_id'] as String?,
       audioFileName: audioFileName,

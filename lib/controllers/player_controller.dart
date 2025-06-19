@@ -758,6 +758,8 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
         forceRestart: shouldForceRestart, autoPlay: true);
   }
 
+
+
   /// Set queue and play without playlist context
   Future<void> playQueue(List<Song> songs, int startIndex) async {
     if (_isDisposed) return;

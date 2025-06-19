@@ -29,4 +29,3 @@ Map<String, dynamic> _$$ArtistSelectImplToJson(_$ArtistSelectImpl instance) =>
       'artistBio': instance.artistBio,
       'artistImageUrl': instance.artistImageUrl,
     };
-

@@ -13,6 +13,7 @@ _$SongImpl _$$SongImplFromJson(Map<String, dynamic> json) => _$SongImpl(
       albumArtUrl: json['albumArtUrl'] as String,
       durationInSeconds: (json['durationInSeconds'] as num).toInt(),
       albumName: json['albumName'] as String,
+      albumId: json['albumId'] as String?,
       lyrics: json['lyrics'] as String?,
       playlistId: json['playlistId'] as String?,
       audioFileUrl: json['audioFileUrl'] as String?,
@@ -28,10 +29,10 @@ Map<String, dynamic> _$$SongImplToJson(_$SongImpl instance) =>
       'albumArtUrl': instance.albumArtUrl,
       'durationInSeconds': instance.durationInSeconds,
       'albumName': instance.albumName,
+      'albumId': instance.albumId,
       'lyrics': instance.lyrics,
       'playlistId': instance.playlistId,
       'audioFileUrl': instance.audioFileUrl,
       'audioFileName': instance.audioFileName,
       'playCount': instance.playCount,
     };
-

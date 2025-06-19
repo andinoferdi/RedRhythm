@@ -48,4 +48,3 @@ const _$RepeatModeEnumMap = {
   RepeatMode.all: 'all',
   RepeatMode.one: 'one',
 };
-

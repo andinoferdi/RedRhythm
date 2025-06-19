@@ -4,6 +4,7 @@ import '../../services/audio_duration_service.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/user_repository.dart';
 import '../../repositories/genre_repository.dart';
+import '../../repositories/album_repository.dart';
 
 /// Sets up dependency injection using GetIt
 Future<void> setupServiceLocator() async {
@@ -23,6 +24,10 @@ Future<void> setupServiceLocator() async {
   ));
   
   getIt.registerLazySingleton<GenreRepository>(() => GenreRepository(
+    getIt<PocketBaseService>(),
+  ));
+  
+  getIt.registerLazySingleton<AlbumRepository>(() => AlbumRepository(
     getIt<PocketBaseService>(),
   ));
   

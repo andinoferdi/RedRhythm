@@ -26,6 +26,8 @@ mixin _$Song {
   String get albumArtUrl => throw _privateConstructorUsedError;
   int get durationInSeconds => throw _privateConstructorUsedError;
   String get albumName => throw _privateConstructorUsedError;
+  String? get albumId =>
+      throw _privateConstructorUsedError; // ID of the album for navigation
   String? get lyrics => throw _privateConstructorUsedError;
   String? get playlistId => throw _privateConstructorUsedError;
   String? get audioFileUrl => throw _privateConstructorUsedError;
@@ -53,6 +55,7 @@ abstract class $SongCopyWith<$Res> {
       String albumArtUrl,
       int durationInSeconds,
       String albumName,
+      String? albumId,
       String? lyrics,
       String? playlistId,
       String? audioFileUrl,
@@ -81,6 +84,7 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
     Object? albumArtUrl = null,
     Object? durationInSeconds = null,
     Object? albumName = null,
+    Object? albumId = freezed,
     Object? lyrics = freezed,
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
@@ -112,6 +116,10 @@ class _$SongCopyWithImpl<$Res, $Val extends Song>
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
               as String,
+      albumId: freezed == albumId
+          ? _value.albumId
+          : albumId // ignore: cast_nullable_to_non_nullable
+              as String?,
       lyrics: freezed == lyrics
           ? _value.lyrics
           : lyrics // ignore: cast_nullable_to_non_nullable
@@ -150,6 +158,7 @@ abstract class _$$SongImplCopyWith<$Res> implements $SongCopyWith<$Res> {
       String albumArtUrl,
       int durationInSeconds,
       String albumName,
+      String? albumId,
       String? lyrics,
       String? playlistId,
       String? audioFileUrl,
@@ -175,6 +184,7 @@ class __$$SongImplCopyWithImpl<$Res>
     Object? albumArtUrl = null,
     Object? durationInSeconds = null,
     Object? albumName = null,
+    Object? albumId = freezed,
     Object? lyrics = freezed,
     Object? playlistId = freezed,
     Object? audioFileUrl = freezed,
@@ -206,6 +216,10 @@ class __$$SongImplCopyWithImpl<$Res>
           ? _value.albumName
           : albumName // ignore: cast_nullable_to_non_nullable
               as String,
+      albumId: freezed == albumId
+          ? _value.albumId
+          : albumId // ignore: cast_nullable_to_non_nullable
+              as String?,
       lyrics: freezed == lyrics
           ? _value.lyrics
           : lyrics // ignore: cast_nullable_to_non_nullable
@@ -240,6 +254,7 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       required this.albumArtUrl,
       required this.durationInSeconds,
       required this.albumName,
+      this.albumId,
       this.lyrics,
       this.playlistId,
       this.audioFileUrl,
@@ -262,6 +277,9 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
   @override
   final String albumName;
   @override
+  final String? albumId;
+// ID of the album for navigation
+  @override
   final String? lyrics;
   @override
   final String? playlistId;
@@ -275,7 +293,7 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName, playCount: $playCount)';
+    return 'Song(id: $id, title: $title, artist: $artist, albumArtUrl: $albumArtUrl, durationInSeconds: $durationInSeconds, albumName: $albumName, albumId: $albumId, lyrics: $lyrics, playlistId: $playlistId, audioFileUrl: $audioFileUrl, audioFileName: $audioFileName, playCount: $playCount)';
   }
 
   @override
@@ -289,6 +307,7 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       ..add(DiagnosticsProperty('albumArtUrl', albumArtUrl))
       ..add(DiagnosticsProperty('durationInSeconds', durationInSeconds))
       ..add(DiagnosticsProperty('albumName', albumName))
+      ..add(DiagnosticsProperty('albumId', albumId))
       ..add(DiagnosticsProperty('lyrics', lyrics))
       ..add(DiagnosticsProperty('playlistId', playlistId))
       ..add(DiagnosticsProperty('audioFileUrl', audioFileUrl))
@@ -310,6 +329,7 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
                 other.durationInSeconds == durationInSeconds) &&
             (identical(other.albumName, albumName) ||
                 other.albumName == albumName) &&
+            (identical(other.albumId, albumId) || other.albumId == albumId) &&
             (identical(other.lyrics, lyrics) || other.lyrics == lyrics) &&
             (identical(other.playlistId, playlistId) ||
                 other.playlistId == playlistId) &&
@@ -331,6 +351,7 @@ class _$SongImpl with DiagnosticableTreeMixin implements _Song {
       albumArtUrl,
       durationInSeconds,
       albumName,
+      albumId,
       lyrics,
       playlistId,
       audioFileUrl,
@@ -361,6 +382,7 @@ abstract class _Song implements Song {
       required final String albumArtUrl,
       required final int durationInSeconds,
       required final String albumName,
+      final String? albumId,
       final String? lyrics,
       final String? playlistId,
       final String? audioFileUrl,
@@ -382,6 +404,8 @@ abstract class _Song implements Song {
   @override
   String get albumName;
   @override
+  String? get albumId; // ID of the album for navigation
+  @override
   String? get lyrics;
   @override
   String? get playlistId;
@@ -399,4 +423,3 @@ abstract class _Song implements Song {
   _$$SongImplCopyWith<_$SongImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
-

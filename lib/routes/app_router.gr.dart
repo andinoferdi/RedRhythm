@@ -15,6 +15,18 @@ abstract class _$AppRouter extends RootStackRouter {
 
   @override
   final Map<String, PageFactory> pagesMap = {
+    AlbumRoute.name: (routeData) {
+      final args = routeData.argsAs<AlbumRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: AlbumScreen(
+          albumId: args.albumId,
+          albumTitle: args.albumTitle,
+          sourceTabIndex: args.sourceTabIndex,
+          key: args.key,
+        ),
+      );
+    },
     ArtistDetailRoute.name: (routeData) {
       final args = routeData.argsAs<ArtistDetailRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -22,6 +34,7 @@ abstract class _$AppRouter extends RootStackRouter {
         child: ArtistDetailScreen(
           artistId: args.artistId,
           artistName: args.artistName,
+          sourceTabIndex: args.sourceTabIndex,
           key: args.key,
         ),
       );
@@ -156,11 +169,59 @@ abstract class _$AppRouter extends RootStackRouter {
 }
 
 /// generated route for
+/// [AlbumScreen]
+class AlbumRoute extends PageRouteInfo<AlbumRouteArgs> {
+  AlbumRoute({
+    required String albumId,
+    String? albumTitle,
+    int? sourceTabIndex,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+          AlbumRoute.name,
+          args: AlbumRouteArgs(
+            albumId: albumId,
+            albumTitle: albumTitle,
+            sourceTabIndex: sourceTabIndex,
+            key: key,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'AlbumRoute';
+
+  static const PageInfo<AlbumRouteArgs> page = PageInfo<AlbumRouteArgs>(name);
+}
+
+class AlbumRouteArgs {
+  const AlbumRouteArgs({
+    required this.albumId,
+    this.albumTitle,
+    this.sourceTabIndex,
+    this.key,
+  });
+
+  final String albumId;
+
+  final String? albumTitle;
+
+  final int? sourceTabIndex;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'AlbumRouteArgs{albumId: $albumId, albumTitle: $albumTitle, sourceTabIndex: $sourceTabIndex, key: $key}';
+  }
+}
+
+/// generated route for
 /// [ArtistDetailScreen]
 class ArtistDetailRoute extends PageRouteInfo<ArtistDetailRouteArgs> {
   ArtistDetailRoute({
     required String artistId,
     String? artistName,
+    int? sourceTabIndex,
     Key? key,
     List<PageRouteInfo>? children,
   }) : super(
@@ -168,6 +229,7 @@ class ArtistDetailRoute extends PageRouteInfo<ArtistDetailRouteArgs> {
           args: ArtistDetailRouteArgs(
             artistId: artistId,
             artistName: artistName,
+            sourceTabIndex: sourceTabIndex,
             key: key,
           ),
           initialChildren: children,
@@ -183,6 +245,7 @@ class ArtistDetailRouteArgs {
   const ArtistDetailRouteArgs({
     required this.artistId,
     this.artistName,
+    this.sourceTabIndex,
     this.key,
   });
 
@@ -190,11 +253,13 @@ class ArtistDetailRouteArgs {
 
   final String? artistName;
 
+  final int? sourceTabIndex;
+
   final Key? key;
 
   @override
   String toString() {
-    return 'ArtistDetailRouteArgs{artistId: $artistId, artistName: $artistName, key: $key}';
+    return 'ArtistDetailRouteArgs{artistId: $artistId, artistName: $artistName, sourceTabIndex: $sourceTabIndex, key: $key}';
   }
 }
 
@@ -549,4 +614,3 @@ class StatsRoute extends PageRouteInfo<void> {
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }
-

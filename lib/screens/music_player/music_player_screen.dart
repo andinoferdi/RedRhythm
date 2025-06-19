@@ -404,15 +404,32 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 // Song info
                 Column(
                   children: [
-                    Text(
-                      currentSong.title,
-                      style: TextStyle(
-                        color: colors.textPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Gotham',
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to album screen if albumId is available
+                        if (currentSong.albumId != null && currentSong.albumId!.isNotEmpty) {
+                          context.router.push(AlbumRoute(
+                            albumId: currentSong.albumId!,
+                            albumTitle: currentSong.albumName,
+                          ));
+                        } else {
+                          // Fallback: navigate to album screen with title only
+                          context.router.push(AlbumRoute(
+                            albumId: '',
+                            albumTitle: currentSong.albumName,
+                          ));
+                        }
+                      },
+                      child: Text(
+                        currentSong.title,
+                        style: TextStyle(
+                          color: colors.textPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Gotham',
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     GestureDetector(
