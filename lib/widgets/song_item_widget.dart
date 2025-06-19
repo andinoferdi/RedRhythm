@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/player_controller.dart';
 import '../models/song.dart';
 import '../utils/image_helpers.dart';
+import '../utils/font_usage_guide.dart';
 import 'animated_sound_bars.dart';
 
 class SongItemWidget extends ConsumerWidget {
@@ -86,24 +87,16 @@ class SongItemWidget extends ConsumerWidget {
                     children: [
                       Text(
                         song.title,
-                        style: TextStyle(
-                          color: actualIsCurrentSong ? Colors.red : Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                        ),
+                        style: actualIsCurrentSong 
+                            ? FontUsageGuide.playingSongTitle 
+                            : FontUsageGuide.getResponsiveSongTitle(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
                         subtitle ?? (song.artist.isNotEmpty ? song.artist : 'Unknown Artist'),
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                        ),
+                        style: FontUsageGuide.getResponsiveArtistName(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),

@@ -3,6 +3,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../widgets/custom_bottom_nav.dart';
 import '../../widgets/user_avatar.dart';
 import '../../controllers/auth_controller.dart';
@@ -92,25 +93,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                            'Admin Options',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
+                            Text(
+                'Admin Options',
+                style: FontUsageGuide.modalTitle,
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.timer, color: Colors.orange),
-                title: const Text(
+                title: Text(
                   'Update Song Durations',
-                  style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.modalButton,
                 ),
-                subtitle: const Text(
+                subtitle: Text(
                   'Auto-detect durations from MP3 files',
-                  style: TextStyle(color: Colors.grey, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.modalBody,
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -171,16 +167,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                                          playlist.data['name'] ?? 'Playlist Tanpa Judul',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
+                        playlist.data['name'] ?? 'Playlist Tanpa Judul',
+                        style: FontUsageGuide.modalTitle,
                       ),
                       Text(
                         'Playlist',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+                        style: FontUsageGuide.metadata,
                       ),
                     ],
                   ),
@@ -241,18 +233,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
-                      color: isDestructive ? Colors.red : Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: isDestructive 
+                      ? FontUsageGuide.modalButton.copyWith(color: Colors.red)
+                      : FontUsageGuide.modalButton,
                   ),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
+                    style: FontUsageGuide.modalBody,
                   ),
                 ],
               ),
@@ -289,14 +276,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Title
-              const Text(
+              Text(
                 'Hapus playlist',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                ),
+                style: FontUsageGuide.modalTitle,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -304,12 +286,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               // Subtitle/Question
               Text(
                 'Yakin ingin menghapus ${playlist.data['name']}?',
-                style: TextStyle(
-                  color: Colors.grey[300],
-                  fontSize: 16,
-                  fontFamily: 'Gotham',
-                  fontWeight: FontWeight.w400,
-                ),
+                style: FontUsageGuide.modalBody,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
@@ -330,15 +307,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         ),
                         minimumSize: const Size(80, 40),
                       ),
-                      child: const Text(
+                      child: Text(
                         'BATALKAN',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                          letterSpacing: 1.2,
-                        ),
+                        style: FontUsageGuide.authButtonText,
                       ),
                     ),
                   ),
@@ -361,13 +332,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       ),
                       child: Text(
                         'HAPUS',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                          letterSpacing: 1.2,
-                        ),
+                        style: FontUsageGuide.authButtonText.copyWith(color: Colors.red),
                       ),
                     ),
                   ),
@@ -451,11 +416,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 children: [
                   Text(
                     playlist.data['name'] ?? 'Playlist Tanpa Judul',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.listSongTitle,
                   ),
                   const SizedBox(height: 4),
                   FutureBuilder<String>(
@@ -464,14 +425,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       if (snapshot.hasData) {
                         return Text(
                           'Playlist • ${snapshot.data}',
-                          style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+                          style: FontUsageGuide.metadata,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         );
                       } else {
                         return Text(
                           'Playlist',
-                          style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+                          style: FontUsageGuide.metadata,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         );
@@ -524,19 +485,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 children: [
                   Text(
                     artistSelect.artistName ?? 'Unknown Artist',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.listSongTitle,
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Artis',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                    ),
+                    style: FontUsageGuide.metadata,
                   ),
                 ],
               ),
@@ -597,19 +551,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 children: [
                   Text(
                     albumSelect.albumTitle ?? 'Unknown Album',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: FontUsageGuide.listSongTitle,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Album • ${albumSelect.albumArtistName ?? 'Unknown Artist'}',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
+                    style: FontUsageGuide.metadata,
                   ),
                 ],
               ),
@@ -631,12 +578,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       child: Center(
         child: Text(
           artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
-          style: const TextStyle(
-            color: Colors.white,
-                                      fontSize: 24,
-                          fontWeight: FontWeight.w900,
-            fontFamily: 'Gotham',
-          ),
+          style: FontUsageGuide.searchResultArtist,
         ),
       ),
     );
@@ -683,17 +625,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: Center(
-                          child: Text(
-                            (artistSelect.artistName?.isNotEmpty == true) 
-                                ? artistSelect.artistName![0].toUpperCase() 
-                                : 'A',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              fontFamily: 'Gotham',
-                            ),
-                          ),
+                                    child: Text(
+            (artistSelect.artistName?.isNotEmpty == true) 
+                ? artistSelect.artistName![0].toUpperCase() 
+                : 'A',
+            style: FontUsageGuide.searchResultArtist,
+          ),
                         ),
                       ),
                     ),
@@ -706,18 +643,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       Text(
                         artistSelect.artistName ?? 'Unknown Artist',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: FontUsageGuide.modalTitle,
                       ),
-                      const Text(
+                      Text(
                         'Artis',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                        ),
+                        style: FontUsageGuide.metadata,
                       ),
                     ],
                   ),
@@ -809,18 +739,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       Text(
                         albumSelect.albumTitle ?? 'Unknown Album',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: FontUsageGuide.modalTitle,
                       ),
                       Text(
                         'Album • ${albumSelect.albumArtistName ?? 'Unknown Artist'}',
-                        style: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: 14,
-                        ),
+                        style: FontUsageGuide.metadata,
                       ),
                     ],
                   ),
@@ -974,7 +897,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           children: [
             Text(
               playlistError,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+              style: FontUsageGuide.errorMessage,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -1011,15 +934,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Koleksi masih kosong',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+                  style: FontUsageGuide.emptyStateTitle,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Tambahkan playlist, artis, atau album untuk\nmulai membangun koleksi musik kamu',
-                  style: TextStyle(
-                    color: Colors.grey[500],
-                    fontSize: 14,
-                  ),
+                  style: FontUsageGuide.emptyStateMessage,
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -1131,15 +1051,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       // Admin access through long press
                       _showAdminOptions(context);
                     },
-                    child: const Text(
+                    child: Text(
                       'Library',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 25, // Match size with other screens
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        fontFamily: 'Gotham',
-                      ),
+                      style: FontUsageGuide.appBarTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1252,12 +1166,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                             child: Text(
                               'Beri nama playlist-mu',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Gotham',
-                              ),
+                              style: FontUsageGuide.modalTitle,
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -1277,21 +1186,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ),
                               child: TextField(
                                 controller: nameController,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontFamily: 'Gotham',
-                                  fontWeight: FontWeight.w400,
-                                ),
+                                style: FontUsageGuide.authFieldInput,
                                 cursorColor:
                                     Colors.red, // Spotify green
                                 decoration: InputDecoration(
                                   hintText: 'Playlist-ku',
-                                  hintStyle: TextStyle(
+                                  hintStyle: FontUsageGuide.authFieldInput.copyWith(
                                     color: Colors.grey[500],
-                                    fontSize: 16,
-                                    fontFamily: 'Gotham',
-                                    fontWeight: FontWeight.w400,
                                   ),
                                   border: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -1332,14 +1233,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                   ),
                                   child: Text(
                                     'BATAL',
-                                    style: TextStyle(
+                                    style: FontUsageGuide.authButtonText.copyWith(
                                       color: isLoading
                                           ? Colors.grey[600]
                                           : Colors.grey[300],
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      fontFamily: 'Gotham',
-                                      letterSpacing: 1.2,
                                     ),
                                   ),
                                 ),
@@ -1465,15 +1362,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                                     Colors.white),
                                           ),
                                         )
-                                      : const Text(
+                                      : Text(
                                           'BUAT',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            fontFamily: 'Gotham',
-                                            letterSpacing: 1.2,
-                                            color: Colors.white,
-                                          ),
+                                          style: FontUsageGuide.authButtonText,
                                         ),
                                 ),
                               ],

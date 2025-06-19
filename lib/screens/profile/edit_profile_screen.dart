@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../controllers/auth_controller.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../widgets/user_avatar.dart';
 import '../../services/pocketbase_service.dart';
 import '../../providers/user_stats_provider.dart';
@@ -164,15 +165,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'New Profile Picture',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                ),
-              ),
+                          Text(
+              'New Profile Picture',
+              style: FontUsageGuide.modalTitle,
+            ),
               const SizedBox(height: 20),
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
@@ -196,13 +192,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                         });
                         Navigator.pop(context);
                       },
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                        ),
+                        style: FontUsageGuide.modalButton.copyWith(color: Colors.grey),
                       ),
                     ),
                   ),
@@ -216,13 +208,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                           borderRadius: BorderRadius.circular(25),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Keep',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                        ),
+                        style: FontUsageGuide.modalButton,
                       ),
                     ),
                   ),
@@ -313,13 +301,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                  height: 1.4,
-                ),
+                style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.white),
               ),
             ),
           ],
@@ -454,14 +436,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
             ),
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Edit Profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.appBarTitle,
           ),
           const Spacer(),
           if (hasChanges)
@@ -486,13 +463,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                   const SizedBox(width: 4),
                   Text(
                     'Unsaved',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                      height: 1.3,
-                    ),
+                    style: FontUsageGuide.navigationLabel.copyWith(color: AppColors.primary),
                   ),
                 ],
               ),
@@ -509,15 +480,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
 
     return Column(
       children: [
-        const Text(
+        Text(
           'Profile Picture',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'Gotham',
-            height: 1.25,
-          ),
+          style: FontUsageGuide.homeSectionHeader,
         ),
         const SizedBox(height: 20),
         
@@ -587,13 +552,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
         
         Text(
           'Tap to change your profile picture',
-          style: TextStyle(
-            color: Colors.grey.shade400,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'Gotham',
-            height: 1.3,
-          ),
+          style: FontUsageGuide.listMetadata.copyWith(color: Colors.grey.shade400),
         ),
       ],
     );
@@ -627,15 +586,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 size: 24,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Account Information',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                  height: 1.3,
-                ),
+                style: FontUsageGuide.modalTitle,
               ),
             ],
           ),
@@ -663,24 +616,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           children: [
             Text(
               label,
-              style: TextStyle(
-                color: Colors.grey.shade400,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-                height: 1.3,
-              ),
+              style: FontUsageGuide.listMetadata.copyWith(color: Colors.grey.shade400),
             ),
             const SizedBox(height: 2),
             Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-                height: 1.4,
-              ),
+              style: FontUsageGuide.authFieldLabel,
             ),
           ],
         ),
@@ -712,15 +653,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 size: 24,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Username',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                  height: 1.3,
-                ),
+                style: FontUsageGuide.modalTitle,
               ),
               const Spacer(),
               if (_isUsernameChanged)
@@ -730,14 +665,11 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                     color: AppColors.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(
+                  child:                   Text(
                     'Modified',
-                    style: TextStyle(
-                      color: AppColors.primary,
+                    style: FontUsageGuide.navigationLabel.copyWith(
+                      color: AppColors.primary, 
                       fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                      height: 1.2,
                     ),
                   ),
                 ),
@@ -748,22 +680,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           TextFormField(
             controller: _usernameController,
             focusNode: _usernameFocusNode,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              height: 1.4,
-            ),
+            style: FontUsageGuide.authButtonText,
             decoration: InputDecoration(
               hintText: 'Enter your username',
-              hintStyle: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-                height: 1.4,
-              ),
+                              hintStyle: FontUsageGuide.authButtonText.copyWith(color: Colors.grey.shade500),
               filled: true,
               fillColor: const Color(0xFF2A2A2A),
               border: OutlineInputBorder(
@@ -801,13 +721,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           
                       Text(
             'Choose a unique username that represents you',
-            style: TextStyle(
-              color: Colors.grey.shade400,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              height: 1.3,
-            ),
+            style: FontUsageGuide.listMetadata.copyWith(color: Colors.grey.shade400),
           ),
         ],
       ),
@@ -836,15 +750,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                 size: 24,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Your Activity',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                  height: 1.3,
-                ),
+                style: FontUsageGuide.modalTitle,
               ),
             ],
           ),
@@ -1041,24 +949,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              height: 1.2,
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              height: 1.3,
-            ),
+            style: FontUsageGuide.listMetadata.copyWith(color: Colors.white70),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1124,13 +1020,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen>
                         : hasChanges
                             ? 'Save Changes'
                             : 'No Changes',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                      height: 1.3,
-                    ),
+                    style: FontUsageGuide.authButtonText,
                   ),
                 ],
               ),

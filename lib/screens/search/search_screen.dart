@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/search_history_utils.dart';
 import '../../utils/image_helpers.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../models/song.dart';
 import '../../models/album.dart';
 import '../../routes/app_router.dart';
@@ -304,12 +305,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Oops! Terjadi kesalahan',
-              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.errorTitle,
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage!,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.errorMessage,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -321,7 +322,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   borderRadius: BorderRadius.circular(25),
                 ),
               ),
-              child: const Text('Coba Lagi', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham')),
+              child: Text('Coba Lagi', style: FontUsageGuide.authButtonText),
             ),
           ],
         ),
@@ -341,16 +342,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       children: [
         // Album results section
         if (_albumSearchResults.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               'Album',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
+              style: FontUsageGuide.searchSectionHeader,
             ),
           ),
           ..._albumSearchResults.map((album) => _buildAlbumItem(album)),
@@ -359,16 +355,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         
         // Artist results section
         if (_artistSearchResults.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               'Artis',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
+              style: FontUsageGuide.searchSectionHeader,
             ),
           ),
           ..._artistSearchResults.map((artist) => _buildArtistItem(artist)),
@@ -377,16 +368,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         
         // Song results section
         if (_searchResults.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               'Lagu',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.3,
-              ),
+              style: FontUsageGuide.searchSectionHeader,
             ),
           ),
           ..._searchResults.asMap().entries.map((entry) {
@@ -414,12 +400,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Tidak ada hasil',
-              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.emptyStateTitle,
             ),
             const SizedBox(height: 8),
             Text(
               'Coba kata kunci yang berbeda',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.emptyStateMessage,
             ),
           ],
         ),
@@ -439,21 +425,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                            'Pencarian terkini',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.3,
-            ),
+                        children: [
+              Text(
+                'Pencarian terkini',
+                style: FontUsageGuide.homeSectionHeader,
               ),
               TextButton(
                 onPressed: _clearAllRecentSearches,
-                child: const Text(
+                child: Text(
                   'Hapus semua',
-                  style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.linkText,
                 ),
               ),
             ],
@@ -495,12 +476,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             const SizedBox(height: 16),
             Text(
               'Kamu belum mencari apapun',
-              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.emptyStateTitle,
             ),
             const SizedBox(height: 8),
             Text(
               'Mulai cari lagu, artis, atau album favoritmu',
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.emptyStateMessage,
               textAlign: TextAlign.center,
             ),
           ],
@@ -616,23 +597,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     album.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.searchResultTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Album � ${album.artistName}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.metadata,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -673,12 +645,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: Center(
                       child: Text(
                         artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'Gotham',
-                        ),
+                        style: FontUsageGuide.searchResultArtist,
                       ),
                     ),
                   ),
@@ -694,23 +661,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     artist.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.searchResultTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Artis',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.metadata,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -772,23 +730,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     album.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.searchResultTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Album � ${album.artistName}',
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.metadata,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -833,12 +782,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Center(
                     child: Text(
                       artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Gotham',
-                      ),
+                      style: FontUsageGuide.searchResultArtist,
                     ),
                   ),
                 ),
@@ -856,23 +800,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 children: [
                   Text(
                     artist.name.isNotEmpty ? artist.name : 'Unknown Artist',
-                    style: TextStyle(
-                      color: artist.name.isNotEmpty ? Colors.white : Colors.grey.shade400,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.searchResultTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  const Text(
+                  Text(
                     'Artis',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.metadata,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

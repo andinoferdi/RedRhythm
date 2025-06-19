@@ -14,8 +14,7 @@ import '../../providers/genre_provider.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
-
-
+import '../../utils/font_usage_guide.dart';
 
 import '../../utils/app_colors.dart';
 import '../../utils/app_config.dart';
@@ -257,15 +256,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 145, // Match width constraint with other screens
-                  child: const Text(
+                  child: Text(
                     'Home',
-                    style: TextStyle(
-                      fontFamily: 'Gotham',
-                      color: Colors.white,
-                      fontSize: 25, // Match size with other screens
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
+                    style: FontUsageGuide.appBarTitle.copyWith(fontSize: 25),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -325,17 +318,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             'Continue Listening',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              letterSpacing: 0.4,
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),
@@ -361,12 +348,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'Error: ${genreState.error}',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.authErrorText,
                   ),
                 ),
               );
@@ -374,17 +356,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             
             // Show empty state
             if (genreState.genres.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'No genres available',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
                   ),
                 ),
               );
@@ -472,12 +449,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                ),
+                style: FontUsageGuide.authFieldLabel,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -528,14 +500,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   children: [
-                    const Text(
+                    Text(
                       'Profile',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Gotham',
-                      ),
+                      style: FontUsageGuide.homeSectionHeader,
                     ),
                     const Spacer(),
                     IconButton(
@@ -591,24 +558,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                         children: [
                           Text(
                             userName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Gotham',
-                            ),
+                            style: FontUsageGuide.modalTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 6),
                           Text(
                             userEmail,
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Gotham',
-                            ),
+                            style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey.shade400),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -713,22 +670,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: FontUsageGuide.authButtonText.copyWith(
                       color: isDestructive ? Colors.red.shade400 : Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.listMetadata.copyWith(color: Colors.grey.shade400),
                   ),
                 ],
               ),
@@ -754,35 +703,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             'Sign Out',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.modalTitle.copyWith(fontSize: 20),
           ),
-          content: const Text(
+          content: Text(
             'Are you sure you want to sign out from your account?',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.modalBody.copyWith(color: Colors.grey),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancel',
-                style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                ),
+                style: FontUsageGuide.modalButton.copyWith(color: Colors.grey.shade400),
               ),
             ),
             TextButton(
@@ -807,14 +741,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   context.router.replace(const AuthOptionsRoute());
                 }
               },
-              child: const Text(
+              child: Text(
                 'Sign Out',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Gotham',
-                ),
+                style: FontUsageGuide.modalButton.copyWith(color: Colors.red),
               ),
             ),
           ],
@@ -829,17 +758,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             'Your Top Mixes',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              letterSpacing: 0.4,
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),
@@ -894,17 +817,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             'Recently Played',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-              letterSpacing: 0.4,
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),
@@ -930,12 +847,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                   padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
                   child: Text(
                     'Error: ${playHistoryState.error}',
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.authErrorText,
                   ),
                 ),
               );
@@ -943,17 +855,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             
             // Show empty state
             if (playHistoryState.recentlyPlayed.isEmpty) {
-              return const Center(
+              return Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Text(
                     'No recently played songs',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
                   ),
                 ),
               );
@@ -991,12 +898,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                       )
                                     : Text(
                                         '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          fontFamily: 'Gotham',
-                                        ),
+                                        style: FontUsageGuide.authButtonText.copyWith(color: Colors.grey),
                                         textAlign: TextAlign.center,
                                       ),
                               ),
@@ -1064,22 +966,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                    fontFamily: 'Gotham',
-                  ),
+                  style: FontUsageGuide.modalTitle,
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Based on your listening',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Gotham',
-                  ),
+                  style: FontUsageGuide.listMetadata.copyWith(color: Colors.white70),
                 ),
               ],
             ),

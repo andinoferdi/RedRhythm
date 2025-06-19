@@ -6,6 +6,7 @@ import '../../controllers/auth_controller.dart';
 import '../home/home_screen.dart';
 import '../../widgets/user_avatar.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../routes/app_router.dart';
 import '../../widgets/mini_player.dart';
 import '../../controllers/player_controller.dart';
@@ -85,14 +86,9 @@ class ExploreScreen extends ConsumerWidget {
                 const SizedBox(width: 12),
                 SizedBox(
                   width: 145, // Constrain width
-                  child: const Text(
+                  child: Text(
                     'Search',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 25, // Match size with other screens
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Gotham',
-                    ),
+                    style: FontUsageGuide.appBarTitle.copyWith(fontSize: 25),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -129,16 +125,11 @@ class ExploreScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             'Your Top Genres',
-            style: TextStyle(
-              color: AppColors.text,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),
@@ -183,16 +174,11 @@ class ExploreScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.0),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
             'Browse All',
-            style: TextStyle(
-              color: AppColors.text,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Gotham',
-            ),
+            style: FontUsageGuide.homeSectionHeader,
           ),
         ),
         const SizedBox(height: 16),

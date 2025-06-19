@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 import 'constants.dart';
 import 'custom_page_transitions.dart';
+import 'typography.dart';
 
 class AppTheme {
   // Private constructor to prevent instantiation
@@ -54,98 +55,23 @@ class AppTheme {
         ),
       );
 
-  // Text theme - Semua menggunakan font Gotham
+  // Text theme - Using the new AppTypography system
   static TextTheme get _textTheme => const TextTheme(
-        displayLarge: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 32,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        displayMedium: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        displaySmall: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        headlineLarge: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        headlineMedium: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        headlineSmall: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        titleLarge: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        titleMedium: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        titleSmall: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        bodyLarge: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 16,
-          fontWeight: FontWeight.w400,
-          color: Colors.white,
-        ),
-        bodyMedium: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: Colors.white,
-        ),
-        bodySmall: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: Colors.white,
-        ),
-        labelLarge: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        labelMedium: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-        labelSmall: TextStyle(
-          fontFamily: 'Gotham',
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
+        displayLarge: AppTypography.displayLarge,
+        displayMedium: AppTypography.displayMedium,
+        displaySmall: AppTypography.displaySmall,
+        headlineLarge: AppTypography.headlineLarge,
+        headlineMedium: AppTypography.headlineMedium,
+        headlineSmall: AppTypography.headlineSmall,
+        titleLarge: AppTypography.titleLarge,
+        titleMedium: AppTypography.titleMedium,
+        titleSmall: AppTypography.titleSmall,
+        bodyLarge: AppTypography.bodyLarge,
+        bodyMedium: AppTypography.bodyMedium,
+        bodySmall: AppTypography.bodySmall,
+        labelLarge: AppTypography.labelLarge,
+        labelMedium: AppTypography.labelMedium,
+        labelSmall: AppTypography.labelSmall,
       );
 
   // AppBar theme
