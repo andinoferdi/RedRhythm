@@ -5,6 +5,7 @@ import 'package:pocketbase/pocketbase.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../models/song.dart';
 import '../../services/pocketbase_service.dart';
 import '../../repositories/playlist_repository.dart';
@@ -266,13 +267,13 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text(
+        title: Text(
           'Hapus dari Playlist',
-          style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+          style: FontUsageGuide.modalTitle,
         ),
         content: Text(
           'Hapus "${song.title}" dari playlist ini?\n\nPerubahan akan disimpan saat menekan tombol Simpan.',
-          style: const TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
+          style: FontUsageGuide.modalBody,
         ),
         actions: [
           TextButton(
@@ -349,10 +350,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
               ),
             ),
           ],
@@ -395,13 +393,13 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text(
+        title: Text(
           'Perubahan Belum Disimpan',
-          style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+          style: FontUsageGuide.modalTitle,
         ),
-        content: const Text(
+        content: Text(
           'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin keluar?',
-          style: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
+          style: FontUsageGuide.modalBody,
         ),
         actions: [
           TextButton(
@@ -469,9 +467,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                 child: Column(
                   children: [
                     _buildPlaylistInfo(),
-                    // Move description section up too
+                    // Move description section up but less aggressive
                     Transform.translate(
-                      offset: const Offset(0, -30),
+                      offset: const Offset(0, -15),
                       child: Column(
                         children: [
                           _buildDescriptionSection(),
@@ -500,14 +498,10 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         icon: const Icon(Icons.close, color: Colors.white),
         onPressed: _onBackPressed,
       ),
-      title: const Text(
-        'Edit Playlist',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+              title: Text(
+          'Edit Playlist',
+          style: FontUsageGuide.appBarTitle,
         ),
-      ),
       actions: [
         TextButton(
           onPressed: (_isSaving || !_hasChanges) ? null : _savePlaylist,
@@ -522,9 +516,8 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
               )
             : Text(
                 'Simpan',
-                style: TextStyle(
+                style: FontUsageGuide.authButtonText.copyWith(
                   color: _hasChanges ? Colors.white : Colors.white38,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
         ),
@@ -592,9 +585,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                       padding: const EdgeInsets.only(top: 8),
                       child: TextButton(
                         onPressed: _removeImage,
-                        child: const Text(
+                        child: Text(
                           'Ganti gambar',
-                          style: TextStyle(color: Colors.white70, fontFamily: 'Gotham'),
+                          style: FontUsageGuide.authButtonText.copyWith(color: Colors.white70),
                         ),
                       ),
                     ),
@@ -636,13 +629,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             children: [
               TextField(
                 controller: _nameController,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: FontUsageGuide.homeSectionHeader,
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -651,11 +640,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
                   filled: false,
                   fillColor: Colors.transparent,
                   hintText: 'Nama Playlist',
-                  hintStyle: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  hintStyle: FontUsageGuide.homeSectionHeader.copyWith(color: Colors.white54),
                   contentPadding: EdgeInsets.only(bottom: -5),
                   isDense: true,
                 ),
@@ -664,7 +649,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
               ),
               // Spotify-style underline - moved closer to text
               Transform.translate(
-                offset: const Offset(0, -40),
+                offset: const Offset(0, -20), // Move closer to text
                 child: Container(
                   height: 1,
                   color: Colors.white,
@@ -675,13 +660,10 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
         ),
         // Negative margin to compensate for transform offset
         Transform.translate(
-          offset: const Offset(0, -30),
+          offset: const Offset(0, -15), // Move further down
           child: Text(
             '${_songs.length} lagu',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 14,
-            ),
+            style: FontUsageGuide.metadata,
           ),
         ),
       ],
@@ -746,10 +728,7 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           children: [
             Text(
               _descriptionController.text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-              ),
+              style: FontUsageGuide.authFieldInput,
             ),
             const SizedBox(height: 4),
             Text(
@@ -773,13 +752,10 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
           TextField(
             controller: _descriptionController,
             autofocus: true,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
+            style: FontUsageGuide.authFieldInput,
             decoration: InputDecoration(
               hintText: 'Tambahkan deskripsi playlist...',
-              hintStyle: const TextStyle(color: Colors.white54, fontFamily: 'Gotham'),
+              hintStyle: FontUsageGuide.searchPlaceholder,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: Colors.white24),
@@ -806,17 +782,17 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
             children: [
               TextButton(
                 onPressed: _cancelEditingDescription,
-                child: const Text(
+                child: Text(
                   'Batal',
-                  style: TextStyle(color: Colors.white54, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.modalButton.copyWith(color: Colors.white54),
                 ),
               ),
               const SizedBox(width: 8),
               TextButton(
                 onPressed: _saveDescription,
-                child: const Text(
+                child: Text(
                   'Simpan',
-                  style: TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+                  style: FontUsageGuide.modalButton,
                 ),
               ),
             ],
@@ -871,22 +847,15 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
     return Column(
       children: [
         const SizedBox(height: 50),
-        const Text(
+        Text(
           'Mulai menambahkan ke playlist kamu.',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+          style: FontUsageGuide.emptyStateTitle,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Kamu bisa mengeditnya di sini.',
-          style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-          ),
+          style: FontUsageGuide.emptyStateMessage,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -908,9 +877,9 @@ class _EditPlaylistScreenState extends ConsumerState<EditPlaylistScreen> {
               borderRadius: BorderRadius.circular(25),
             ),
           ),
-          child: const Text(
+          child: Text(
             'Cari lagu',
-            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Gotham'),
+            style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
           ),
         ),
       ],
