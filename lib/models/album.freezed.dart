@@ -27,6 +27,7 @@ mixin _$Album {
   String? get coverImageUrl => throw _privateConstructorUsedError;
   String? get coverImageFilename => throw _privateConstructorUsedError;
   int get releaseYear => throw _privateConstructorUsedError;
+  DateTime? get releaseDate => throw _privateConstructorUsedError;
   String? get description => throw _privateConstructorUsedError;
   int get trackCount => throw _privateConstructorUsedError;
   DateTime get created => throw _privateConstructorUsedError;
@@ -54,6 +55,7 @@ abstract class $AlbumCopyWith<$Res> {
       String? coverImageUrl,
       String? coverImageFilename,
       int releaseYear,
+      DateTime? releaseDate,
       String? description,
       int trackCount,
       DateTime created,
@@ -82,6 +84,7 @@ class _$AlbumCopyWithImpl<$Res, $Val extends Album>
     Object? coverImageUrl = freezed,
     Object? coverImageFilename = freezed,
     Object? releaseYear = null,
+    Object? releaseDate = freezed,
     Object? description = freezed,
     Object? trackCount = null,
     Object? created = null,
@@ -116,6 +119,10 @@ class _$AlbumCopyWithImpl<$Res, $Val extends Album>
           ? _value.releaseYear
           : releaseYear // ignore: cast_nullable_to_non_nullable
               as int,
+      releaseDate: freezed == releaseDate
+          ? _value.releaseDate
+          : releaseDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
@@ -151,6 +158,7 @@ abstract class _$$AlbumImplCopyWith<$Res> implements $AlbumCopyWith<$Res> {
       String? coverImageUrl,
       String? coverImageFilename,
       int releaseYear,
+      DateTime? releaseDate,
       String? description,
       int trackCount,
       DateTime created,
@@ -177,6 +185,7 @@ class __$$AlbumImplCopyWithImpl<$Res>
     Object? coverImageUrl = freezed,
     Object? coverImageFilename = freezed,
     Object? releaseYear = null,
+    Object? releaseDate = freezed,
     Object? description = freezed,
     Object? trackCount = null,
     Object? created = null,
@@ -211,6 +220,10 @@ class __$$AlbumImplCopyWithImpl<$Res>
           ? _value.releaseYear
           : releaseYear // ignore: cast_nullable_to_non_nullable
               as int,
+      releaseDate: freezed == releaseDate
+          ? _value.releaseDate
+          : releaseDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       description: freezed == description
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
@@ -242,6 +255,7 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
       this.coverImageUrl,
       this.coverImageFilename,
       this.releaseYear = 0,
+      this.releaseDate,
       this.description,
       this.trackCount = 0,
       required this.created,
@@ -266,6 +280,8 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
   @JsonKey()
   final int releaseYear;
   @override
+  final DateTime? releaseDate;
+  @override
   final String? description;
   @override
   @JsonKey()
@@ -277,7 +293,7 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'Album(id: $id, title: $title, artistName: $artistName, artistId: $artistId, coverImageUrl: $coverImageUrl, coverImageFilename: $coverImageFilename, releaseYear: $releaseYear, description: $description, trackCount: $trackCount, created: $created, updated: $updated)';
+    return 'Album(id: $id, title: $title, artistName: $artistName, artistId: $artistId, coverImageUrl: $coverImageUrl, coverImageFilename: $coverImageFilename, releaseYear: $releaseYear, releaseDate: $releaseDate, description: $description, trackCount: $trackCount, created: $created, updated: $updated)';
   }
 
   @override
@@ -292,6 +308,7 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
       ..add(DiagnosticsProperty('coverImageUrl', coverImageUrl))
       ..add(DiagnosticsProperty('coverImageFilename', coverImageFilename))
       ..add(DiagnosticsProperty('releaseYear', releaseYear))
+      ..add(DiagnosticsProperty('releaseDate', releaseDate))
       ..add(DiagnosticsProperty('description', description))
       ..add(DiagnosticsProperty('trackCount', trackCount))
       ..add(DiagnosticsProperty('created', created))
@@ -315,6 +332,8 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
                 other.coverImageFilename == coverImageFilename) &&
             (identical(other.releaseYear, releaseYear) ||
                 other.releaseYear == releaseYear) &&
+            (identical(other.releaseDate, releaseDate) ||
+                other.releaseDate == releaseDate) &&
             (identical(other.description, description) ||
                 other.description == description) &&
             (identical(other.trackCount, trackCount) ||
@@ -334,6 +353,7 @@ class _$AlbumImpl with DiagnosticableTreeMixin implements _Album {
       coverImageUrl,
       coverImageFilename,
       releaseYear,
+      releaseDate,
       description,
       trackCount,
       created,
@@ -364,6 +384,7 @@ abstract class _Album implements Album {
       final String? coverImageUrl,
       final String? coverImageFilename,
       final int releaseYear,
+      final DateTime? releaseDate,
       final String? description,
       final int trackCount,
       required final DateTime created,
@@ -385,6 +406,8 @@ abstract class _Album implements Album {
   String? get coverImageFilename;
   @override
   int get releaseYear;
+  @override
+  DateTime? get releaseDate;
   @override
   String? get description;
   @override

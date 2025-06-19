@@ -977,7 +977,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                               size: 16,
                             )
                           : Text(
-                              '${index + 1}',
+                              '${song.order > 0 ? song.order : index + 1}',
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 16,

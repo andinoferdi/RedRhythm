@@ -16,6 +16,7 @@ class Album with _$Album {
     String? coverImageUrl,
     String? coverImageFilename,
     @Default(0) int releaseYear,
+    DateTime? releaseDate,
     String? description,
     @Default(0) int trackCount,
     required DateTime created,
@@ -72,6 +73,18 @@ class Album with _$Album {
       }
     }
     
+    // Parse release date
+    DateTime? releaseDate;
+    try {
+      final releaseDateStr = record.data['release_date'] as String?;
+      if (releaseDateStr != null && releaseDateStr.isNotEmpty) {
+        releaseDate = DateTime.parse(releaseDateStr);
+      }
+    } catch (e) {
+      debugPrint('Error parsing release_date: $e');
+      releaseDate = null;
+    }
+    
     return Album(
       id: record.id,
       title: record.data['title'] as String? ?? record.data['name'] as String? ?? 'Unknown Album',
@@ -80,6 +93,7 @@ class Album with _$Album {
       coverImageUrl: coverImageUrl,
       coverImageFilename: coverImageFilename,
       releaseYear: record.data['release_year'] as int? ?? 0,
+      releaseDate: releaseDate,
       description: record.data['description'] as String?,
       trackCount: record.data['track_count'] as int? ?? 0,
       created: DateTime.parse(record.created),
@@ -116,7 +130,9 @@ class Album with _$Album {
 extension AlbumExt on Album {
   /// Get formatted release year for display
   String get formattedReleaseYear {
-    if (releaseYear > 0) {
+    if (releaseDate != null) {
+      return releaseDate!.year.toString();
+    } else if (releaseYear > 0) {
       return releaseYear.toString();
     }
     return 'Unknown Year';

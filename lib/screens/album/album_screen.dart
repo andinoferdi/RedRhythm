@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/album.dart';
 import '../../models/song.dart';
 import '../../repositories/album_repository.dart';
+import '../../repositories/artist_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/image_helpers.dart';
 import '../../controllers/player_controller.dart';
@@ -11,10 +12,12 @@ import '../../widgets/song_item_widget.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/shimmer_widget.dart';
 import '../../widgets/custom_bottom_nav.dart';
+import '../../widgets/animated_sound_bars.dart';
 import '../../utils/app_colors.dart';
 import '../../models/playlist.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../widgets/playlist_selection_modal.dart';
+import '../../routes/app_router.dart';
 
 @RoutePage()
 class AlbumScreen extends ConsumerStatefulWidget {
@@ -43,6 +46,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
   bool _isLoadingAlbum = true;
   bool _isLoadingSongs = true;
   String? _errorMessage;
+  String? _artistImageUrl;
 
   // Playlist status tracking
   Map<String, bool> _songPlaylistStatus = {};
@@ -111,6 +115,28 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     return 0; // Default to Home
   }
 
+  /// Load artist image from repository
+  Future<void> _loadArtistImage(String artistId) async {
+    try {
+      final artistRepository = ArtistRepository(PocketBaseService());
+      final artist = await artistRepository.getArtistById(artistId);
+      
+      if (mounted && artist != null) {
+        setState(() {
+          _artistImageUrl = artist.imageUrl;
+        });
+      }
+    } catch (e) {
+      // Silently fail - will use fallback icon
+      debugPrint('Failed to load artist image: $e');
+    }
+  }
+
+  /// Get artist image URL
+  String _getArtistImageUrl() {
+    return _artistImageUrl ?? '';
+  }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoadingAlbum = true;
@@ -155,7 +181,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
           }
         } catch (songsError) {
           // Don't fail the whole screen if songs can't be loaded
-          print('Warning: Could not load songs for album: $songsError');
+          debugPrint('Warning: Could not load songs for album: $songsError');
           
           // Try fallback search by album name
           try {
@@ -163,7 +189,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
               songs = await _albumRepository.getSongsByAlbumName(album.title);
             }
           } catch (fallbackError) {
-            print('Warning: Fallback search also failed: $fallbackError');
+            debugPrint('Warning: Fallback search also failed: $fallbackError');
             songs = [];
           }
         }
@@ -176,6 +202,11 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         // Load playlist status for all songs
         if (songs.isNotEmpty) {
           _checkSongsPlaylistStatus(songs);
+        }
+
+        // Load artist image if we have artist ID
+        if (album.artistId.isNotEmpty) {
+          _loadArtistImage(album.artistId);
         }
       } else {
         setState(() {
@@ -449,12 +480,6 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         icon: const Icon(Icons.arrow_back, color: Colors.white),
         onPressed: () => context.router.maybePop(),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onPressed: () {},
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           color: AppColors.background,
@@ -515,27 +540,59 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 12,
-                backgroundColor: Color(0xFF282828),
-                child: Icon(Icons.person, size: 16, color: Colors.white),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _album!.artistName,
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+          GestureDetector(
+            onTap: () {
+              // Navigate to artist detail screen
+              if (_album!.artistId.isNotEmpty) {
+                context.router.push(ArtistDetailRoute(
+                  artistId: _album!.artistId,
+                  artistName: _album!.artistName,
+                  sourceTabIndex: _determineCurrentTabIndex(),
+                ));
+              }
+            },
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: const Color(0xFF282828),
+                  child: _album!.artistId.isNotEmpty
+                      ? ClipOval(
+                          child: ImageHelpers.buildSafeNetworkImage(
+                            imageUrl: _getArtistImageUrl(),
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.cover,
+                            fallbackWidget: Icon(
+                              Icons.person, 
+                              size: 16, 
+                              color: Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 16, color: Colors.white),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Text(
+                  _album!.artistName,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  color: Colors.grey[600],
+                  size: 16,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Album • ${_album!.releaseYear > 0 ? _album!.releaseYear : 'Unknown Year'}',
+            'Album • ${_album!.formattedReleaseYear}',
             style: TextStyle(
               color: Colors.grey[400],
               fontSize: 14,
@@ -563,23 +620,7 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
               iconSize: 20,
             ),
           ),
-          const SizedBox(width: 12),
-          
-          // Download button
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.download, color: Colors.white),
-            iconSize: 24,
-          ),
-          
-          const SizedBox(width: 12),
-          
-          // More options
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            iconSize: 24,
-          ),
+
 
           const Spacer(),
 
@@ -672,25 +713,25 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
                 child: Row(
                   children: [
-                    // Track number or play indicator
-                    SizedBox(
-                      width: 24,
-                      child: isPlaying
-                          ? const Icon(
-                              Icons.volume_up,
-                              color: Colors.red,
-                              size: 16,
-                            )
-                          : Text(
-                              song.order > 0 ? '${song.order}' : '${index + 1}',
-                              style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                              textAlign: TextAlign.center,
+                                      // Track number or play indicator
+                  SizedBox(
+                    width: 24,
+                    child: isPlaying
+                        ? const Icon(
+                            Icons.volume_up,
+                            color: Colors.red,
+                            size: 16,
+                          )
+                        : Text(
+                            song.order > 0 ? '${song.order}' : '${index + 1}',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
-                    ),
+                            textAlign: TextAlign.center,
+                          ),
+                  ),
                     const SizedBox(width: 12),
 
                     // Use SongItemWidget for consistency
@@ -705,11 +746,11 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Playlist status indicator
+                            // Playlist status indicator (tombol +)
                             if (_isLoadingPlaylistStatus)
                               SizedBox(
-                                width: 16,
-                                height: 16,
+                                width: 20,
+                                height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
@@ -736,17 +777,16 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
                                 ),
                               ),
                             
-                            const SizedBox(width: 8),
-
-                            // More options
-                            IconButton(
-                              onPressed: () {},
-                              icon: Icon(
-                                Icons.more_vert,
-                                color: Colors.grey[400],
-                                size: 20,
+                            // Show animated sound bars when playing (di paling kanan)
+                            if (isPlaying)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12.0),
+                                child: AnimatedSoundBars(
+                                  color: Colors.red,
+                                  size: 20.0,
+                                  isAnimating: true,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),

@@ -30,7 +30,10 @@ class SongPlaylistRepository {
         final songData = record.expand['song_id'];
         if (songData != null && songData.isNotEmpty) {
           final songRecord = songData.first;
-          final song = Song.fromRecord(songRecord);
+          // Create song with playlist order information
+          final song = Song.fromRecord(songRecord).copyWith(
+            order: record.data['order'] as int? ?? 1,
+          );
           final order = record.data['order'] as int?;
           
           // Use order if available, otherwise use created timestamp as fallback

@@ -14,6 +14,9 @@ _$AlbumImpl _$$AlbumImplFromJson(Map<String, dynamic> json) => _$AlbumImpl(
       coverImageUrl: json['coverImageUrl'] as String?,
       coverImageFilename: json['coverImageFilename'] as String?,
       releaseYear: (json['releaseYear'] as num?)?.toInt() ?? 0,
+      releaseDate: json['releaseDate'] == null
+          ? null
+          : DateTime.parse(json['releaseDate'] as String),
       description: json['description'] as String?,
       trackCount: (json['trackCount'] as num?)?.toInt() ?? 0,
       created: DateTime.parse(json['created'] as String),
@@ -29,6 +32,7 @@ Map<String, dynamic> _$$AlbumImplToJson(_$AlbumImpl instance) =>
       'coverImageUrl': instance.coverImageUrl,
       'coverImageFilename': instance.coverImageFilename,
       'releaseYear': instance.releaseYear,
+      'releaseDate': instance.releaseDate?.toIso8601String(),
       'description': instance.description,
       'trackCount': instance.trackCount,
       'created': instance.created.toIso8601String(),
