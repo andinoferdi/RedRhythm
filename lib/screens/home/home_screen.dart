@@ -131,19 +131,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   
   bool _hasLoadedInitialData = false;
   bool _shouldPauseVideos = false; // Track if we should pause videos when music is playing
+  bool _hasClearedFilterOnReturn = false; // Track if we've cleared filter on return
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
-    // Load data on init using new providers
-    Future.microtask(() {
-      if (!_hasLoadedInitialData) {
-        ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
-        ref.read(genreProvider.notifier).loadGenres();
-        ref.read(shortsProvider.notifier).loadShorts();
-        _hasLoadedInitialData = true;
+    // Load initial data
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Load genres for proper genre name display
+      ref.read(genreProvider.notifier).loadGenres();
+      
+      // Always load ALL shorts for home screen (clear any existing filter)
+      ref.read(shortsProvider.notifier).clearFilter();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Check if this route is becoming active and clear filter if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (mounted) {
+        final route = ModalRoute.of(context);
+        if (route?.isCurrent == true && !_hasClearedFilterOnReturn) {
+          final shortsState = ref.read(shortsProvider);
+          // Only clear filter if we have a genre filter active
+          if (shortsState.currentGenreFilter != null) {
+            debugPrint('🏠 Home screen: Route became active, clearing genre filter');
+            _hasClearedFilterOnReturn = true;
+            await ref.read(shortsProvider.notifier).clearFilter();
+            // Reset the flag after a delay to allow future clears
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                _hasClearedFilterOnReturn = false;
+              }
+            });
+          }
+        }
       }
     });
   }
@@ -162,6 +189,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     if (state == AppLifecycleState.resumed && _hasLoadedInitialData && mounted) {
       Future.microtask(() {
         ref.read(playHistoryProvider.notifier).loadRecentlyPlayed();
+        
+        // Also clear shorts filter if we have one active
+        final shortsState = ref.read(shortsProvider);
+        if (shortsState.currentGenreFilter != null && !_hasClearedFilterOnReturn) {
+          debugPrint('🏠 Home screen: App resumed, clearing genre filter');
+          _hasClearedFilterOnReturn = true;
+          ref.read(shortsProvider.notifier).clearFilter().then((_) {
+            // Reset the flag after clearing
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                _hasClearedFilterOnReturn = false;
+              }
+            });
+          });
+        }
       });
     }
     
@@ -191,6 +233,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Check if we need to clear filter when home screen is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_hasClearedFilterOnReturn) {
+        final shortsState = ref.read(shortsProvider);
+        if (shortsState.currentGenreFilter != null) {
+          debugPrint('🏠 Home screen: Build detected filter, clearing');
+          _hasClearedFilterOnReturn = true;
+          ref.read(shortsProvider.notifier).clearFilter().then((_) {
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) {
+                _hasClearedFilterOnReturn = false;
+              }
+            });
+          });
+        }
+      }
+    });
     
     // Removed auto-refresh listener to prevent Recently Played list from reordering
     // while user is interacting with the home screen. Data will only refresh when:
@@ -780,8 +840,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
           builder: (context, ref, child) {
             final shortsState = ref.watch(shortsProvider);
             
-            // Show loading state
-            if (shortsState.isLoading) {
+            // Show loading state or when clearing filter
+            if (shortsState.isLoading || 
+                (shortsState.currentGenreFilter != null && _hasClearedFilterOnReturn)) {
               return const SizedBox(
                 height: 240,
                 child: Center(
@@ -838,21 +899,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               );
             }
             
+            // Debug: Log current shorts state
+            debugPrint('🏠 Home screen: Building shorts section');
+            debugPrint('🏠 Current genre filter: ${shortsState.currentGenreFilter}');
+            debugPrint('🏠 Has cleared filter flag: $_hasClearedFilterOnReturn');
+            debugPrint('🏠 Total shorts: ${shortsState.shorts.length}');
+            debugPrint('🏠 Shorts IDs: ${shortsState.shorts.map((s) => s.id).take(5).toList()}');
+            
             // Group shorts by genre to avoid duplicates
-            final shortsGroupedByGenre = <String, List<dynamic>>{};
+            final shortsGroupedByGenre = <String, Map<String, dynamic>>{};
             
             for (final short in shortsState.shorts) {
-              // Get genre name from expanded data
-              final genreName = _getGenreNameFromShort(short);
+              // Get genre info from expanded data
+              final genreInfo = _getGenreInfoFromShort(short);
+              final genreName = genreInfo['name'] as String;
+              final genreId = genreInfo['id'] as String;
               
               if (!shortsGroupedByGenre.containsKey(genreName)) {
-                shortsGroupedByGenre[genreName] = [];
+                shortsGroupedByGenre[genreName] = {
+                  'id': genreId,
+                  'name': genreName,
+                  'shorts': <dynamic>[],
+                };
               }
-              shortsGroupedByGenre[genreName]!.add(short);
+              shortsGroupedByGenre[genreName]!['shorts'].add(short);
             }
             
             // Convert to list and take up to 6 genre categories
             final genreEntries = shortsGroupedByGenre.entries.take(6).toList();
+            
+            // Debug: Log grouping results
+            debugPrint('🏠 Genre groups found: ${genreEntries.map((e) => e.key).toList()}');
             
             return SizedBox(
               height: 260,
@@ -863,7 +940,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 itemBuilder: (context, index) {
                   final entry = genreEntries[index];
                   final genreName = entry.key;
-                  final genreShorts = entry.value;
+                  final genreData = entry.value;
+                  final genreId = genreData['id'] as String;
+                  final genreShorts = genreData['shorts'] as List<dynamic>;
                   final firstShort = genreShorts.first;
                   
                   return Padding(
@@ -876,7 +955,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                       firstShort,
                       () {
                         // Navigate to shorts screen with specific genre
-                        context.router.push(ShortsRoute());
+                        context.router.push(ShortsRoute(initialGenreId: genreId));
                       },
                     ),
                   );
@@ -889,8 +968,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
   
-    /// Extract genre name from short data
-  String _getGenreNameFromShort(dynamic short) {
+  /// Extract genre info from short data
+  Map<String, String> _getGenreInfoFromShort(dynamic short) {
     try {
       // Debug: Print short data to understand structure
       debugPrint('📹 Short data: ${short.toString()}');
@@ -908,30 +987,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             try {
               final genre = genreState.genres.firstWhere((g) => g.id == genreId);
               debugPrint('📹 Found genre: ${genre.name}');
-              return genre.name;
+              return {
+                'id': genreId,
+                'name': genre.name,
+              };
             } catch (e) {
               debugPrint('📹 Genre not found for ID: $genreId');
-              // Genre not found, return fallback
-              return 'Music';
+              // Genre not found, return fallback with ID
+              return {
+                'id': genreId,
+                'name': 'Music',
+              };
             }
          }
          
-         // Try to get genre name from hashtags as fallback (proper object access)
-         try {
-           if (short.hashtags != null && short.hashtags.isNotEmpty) {
-             final hashtag = short.hashtags;
-             if (hashtag.startsWith('#')) {
-               return hashtag.substring(1).split(' ').first;
-             }
-           }
-         } catch (e) {
-           debugPrint('📹 Error accessing hashtags: $e');
-         }
-         
-         // Try to get artist name as fallback
+         // If no genre ID, try to get artist name as category
          try {
            if (short.artistName != null && short.artistName.isNotEmpty) {
-             return short.artistName;
+             return {
+               'id': short.artistId ?? '',
+               'name': '${short.artistName}',
+             };
            }
          } catch (e) {
            debugPrint('📹 Error accessing artist name: $e');
@@ -939,10 +1015,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
        }
        
        // Final fallback
-       return 'Music';
+       return {
+         'id': '',
+         'name': 'Music',
+       };
     } catch (e) {
-      debugPrint('❌ Error getting genre name: $e');
-      return 'Shorts';
+      debugPrint('❌ Error getting genre info: $e');
+      return {
+        'id': '',
+        'name': 'Shorts',
+      };
     }
   }
 

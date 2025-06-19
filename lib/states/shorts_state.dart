@@ -16,5 +16,6 @@ class ShortsState with _$ShortsState {
     @Default(1.0) double volume,
     String? error,
     Shorts? currentShort,
+    String? currentGenreFilter,
   }) = _ShortsState;
 }

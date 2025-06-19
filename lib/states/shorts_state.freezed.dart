@@ -26,6 +26,7 @@ mixin _$ShortsState {
   double get volume => throw _privateConstructorUsedError;
   String? get error => throw _privateConstructorUsedError;
   Shorts? get currentShort => throw _privateConstructorUsedError;
+  String? get currentGenreFilter => throw _privateConstructorUsedError;
 
   /// Create a copy of ShortsState
   /// with the given fields replaced by the non-null parameter values.
@@ -50,7 +51,8 @@ abstract class $ShortsStateCopyWith<$Res> {
       bool isMuted,
       double volume,
       String? error,
-      Shorts? currentShort});
+      Shorts? currentShort,
+      String? currentGenreFilter});
 
   $ShortsCopyWith<$Res>? get currentShort;
 }
@@ -80,6 +82,7 @@ class _$ShortsStateCopyWithImpl<$Res, $Val extends ShortsState>
     Object? volume = null,
     Object? error = freezed,
     Object? currentShort = freezed,
+    Object? currentGenreFilter = freezed,
   }) {
     return _then(_value.copyWith(
       shorts: null == shorts
@@ -122,6 +125,10 @@ class _$ShortsStateCopyWithImpl<$Res, $Val extends ShortsState>
           ? _value.currentShort
           : currentShort // ignore: cast_nullable_to_non_nullable
               as Shorts?,
+      currentGenreFilter: freezed == currentGenreFilter
+          ? _value.currentGenreFilter
+          : currentGenreFilter // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 
@@ -158,7 +165,8 @@ abstract class _$$ShortsStateImplCopyWith<$Res>
       bool isMuted,
       double volume,
       String? error,
-      Shorts? currentShort});
+      Shorts? currentShort,
+      String? currentGenreFilter});
 
   @override
   $ShortsCopyWith<$Res>? get currentShort;
@@ -187,6 +195,7 @@ class __$$ShortsStateImplCopyWithImpl<$Res>
     Object? volume = null,
     Object? error = freezed,
     Object? currentShort = freezed,
+    Object? currentGenreFilter = freezed,
   }) {
     return _then(_$ShortsStateImpl(
       shorts: null == shorts
@@ -229,6 +238,10 @@ class __$$ShortsStateImplCopyWithImpl<$Res>
           ? _value.currentShort
           : currentShort // ignore: cast_nullable_to_non_nullable
               as Shorts?,
+      currentGenreFilter: freezed == currentGenreFilter
+          ? _value.currentGenreFilter
+          : currentGenreFilter // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -246,7 +259,8 @@ class _$ShortsStateImpl implements _ShortsState {
       this.isMuted = false,
       this.volume = 1.0,
       this.error,
-      this.currentShort})
+      this.currentShort,
+      this.currentGenreFilter})
       : _shorts = shorts;
 
   final List<Shorts> _shorts;
@@ -283,10 +297,12 @@ class _$ShortsStateImpl implements _ShortsState {
   final String? error;
   @override
   final Shorts? currentShort;
+  @override
+  final String? currentGenreFilter;
 
   @override
   String toString() {
-    return 'ShortsState(shorts: $shorts, currentIndex: $currentIndex, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasReachedMax: $hasReachedMax, isPlaying: $isPlaying, isMuted: $isMuted, volume: $volume, error: $error, currentShort: $currentShort)';
+    return 'ShortsState(shorts: $shorts, currentIndex: $currentIndex, isLoading: $isLoading, isLoadingMore: $isLoadingMore, hasReachedMax: $hasReachedMax, isPlaying: $isPlaying, isMuted: $isMuted, volume: $volume, error: $error, currentShort: $currentShort, currentGenreFilter: $currentGenreFilter)';
   }
 
   @override
@@ -309,7 +325,9 @@ class _$ShortsStateImpl implements _ShortsState {
             (identical(other.volume, volume) || other.volume == volume) &&
             (identical(other.error, error) || other.error == error) &&
             (identical(other.currentShort, currentShort) ||
-                other.currentShort == currentShort));
+                other.currentShort == currentShort) &&
+            (identical(other.currentGenreFilter, currentGenreFilter) ||
+                other.currentGenreFilter == currentGenreFilter));
   }
 
   @override
@@ -324,7 +342,8 @@ class _$ShortsStateImpl implements _ShortsState {
       isMuted,
       volume,
       error,
-      currentShort);
+      currentShort,
+      currentGenreFilter);
 
   /// Create a copy of ShortsState
   /// with the given fields replaced by the non-null parameter values.
@@ -346,7 +365,8 @@ abstract class _ShortsState implements ShortsState {
       final bool isMuted,
       final double volume,
       final String? error,
-      final Shorts? currentShort}) = _$ShortsStateImpl;
+      final Shorts? currentShort,
+      final String? currentGenreFilter}) = _$ShortsStateImpl;
 
   @override
   List<Shorts> get shorts;
@@ -368,6 +388,8 @@ abstract class _ShortsState implements ShortsState {
   String? get error;
   @override
   Shorts? get currentShort;
+  @override
+  String? get currentGenreFilter;
 
   /// Create a copy of ShortsState
   /// with the given fields replaced by the non-null parameter values.

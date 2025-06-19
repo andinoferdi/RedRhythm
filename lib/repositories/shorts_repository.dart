@@ -23,15 +23,9 @@ class ShortsRepository {
       
       String filter = '';
       
-      // Add genre filter if specified
-      if (genreFilter != null && genreFilter.isNotEmpty) {
-        filter = 'genres_id = "$genreFilter"';
-      }
-      
       // Add search query if specified
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        final searchFilter = 'title ~ "$searchQuery" || hashtags ~ "$searchQuery"';
-        filter = filter.isEmpty ? searchFilter : '$filter && ($searchFilter)';
+        filter = 'title ~ "$searchQuery" || hashtags ~ "$searchQuery"';
       }
 
       debugPrint('🔍 Query filter: $filter');
@@ -40,7 +34,7 @@ class ShortsRepository {
       final resultList = await _pb.collection('shorts').getList(
         page: page,
         perPage: limit,
-        filter: filter,
+        filter: filter.isEmpty ? null : filter,
         sort: '-created', // Most recent first
         expand: 'artist_id,song_id,genres_id',
       );
@@ -55,6 +49,25 @@ class ShortsRepository {
       }).toList();
 
       debugPrint('✅ Converted ${shorts.length} shorts to models');
+      
+      // Apply genre filter in memory if specified
+      if (genreFilter != null && genreFilter.isNotEmpty) {
+        debugPrint('🔍 Applying genre filter in memory: $genreFilter');
+        final filteredShorts = shorts.where((short) {
+          // Filter by genre_id (from song) or artist_id
+          final matchesGenre = short.genresId == genreFilter;
+          final matchesArtist = short.artistId == genreFilter;
+          
+          debugPrint('📹 Short ${short.id}: genresId=${short.genresId}, artistId=${short.artistId}, filter=$genreFilter');
+          debugPrint('📹 Matches genre: $matchesGenre, Matches artist: $matchesArtist');
+          
+          return matchesGenre || matchesArtist;
+        }).toList();
+        
+        debugPrint('✅ Filtered to ${filteredShorts.length} shorts');
+        return filteredShorts;
+      }
+      
       return shorts;
     } catch (e) {
       debugPrint('❌ Error fetching shorts: $e');
@@ -160,37 +173,40 @@ class ShortsRepository {
     // Extract expanded data safely handling both List and RecordModel
     String? artistName;
     String? songTitle;
+    String? genreIdFromSong;
     
     try {
-             // Parse artist expand data - PocketBase can return List<RecordModel>
-       final artistExpand = record.expand['artist_id'];
-       if (artistExpand != null) {
-         if (artistExpand is List) {
-           if (artistExpand.isNotEmpty) {
-             final artistRecord = artistExpand.first;
-             if (artistRecord is RecordModel) {
-               artistName = artistRecord.data['name'] as String?;
-             }
-           }
-         } else if (artistExpand is RecordModel) {
-           artistName = (artistExpand as RecordModel).data['name'] as String?;
-         }
-       }
-       
-       // Parse song expand data
-       final songExpand = record.expand['song_id'];
-       if (songExpand != null) {
-         if (songExpand is List) {
-           if (songExpand.isNotEmpty) {
-             final songRecord = songExpand.first;
-             if (songRecord is RecordModel) {
-               songTitle = songRecord.data['title'] as String?;
-             }
-           }
-         } else if (songExpand is RecordModel) {
-           songTitle = (songExpand as RecordModel).data['title'] as String?;
-         }
-       }
+      // Parse artist expand data - PocketBase can return List<RecordModel>
+      final artistExpand = record.expand?['artist_id'];
+      if (artistExpand != null) {
+        if (artistExpand is List) {
+          if (artistExpand.isNotEmpty) {
+            final artistRecord = artistExpand.first;
+            if (artistRecord is RecordModel) {
+              artistName = artistRecord.data['name'] as String?;
+            }
+          }
+        } else if (artistExpand is RecordModel) {
+          artistName = (artistExpand as RecordModel).data['name'] as String?;
+        }
+      }
+
+      // Parse song expand data
+      final songExpand = record.expand?['song_id'];
+      if (songExpand != null) {
+        if (songExpand is List) {
+          if (songExpand.isNotEmpty) {
+            final songRecord = songExpand.first;
+            if (songRecord is RecordModel) {
+              songTitle = songRecord.data['title'] as String?;
+              genreIdFromSong = songRecord.data['genre_id'] as String?;
+            }
+          }
+        } else if (songExpand is RecordModel) {
+          songTitle = (songExpand as RecordModel).data['title'] as String?;
+          genreIdFromSong = (songExpand as RecordModel).data['genre_id'] as String?;
+        }
+      }
     } catch (e) {
       debugPrint('❌ Error parsing expand data: $e');
       // Continue with null values
@@ -205,16 +221,26 @@ class ShortsRepository {
     debugPrint('📹 Video filename: $videoFileName');
     debugPrint('📹 Generated video URL: $videoUrl');
 
+    // Get genre ID - prioritize direct field, then from song
+    String genreId = data['genres_id'] as String? ?? '';
+    if (genreId.isEmpty && genreIdFromSong != null && genreIdFromSong.isNotEmpty) {
+      genreId = genreIdFromSong;
+      debugPrint('📹 Using genre_id from song: $genreId');
+    }
+
+    debugPrint('📹 Short data: Shorts(id: ${record.id}, genresId: $genreId, videoUrl: $videoUrl, artistId: ${data['artist_id']}, songId: ${data['song_id']}, title: ${data['title']}, hashtags: ${data['hashtags']}, artistName: ${artistName ?? 'Unknown Artist'}, songTitle: ${songTitle ?? 'Unknown Song'}, thumbnailUrl: ${data['thumbnail_url']}, views: ${data['views'] ?? 0}, likes: ${data['likes'] ?? 0}, createdAt: ${record.created}, updatedAt: ${record.updated})');
+    debugPrint('📹 Final Genre ID: $genreId');
+
     return Shorts(
       id: record.id,
-      genresId: data['genres_id'] as String? ?? '',
+      genresId: genreId,
       videoUrl: videoUrl,
       artistId: data['artist_id'] as String? ?? '',
       songId: data['song_id'] as String? ?? '',
       title: data['title'] as String?,
       hashtags: data['hashtags'] as String?,
-      artistName: artistName,
-      songTitle: songTitle,
+      artistName: artistName ?? 'Unknown Artist',
+      songTitle: songTitle ?? 'Unknown Song',
       thumbnailUrl: data['thumbnail_url'] as String?,
       views: data['views'] as int? ?? 0,
       likes: data['likes'] as int? ?? 0,

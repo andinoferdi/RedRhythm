@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:video_player/video_player.dart';
 import '../../providers/shorts_provider.dart';
 import '../../providers/artist_select_provider.dart';
+import '../../providers/genre_provider.dart';
 import '../../repositories/song_repository.dart';
 import '../../repositories/artist_repository.dart';
 import '../../repositories/song_playlist_repository.dart';
@@ -55,18 +56,42 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
     _songRepository = SongRepository(pbService);
     _artistRepository = ArtistRepository(pbService);
     
-    _currentIndex = widget.initialIndex ?? 0;
+    // Initialize index - reset to 0 for genre filtering
+    _currentIndex = widget.initialGenreId != null ? 0 : (widget.initialIndex ?? 0);
     _pageController = PageController(initialPage: _currentIndex);
     
-    // Load shorts if not already loaded
+    // Load shorts based on genre filter
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialGenreId != null && widget.initialGenreId!.isNotEmpty) {
+        // Load shorts for specific genre and reset index
+        debugPrint('🎬 Loading shorts for genre: ${widget.initialGenreId}');
+        ref.read(shortsProvider.notifier).loadShortsByGenre(widget.initialGenreId!).then((_) {
+          // After loading, ensure we're at the first video of filtered list
+          if (mounted) {
+            setState(() {
+              _currentIndex = 0;
+            });
+            // Update PageController to show first video
+            if (_pageController.hasClients) {
+              _pageController.animateToPage(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+            // Update provider index
+            ref.read(shortsProvider.notifier).updateCurrentIndex(0);
+          }
+        });
+      } else {
+        // Load all shorts
       final shortsState = ref.read(shortsProvider);
       if (shortsState.shorts.isEmpty) {
         ref.read(shortsProvider.notifier).loadShorts();
       }
-      
       // Update current index in provider
       ref.read(shortsProvider.notifier).updateCurrentIndex(_currentIndex);
+      }
     });
   }
 
@@ -100,6 +125,20 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
     }
   }
 
+  // Get app bar title based on genre filter
+  String _getAppBarTitle() {
+    if (widget.initialGenreId != null && widget.initialGenreId!.isNotEmpty) {
+      final genreState = ref.read(genreProvider);
+      try {
+        final genre = genreState.genres.firstWhere((g) => g.id == widget.initialGenreId);
+        return '${genre.name} Shorts';
+      } catch (e) {
+        return 'Genre Shorts';
+      }
+    }
+    return 'Shorts';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,7 +152,7 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
           onPressed: () => context.router.pop(),
         ),
         title: Text(
-          'Shorts',
+          _getAppBarTitle(),
           style: FontUsageGuide.appBarTitle.copyWith(color: Colors.white),
         ),
         actions: [
@@ -184,7 +223,9 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'No shorts available',
+                    widget.initialGenreId != null 
+                        ? 'No shorts available for this genre'
+                        : 'No shorts available',
                     style: FontUsageGuide.modalTitle.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
@@ -209,7 +250,13 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                   final short = shortsState.shorts[index];
                   final isActive = index == _currentIndex;
                   
+                  // Debug logging to track which short is being used
+                  debugPrint('🎬 PageView[${index}]: ${short.id} - ${short.songTitle} by ${short.artistName}');
+                  debugPrint('🎬 Video URL: ${short.videoUrl}');
+                  debugPrint('🎬 Is Active: $isActive');
+                  
                   return ShortsVideoPlayer(
+                    key: ValueKey('shorts_${short.id}'), // Force rebuild on data change
                     short: short,
                     isActive: isActive && _isVisible,
                     songRepository: _songRepository,
@@ -338,12 +385,19 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    
+    // Debug logging to track which short is being initialized
+    debugPrint('🎥 ShortsVideoPlayer init: ${widget.short.id}');
+    debugPrint('🎥 Short data: ${widget.short.songTitle} by ${widget.short.artistName}');
+    debugPrint('🎥 Video URL: ${widget.short.videoUrl}');
+    
     _initializeVideo();
     _loadSongAndArtistData();
   }
 
   @override
   void dispose() {
+    debugPrint('🎥 ShortsVideoPlayer dispose: ${widget.short.id}');
     _controller?.dispose();
     super.dispose();
   }
@@ -393,15 +447,28 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
 
   Future<void> _loadSongAndArtistData() async {
     try {
+      debugPrint('🎵 Loading data for short: ${widget.short.id}');
+      debugPrint('🎵 Short songId: ${widget.short.songId}');
+      debugPrint('🎵 Short artistId: ${widget.short.artistId}');
+      debugPrint('🎵 Short songTitle: ${widget.short.songTitle}');
+      debugPrint('🎵 Short artistName: ${widget.short.artistName}');
+      
       // Load song data
       if (widget.short.songId.isNotEmpty) {
         final song = await widget.songRepository.getSongById(widget.short.songId);
         if (mounted) {
-          setState(() {
-            _song = song;
-          });
-          // Check playlist status after song is loaded
-          _checkIfSongInPlaylist();
+          debugPrint('🎵 Loaded song: ${song?.title} by ${song?.artist}');
+          
+          // Validate that loaded song matches the short
+          if (song != null && song.title == widget.short.songTitle) {
+            debugPrint('✅ Song data matches short data');
+            setState(() => _song = song);
+          } else {
+            debugPrint('❌ Song data mismatch! Expected: ${widget.short.songTitle}, Got: ${song?.title}');
+            debugPrint('🔄 Using fallback data from short object');
+            // Don't set _song, let UI use fallback data from widget.short
+            setState(() => _song = null);
+          }
         }
       }
 
@@ -409,17 +476,32 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
       if (widget.short.artistId.isNotEmpty) {
         final artist = await widget.artistRepository.getArtistById(widget.short.artistId);
         if (mounted) {
-          setState(() {
-            _artist = artist;
-          });
+          debugPrint('🎵 Loaded artist: ${artist?.name}');
+          
+          // Validate that loaded artist matches the short
+          if (artist != null && artist.name == widget.short.artistName) {
+            debugPrint('✅ Artist data matches short data');
+            setState(() => _artist = artist);
+          } else {
+            debugPrint('❌ Artist data mismatch! Expected: ${widget.short.artistName}, Got: ${artist?.name}');
+            debugPrint('🔄 Using fallback data from short object');
+            // Don't set _artist, let UI use fallback data from widget.short
+            setState(() => _artist = null);
+          }
         }
       }
+
+      // Check if song is in any playlist
+      if (_song != null) {
+        await _checkIfSongInPlaylist();
+      }
+      
     } catch (e) {
-      debugPrint('Error loading song/artist data: $e');
-    } finally {
+      debugPrint('❌ Error loading song/artist data: $e');
       if (mounted) {
         setState(() {
-          _isLoadingData = false;
+          _song = null;
+          _artist = null;
         });
       }
     }
@@ -683,12 +765,12 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Artist section
-              if (_artist != null) ...[
+              if (_artist != null || (widget.short.artistName?.isNotEmpty == true)) ...[
                 Row(
                   children: [
                     // Artist avatar - clickable to navigate to artist detail
                     GestureDetector(
-                      onTap: _navigateToArtistDetail,
+                      onTap: _artist != null ? _navigateToArtistDetail : null,
                       child: Container(
                         width: 40,
                         height: 40,
@@ -696,29 +778,29 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: ClipOval(
-                          child: _artist!.imageUrl != null && _artist!.imageUrl!.isNotEmpty
-                              ? Image.network(
-                                  _artist!.imageUrl!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => 
-                                      const Icon(Icons.person, color: Colors.white),
-                                )
-                              : const Icon(Icons.person, color: Colors.white),
-                        ),
+                                                  child: ClipOval(
+                            child: _artist?.imageUrl?.isNotEmpty == true
+                                ? Image.network(
+                                    _artist!.imageUrl!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => 
+                                        const Icon(Icons.person, color: Colors.white),
+                                  )
+                                : const Icon(Icons.person, color: Colors.white),
+                          ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     
-                    // Artist name - also clickable
+                    // Artist name - use fallback from short if artist is null
                     Expanded(
                       child: GestureDetector(
-                        onTap: _navigateToArtistDetail,
+                        onTap: _artist != null ? _navigateToArtistDetail : null,
                         child: Text(
-                          _artist!.name,
-                          style: FontUsageGuide.authButtonText.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                          _artist?.name ?? widget.short.artistName ?? 'Unknown Artist',
+                style: FontUsageGuide.authButtonText.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                             fontSize: 16,
                           ),
                           maxLines: 1,
@@ -727,48 +809,50 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                       ),
                     ),
                     
-                    // Follow button
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final selectedArtists = ref.watch(artistSelectProvider);
-                        final isFollowing = selectedArtists.any((artistSelect) => 
-                            artistSelect.artistId == _artist!.id);
-                        
-                        return GestureDetector(
-                          onTap: _toggleFollowArtist,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isFollowing 
-                                  ? Colors.white.withOpacity(0.2)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 1,
+                    // Follow button - only show if we have valid artist data
+                    if (_artist != null) ...[
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final selectedArtists = ref.watch(artistSelectProvider);
+                          final isFollowing = selectedArtists.any((artistSelect) => 
+                              artistSelect.artistId == _artist!.id);
+                          
+                          return GestureDetector(
+                            onTap: _toggleFollowArtist,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: isFollowing 
+                                    ? Colors.white.withOpacity(0.2)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                isFollowing ? 'Mengikuti' : 'Ikuti',
+                                style: FontUsageGuide.navigationLabel.copyWith(
+                                  color: isFollowing ? Colors.white : Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              isFollowing ? 'Mengikuti' : 'Ikuti',
-                              style: FontUsageGuide.navigationLabel.copyWith(
-                                color: isFollowing ? Colors.white : Colors.black,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
               ],
               
               // Song section with border and clickable area
-              if (_song != null) ...[
+              if (_song != null || (widget.short.songTitle?.isNotEmpty == true)) ...[
                 GestureDetector(
-                  onTap: _navigateToMusicPlayer,
+                  onTap: _song != null ? _navigateToMusicPlayer : null,
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -791,7 +875,7 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: _song!.albumArtUrl.isNotEmpty
+                            child: _song?.albumArtUrl.isNotEmpty == true
                                 ? Image.network(
                                     _song!.albumArtUrl,
                                     fit: BoxFit.cover,
@@ -803,13 +887,13 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                         ),
                         const SizedBox(width: 12),
                         
-                        // Song info
+                        // Song info - use fallback from short if song is null
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _song!.title,
+                                _song?.title ?? widget.short.songTitle ?? 'Unknown Song',
                                 style: FontUsageGuide.modalBody.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -819,7 +903,7 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                _song!.artist,
+                                _song?.artist ?? widget.short.artistName ?? 'Unknown Artist',
                                 style: FontUsageGuide.listMetadata.copyWith(
                                   color: Colors.white.withOpacity(0.8),
                                 ),
@@ -830,33 +914,35 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                           ),
                         ),
                         
-                        // Add to playlist button (matching mini player style)
-                        IconButton(
-                          onPressed: _isLoadingPlaylists ? null : _showPlaylistModal,
-                          icon: _isLoadingPlaylists
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
+                        // Add to playlist button - only show if we have valid song data
+                        if (_song != null) ...[
+                          IconButton(
+                            onPressed: _isLoadingPlaylists ? null : _showPlaylistModal,
+                            icon: _isLoadingPlaylists
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Icon(
+                                    _isInPlaylist
+                                        ? Icons.check_circle
+                                        : Icons.add_circle_outline,
+                                    color: _isInPlaylist
+                                        ? Colors.red
+                                        : Colors.white,
+                                    size: 24,
                                   ),
-                                )
-                              : Icon(
-                                  _isInPlaylist
-                                      ? Icons.check_circle
-                                      : Icons.add_circle_outline,
-                                  color: _isInPlaylist
-                                      ? Colors.red
-                                      : Colors.white,
-                                  size: 24,
-                                ),
-                          tooltip: _isLoadingPlaylists
-                              ? 'Checking playlists...'
-                              : (_isInPlaylist
-                                  ? 'In playlist'
-                                  : 'Add to playlist'),
-                        ),
+                            tooltip: _isLoadingPlaylists
+                                ? 'Checking playlists...'
+                                : (_isInPlaylist
+                                    ? 'In playlist'
+                                    : 'Add to playlist'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -922,8 +1008,8 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
                   ),
                 ],
               ),
-            ),
           ),
+        ),
       ],
     );
   }
@@ -935,18 +1021,19 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.3),
-          shape: BoxShape.circle,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
+              shape: BoxShape.circle,
           border: Border.all(color: Colors.white.withOpacity(0.5)),
-        ),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 24,
-        ),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
       ),
     );
   }
 }
+

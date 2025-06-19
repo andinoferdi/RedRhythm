@@ -25,6 +25,7 @@ class ShortsController extends StateNotifier<ShortsState> {
         shorts: shorts,
         isLoading: false,
         hasReachedMax: shorts.length < limit,
+        currentGenreFilter: null, // Clear genre filter for general load
       );
     } catch (e) {
       debugPrint('❌ ShortsController error: $e');
@@ -40,10 +41,44 @@ class ShortsController extends StateNotifier<ShortsState> {
     }
   }
 
+  /// Load shorts filtered by genre
+  Future<void> loadShortsByGenre(String genreId, {int page = 1, int limit = 20}) async {
+    if (state.isLoading) return; // Prevent multiple simultaneous loads
+
+    state = state.copyWith(isLoading: true, error: null, currentGenreFilter: genreId);
+
+    try {
+      final shorts = await _repository.getShortsByGenre(genreId, limit: limit);
+      
+      state = state.copyWith(
+        shorts: shorts,
+        isLoading: false,
+        hasReachedMax: shorts.length < limit,
+        currentGenreFilter: genreId,
+      );
+    } catch (e) {
+      debugPrint('❌ ShortsController loadShortsByGenre error: $e');
+      
+      state = state.copyWith(
+        shorts: [], // Empty list instead of failing
+        isLoading: false,
+        error: null, // Don't show error to user for now
+        hasReachedMax: true,
+        currentGenreFilter: genreId,
+      );
+    }
+  }
+
   /// Refresh shorts (force reload)
   Future<void> refreshShorts() async {
+    final currentGenreFilter = state.currentGenreFilter;
     state = const ShortsState(); // Reset state
-    await loadShorts();
+    
+    if (currentGenreFilter != null) {
+      await loadShortsByGenre(currentGenreFilter);
+    } else {
+      await loadShorts();
+    }
   }
 
   /// Load more shorts for pagination
@@ -54,7 +89,18 @@ class ShortsController extends StateNotifier<ShortsState> {
 
     try {
       final nextPage = (state.shorts.length ~/ 20) + 1;
-      final newShorts = await _repository.getShorts(page: nextPage, limit: 20);
+      List<dynamic> newShorts;
+      
+      if (state.currentGenreFilter != null) {
+        // Load more shorts for specific genre
+        newShorts = await _repository.getShortsByGenre(
+          state.currentGenreFilter!, 
+          limit: 20
+        );
+      } else {
+        // Load more general shorts
+        newShorts = await _repository.getShorts(page: nextPage, limit: 20);
+      }
       
       state = state.copyWith(
         shorts: [...state.shorts, ...newShorts],
@@ -172,6 +218,13 @@ class ShortsController extends StateNotifier<ShortsState> {
     // This can be implemented to preload video controllers
     // for better UX in video feeds
   }
+
+  /// Clear current genre filter and reload all shorts
+  Future<void> clearFilter() async {
+    debugPrint('🔄 Clearing genre filter');
+    state = state.copyWith(currentGenreFilter: null);
+    await loadShorts(page: 1, limit: 20); // Reload all shorts
+  }
 }
 
 /// Provider for shorts repository
@@ -185,9 +238,16 @@ final shortsProvider = StateNotifierProvider<ShortsController, ShortsState>((ref
   return ShortsController(repository, ref);
 });
 
-/// Provider for getting shorts by genre
+/// Provider for getting shorts by genre (uses filtered shorts from state if available)
 final shortsByGenreProvider = Provider.family<List<Shorts>, String>((ref, genreId) {
   final shortsState = ref.watch(shortsProvider);
+  
+  // If we're currently filtering by this genre, return all shorts from state
+  if (shortsState.currentGenreFilter == genreId) {
+    return shortsState.shorts;
+  }
+  
+  // Otherwise, filter from all shorts
   return shortsState.shorts.where((short) => short.genresId == genreId).toList();
 });
 
