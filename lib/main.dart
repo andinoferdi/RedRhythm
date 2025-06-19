@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get_it/get_it.dart';
+import 'package:audio_session/audio_session.dart';
 import 'routes/app_router.dart';
 import 'services/pocketbase_service.dart';
 import 'core/di/service_locator.dart';
@@ -20,6 +21,28 @@ void main() async {
   // Handle async errors that are not caught by Flutter
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Initialize audio session for better audio focus handling
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playback,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
+        avAudioSessionMode: AVAudioSessionMode.defaultMode,
+        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.music,
+          flags: AndroidAudioFlags.audibilityEnforced,
+          usage: AndroidAudioUsage.media,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: false,
+      ));
+      debugPrint('✅ Audio session configured successfully');
+    } catch (e) {
+      debugPrint('⚠️ Error configuring audio session: $e');
+    }
     
     // Set up global error handling to prevent crashes
     FlutterError.onError = (FlutterErrorDetails details) {
