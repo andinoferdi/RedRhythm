@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:pocketbase/pocketbase.dart';
 
 part 'shorts.freezed.dart';
 part 'shorts.g.dart';
@@ -24,95 +23,76 @@ class Shorts with _$Shorts {
   }) = _Shorts;
 
   factory Shorts.fromJson(Map<String, dynamic> json) => _$ShortsFromJson(json);
-  
-  /// Create a Shorts from a PocketBase record
-  static Shorts fromRecord(RecordModel record) {
-    // Get expanded artist and song if available
-    final artistRecord = record.expand['artist_id']?[0];
-    final songRecord = record.expand['song_id']?[0];
-    final genreRecord = record.expand['genres_id']?[0];
-    
-    // Extract artist name - try expand first, then fallback to direct field
-    String artistName = 'Unknown Artist';
-    if (artistRecord != null) {
-      artistName = artistRecord.data['name'] as String? ?? 'Unknown Artist';
-    }
-    
-    // Extract song title - try expand first, then fallback to direct field
-    String songTitle = 'Unknown Song';
-    if (songRecord != null) {
-      songTitle = songRecord.data['title'] as String? ?? 'Unknown Song';
-    }
-    
-    // Extract video URL
-    String videoUrl = '';
-    if (record.data.containsKey('video') && record.data['video'] != null) {
-      final videoField = record.data['video'];
-      if (videoField is String && videoField.trim().isNotEmpty) {
-        // Generate proper PocketBase file URL
-        final baseUrl = ''; // Will be set by service
-        final collectionId = record.collectionId;
-        final recordId = record.id;
-        
-        videoUrl = '$baseUrl/api/files/$collectionId/$recordId/$videoField';
-      }
-    }
-    
-    // Extract hashtags from genre or create based on content
-    String hashtags = '';
-    if (genreRecord != null) {
-      final genreName = genreRecord.data['name'] as String? ?? '';
-      hashtags = '#${genreName.toLowerCase().replaceAll(' ', '')}';
-    }
-    
-    return Shorts(
-      id: record.id,
-      genresId: record.data['genres_id'] as String? ?? '',
-      videoUrl: videoUrl,
-      artistId: record.data['artist_id'] as String? ?? '',
-      songId: record.data['song_id'] as String? ?? '',
-      title: record.data['title'] as String?,
-      hashtags: hashtags,
-      artistName: artistName,
-      songTitle: songTitle,
-      thumbnailUrl: record.data['thumbnail_url'] as String?,
-      views: record.data['views'] as int? ?? 0,
-      likes: record.data['likes'] as int? ?? 0,
-      createdAt: record.created != null ? DateTime.parse(record.created!) : null,
-      updatedAt: record.updated != null ? DateTime.parse(record.updated!) : null,
-    );
-  }
 }
 
-/// Extension for formatted display values
-extension ShortsExt on Shorts {
-  /// Get formatted view count for display
-  String get formattedViews {
-    if (views < 1000) {
-      return views.toString();
-    } else if (views < 1000000) {
-      return '${(views / 1000).toStringAsFixed(1)}K';
-    } else {
-      return '${(views / 1000000).toStringAsFixed(1)}M';
-    }
+/// Extension methods for Shorts model
+extension ShortsExtension on Shorts {
+  /// Get formatted hashtags as a list
+  List<String> get hashtagsList {
+    if (hashtags == null || hashtags!.isEmpty) return [];
+    return hashtags!
+        .split(' ')
+        .where((tag) => tag.isNotEmpty && tag.startsWith('#'))
+        .map((tag) => tag.substring(1)) // Remove # symbol
+        .toList();
   }
-  
-  /// Get formatted like count for display
-  String get formattedLikes {
-    if (likes < 1000) {
-      return likes.toString();
-    } else if (likes < 1000000) {
-      return '${(likes / 1000).toStringAsFixed(1)}K';
-    } else {
-      return '${(likes / 1000000).toStringAsFixed(1)}M';
-    }
-  }
-  
+
   /// Get display title (fallback to song title or artist name)
   String get displayTitle {
-    if (title?.isNotEmpty == true) return title!;
-    if (songTitle?.isNotEmpty == true) return songTitle!;
-    if (artistName?.isNotEmpty == true) return artistName!;
-    return 'Untitled';
+    if (title != null && title!.isNotEmpty) return title!;
+    if (songTitle != null && songTitle!.isNotEmpty) return songTitle!;
+    if (artistName != null && artistName!.isNotEmpty) return '$artistName - Short';
+    return 'Untitled Short';
   }
-} 
+
+  /// Get display artist name with fallback
+  String get displayArtist {
+    if (artistName != null && artistName!.isNotEmpty) return artistName!;
+    return 'Unknown Artist';
+  }
+
+  /// Format view count for display (1.2K, 1.5M, etc.)
+  String get formattedViews {
+    if (views < 1000) return views.toString();
+    if (views < 1000000) return '${(views / 1000).toStringAsFixed(1)}K';
+    return '${(views / 1000000).toStringAsFixed(1)}M';
+  }
+
+  /// Format like count for display
+  String get formattedLikes {
+    if (likes < 1000) return likes.toString();
+    if (likes < 1000000) return '${(likes / 1000).toStringAsFixed(1)}K';
+    return '${(likes / 1000000).toStringAsFixed(1)}M';
+  }
+
+  /// Check if this short has a valid video URL
+  bool get hasValidVideo {
+    return videoUrl.isNotEmpty && 
+           (videoUrl.startsWith('http://') || videoUrl.startsWith('https://'));
+  }
+
+  /// Get duration since creation (for display)
+  String get timeAgo {
+    if (createdAt == null) return '';
+    
+    final now = DateTime.now();
+    final difference = now.difference(createdAt!);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  /// Check if short is recent (within last 24 hours)
+  bool get isRecent {
+    if (createdAt == null) return false;
+    final now = DateTime.now();
+    return now.difference(createdAt!).inHours < 24;
+  }
+}

@@ -5,125 +5,78 @@ import 'package:auto_route/auto_route.dart';
 import 'package:video_player/video_player.dart';
 import '../../providers/shorts_provider.dart';
 import '../../models/shorts.dart';
-
 import '../../utils/app_colors.dart';
 import '../../utils/font_usage_guide.dart';
-import '../../controllers/player_controller.dart';
-import '../../widgets/playlist_selection_modal.dart';
-import '../../repositories/song_repository.dart';
-import '../../services/pocketbase_service.dart';
-import '../../repositories/song_playlist_repository.dart';
-import 'package:get_it/get_it.dart';
+import '../../widgets/video_thumbnail_widget.dart';
 
 @RoutePage()
 class ShortsScreen extends ConsumerStatefulWidget {
-  const ShortsScreen({super.key});
+  final String? initialGenreId;
+  final int? initialIndex;
+
+  const ShortsScreen({
+    super.key,
+    this.initialGenreId,
+    this.initialIndex,
+  });
 
   @override
   ConsumerState<ShortsScreen> createState() => _ShortsScreenState();
 }
 
 class _ShortsScreenState extends ConsumerState<ShortsScreen>
-    with TickerProviderStateMixin {
-  PageController? _pageController;
-  Map<String, VideoPlayerController> _videoControllers = {};
-  String? _currentVideoId;
-  bool _isDisposed = false;
+    with WidgetsBindingObserver {
+  late PageController _pageController;
+  int _currentIndex = 0;
+  bool _isVisible = true;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    WidgetsBinding.instance.addObserver(this);
     
-    // Set system UI for full screen
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    _currentIndex = widget.initialIndex ?? 0;
+    _pageController = PageController(initialPage: _currentIndex);
     
-    // Load initial shorts
+    // Load shorts if not already loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(shortsProvider.notifier).loadShorts();
+      final shortsState = ref.read(shortsProvider);
+      if (shortsState.shorts.isEmpty) {
+        ref.read(shortsProvider.notifier).loadShorts();
+      }
+      
+      // Update current index in provider
+      ref.read(shortsProvider.notifier).updateCurrentIndex(_currentIndex);
     });
   }
 
   @override
   void dispose() {
-    _isDisposed = true;
-    
-    // Restore system UI
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    
-    // Dispose all video controllers
-    for (final controller in _videoControllers.values) {
-      controller.dispose();
-    }
-    _videoControllers.clear();
-    
-    _pageController?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
     super.dispose();
   }
 
-  /// Initialize video controller for a short
-  VideoPlayerController? _initializeVideoController(Shorts short) {
-    if (_isDisposed) return null;
-    
-    // Don't reinitialize if already exists
-    if (_videoControllers.containsKey(short.id)) {
-      return _videoControllers[short.id];
-    }
-
-    try {
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(short.videoUrl),
-      );
-
-      controller.initialize().then((_) {
-        if (!_isDisposed && mounted) {
-          setState(() {});
-          
-          // Auto-play if this is the current video
-          if (_currentVideoId == short.id) {
-            controller.play();
-            controller.setLooping(true);
-          }
-        }
-      }).catchError((error) {
-        debugPrint('Error initializing video controller: $error');
-      });
-
-      _videoControllers[short.id] = controller;
-      return controller;
-    } catch (e) {
-      debugPrint('Error creating video controller: $e');
-      return null;
-    }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    setState(() {
+      _isVisible = state == AppLifecycleState.resumed;
+    });
   }
 
-  /// Handle page change
   void _onPageChanged(int index) {
-    if (_isDisposed) return;
-
+    setState(() {
+      _currentIndex = index;
+    });
+    
+    // Update current index in provider
+    ref.read(shortsProvider.notifier).updateCurrentIndex(index);
+    
+    // Load more shorts if near end
     final shortsState = ref.read(shortsProvider);
-    if (index >= shortsState.shorts.length) return;
-
-    final currentShort = shortsState.shorts[index];
-    
-    // Update shorts provider
-    ref.read(shortsProvider.notifier).goToShort(index);
-    
-    // Update current video
-    _currentVideoId = currentShort.id;
-    
-    // Pause all videos
-    for (final controller in _videoControllers.values) {
-      if (controller.value.isInitialized) {
-        controller.pause();
-      }
-    }
-    
-    // Play current video
-    final currentController = _videoControllers[currentShort.id];
-    if (currentController?.value.isInitialized == true) {
-      currentController!.play();
-      currentController.setLooping(true);
+    if (index >= shortsState.shorts.length - 3 && !shortsState.hasReachedMax) {
+      ref.read(shortsProvider.notifier).loadMoreShorts();
     }
   }
 
@@ -131,52 +84,80 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.router.pop(),
+        ),
+        title: Text(
+          'Shorts',
+          style: FontUsageGuide.appBarTitle.copyWith(color: Colors.white),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              // TODO: Implement search
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onPressed: () {
+              _showMoreOptions();
+            },
+          ),
+        ],
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
       body: Consumer(
         builder: (context, ref, child) {
           final shortsState = ref.watch(shortsProvider);
-
-          // Loading state
-          if (shortsState.isLoading) {
+          
+          if (shortsState.isLoading && shortsState.shorts.isEmpty) {
             return const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
-
-          // Error state
-          if (shortsState.error != null) {
+          
+          if (shortsState.error != null && shortsState.shorts.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.error_outline,
-                    size: 64,
                     color: Colors.grey.shade400,
+                    size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Failed to load shorts',
-                    style: FontUsageGuide.errorTitle,
+                    style: FontUsageGuide.modalTitle.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     shortsState.error!,
-                    style: FontUsageGuide.errorMessage,
+                    style: FontUsageGuide.modalBody.copyWith(color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
                       ref.read(shortsProvider.notifier).refreshShorts();
                     },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             );
           }
-
-          // Empty state
+          
           if (shortsState.shorts.isEmpty) {
             return Center(
               child: Column(
@@ -184,82 +165,80 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                 children: [
                   Icon(
                     Icons.video_library_outlined,
-                    size: 64,
                     color: Colors.grey.shade400,
+                    size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No shorts available',
-                    style: FontUsageGuide.emptyStateTitle,
+                    style: FontUsageGuide.modalTitle.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Check back later for new content',
-                    style: FontUsageGuide.emptyStateMessage,
+                    style: FontUsageGuide.modalBody.copyWith(color: Colors.grey),
                   ),
                 ],
               ),
             );
           }
-
-          // Basic shorts feed placeholder
+          
           return Stack(
             children: [
-              Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.video_library,
-                      size: 64,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Shorts Feature',
-                      style: FontUsageGuide.modalTitle.copyWith(
-                        color: Colors.white,
-                        fontSize: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Video shorts will appear here',
-                      style: FontUsageGuide.modalBody.copyWith(
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Found ${shortsState.shorts.length} shorts',
-                      style: FontUsageGuide.metadata.copyWith(
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
-                ),
+              // Video PageView
+              PageView.builder(
+                controller: _pageController,
+                scrollDirection: Axis.vertical,
+                onPageChanged: _onPageChanged,
+                itemCount: shortsState.shorts.length,
+                itemBuilder: (context, index) {
+                  final short = shortsState.shorts[index];
+                  final isActive = index == _currentIndex;
+                  
+                  return ShortsVideoPlayer(
+                    short: short,
+                    isActive: isActive && _isVisible,
+                    onLike: () => _onLikeShort(short),
+                    onShare: () => _onShareShort(short),
+                    onComment: () => _onCommentShort(short),
+                  );
+                },
               ),
               
-              // Back button
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 8,
-                left: 16,
-                child: GestureDetector(
-                  onTap: () => context.router.maybePop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: Colors.black26,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 24,
+              // Loading indicator for more content
+              if (shortsState.isLoadingMore)
+                Positioned(
+                  bottom: 100,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Loading more...',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           );
         },
@@ -267,252 +246,351 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
     );
   }
 
-  Widget _buildShortItem(Shorts short, bool isActive) {
-    final controller = _videoControllers[short.id];
+  void _onLikeShort(Shorts short) {
+    ref.read(shortsProvider.notifier).toggleLike(short.id);
     
-    return GestureDetector(
-      onTap: () {
-        // Toggle play/pause
-        if (controller?.value.isInitialized == true) {
-          if (controller!.value.isPlaying) {
-            controller.pause();
-          } else {
-            controller.play();
-          }
-        }
-      },
-      child: Container(
-        width: double.infinity,
-        height: double.infinity,
-        color: Colors.black,
-        child: Stack(
-          fit: StackFit.expand,
+    // Show heart animation
+    _showHeartAnimation();
+  }
+
+  void _onShareShort(Shorts short) {
+    // TODO: Implement share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Sharing: ${short.displayTitle}'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _onCommentShort(Shorts short) {
+    // TODO: Implement comments
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Comments coming soon!'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
+  }
+
+  void _showHeartAnimation() {
+    // TODO: Implement heart animation overlay
+  }
+
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Video player
-            if (controller?.value.isInitialized == true)
-              Center(
-                child: AspectRatio(
-                  aspectRatio: controller!.value.aspectRatio,
-                  child: VideoPlayer(controller),
-                ),
-              )
-            else
-              Container(
-                color: Colors.grey.shade900,
-                child: const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              ),
-            
-            // Gradient overlay
             Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black26,
-                    Colors.black54,
-                  ],
-                  stops: [0.0, 0.6, 0.8, 1.0],
-                ),
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade600,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
-            // Content overlay
-            Positioned(
-              bottom: 100,
-              left: 16,
-              right: 80,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Artist name
-                  if (short.artistName != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            short.artistName!,
-                            style: FontUsageGuide.listArtistName.copyWith(
-                              color: Colors.white,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Song title
-                  if (short.songTitle != null)
-                    Text(
-                      short.songTitle!,
-                      style: FontUsageGuide.listSongTitle.copyWith(
-                        color: Colors.white,
-                        fontSize: 16,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Hashtags
-                  if (short.hashtags?.isNotEmpty == true)
-                    Text(
-                      short.hashtags!,
-                      style: FontUsageGuide.metadata.copyWith(
-                        color: Colors.white70,
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.refresh, color: Colors.white),
+              title: const Text('Refresh', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(shortsProvider.notifier).refreshShorts();
+              },
             ),
-            
-            // Action buttons (right side)
-            Positioned(
-              bottom: 100,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Like button
-                  _buildActionButton(
-                    icon: Icons.favorite_border,
-                    activeIcon: Icons.favorite,
-                    isActive: false, // TODO: Track user likes
-                    label: short.formattedLikes,
-                    onTap: () {
-                      ref.read(shortsProvider.notifier).likeShort(short.id);
-                    },
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Add to playlist button
-                  _buildActionButton(
-                    icon: Icons.add,
-                    label: '',
-                    onTap: () => _showAddToPlaylistModal(short),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Share button
-                  _buildActionButton(
-                    icon: Icons.share,
-                    label: '',
-                    onTap: () {
-                      // TODO: Implement share functionality
-                    },
-                  ),
-                ],
-              ),
+            ListTile(
+              leading: const Icon(Icons.report, color: Colors.white),
+              title: const Text('Report', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement report functionality
+              },
             ),
-            
-            // Play/Pause overlay
-            if (controller?.value.isInitialized == true && !controller!.value.isPlaying)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.black26,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.white,
-                    size: 48,
-                  ),
-                ),
-              ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
+}
+
+/// Individual video player widget for shorts
+class ShortsVideoPlayer extends StatefulWidget {
+  final Shorts short;
+  final bool isActive;
+  final VoidCallback onLike;
+  final VoidCallback onShare;
+  final VoidCallback onComment;
+
+  const ShortsVideoPlayer({
+    super.key,
+    required this.short,
+    required this.isActive,
+    required this.onLike,
+    required this.onShare,
+    required this.onComment,
+  });
+
+  @override
+  State<ShortsVideoPlayer> createState() => _ShortsVideoPlayerState();
+}
+
+class _ShortsVideoPlayerState extends State<ShortsVideoPlayer> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _isPlaying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(ShortsVideoPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _playVideo();
+      } else {
+        _pauseVideo();
+      }
+    }
+  }
+
+  Future<void> _initializeVideo() async {
+    if (widget.short.videoUrl.isEmpty) return;
+
+    try {
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.short.videoUrl),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: false, // Take audio focus for full-screen
+          allowBackgroundPlayback: false,
+        ),
+      );
+
+      await _controller!.initialize();
+      await _controller!.setLooping(true);
+      await _controller!.setVolume(1.0); // Full volume for full-screen
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+
+        if (widget.isActive) {
+          _playVideo();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error initializing video: $e');
+    }
+  }
+
+  Future<void> _playVideo() async {
+    if (_controller != null && _isInitialized && !_isPlaying) {
+      await _controller!.play();
+      setState(() {
+        _isPlaying = true;
+      });
+    }
+  }
+
+  Future<void> _pauseVideo() async {
+    if (_controller != null && _isInitialized && _isPlaying) {
+      await _controller!.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    }
+  }
+
+  void _togglePlayPause() {
+    if (_isPlaying) {
+      _pauseVideo();
+    } else {
+      _playVideo();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Video player
+        if (_isInitialized && _controller != null)
+          GestureDetector(
+            onTap: _togglePlayPause,
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _controller!.value.size.width,
+                height: _controller!.value.size.height,
+                child: VideoPlayer(_controller!),
+              ),
+            ),
+          )
+        else
+          Container(
+            color: Colors.grey.shade900,
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          ),
+
+        // Play/Pause overlay
+        if (!_isPlaying && _isInitialized)
+          Center(
+            child: GestureDetector(
+              onTap: _togglePlayPause,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.play_arrow,
+                  color: Colors.white,
+                  size: 50,
+                ),
+              ),
+            ),
+          ),
+
+        // Right side controls
+        Positioned(
+          right: 16,
+          bottom: 100,
+          child: Column(
+            children: [
+              // Like button
+              _buildActionButton(
+                icon: Icons.favorite_border,
+                label: widget.short.formattedLikes,
+                onTap: widget.onLike,
+              ),
+              const SizedBox(height: 20),
+              
+              // Comment button
+              _buildActionButton(
+                icon: Icons.comment_outlined,
+                label: 'Comments',
+                onTap: widget.onComment,
+              ),
+              const SizedBox(height: 20),
+              
+              // Share button
+              _buildActionButton(
+                icon: Icons.share_outlined,
+                label: 'Share',
+                onTap: widget.onShare,
+              ),
+            ],
+          ),
+        ),
+
+        // Bottom info
+        Positioned(
+          left: 16,
+          right: 80,
+          bottom: 100,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Artist name
+              Text(
+                widget.short.displayArtist,
+                style: FontUsageGuide.authButtonText.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              
+              // Title
+              Text(
+                widget.short.displayTitle,
+                style: FontUsageGuide.modalBody.copyWith(color: Colors.white),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              
+              // Hashtags
+              if (widget.short.hashtagsList.isNotEmpty)
+                Wrap(
+                  children: widget.short.hashtagsList.take(3).map((tag) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        '#$tag',
+                        style: FontUsageGuide.listMetadata.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   Widget _buildActionButton({
     required IconData icon,
-    IconData? activeIcon,
-    bool isActive = false,
     required String label,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: const BoxDecoration(
-              color: Colors.black26,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.3),
               shape: BoxShape.circle,
             ),
             child: Icon(
-              isActive && activeIcon != null ? activeIcon : icon,
-              color: isActive ? AppColors.primary : Colors.white,
-              size: 28,
+              icon,
+              color: Colors.white,
+              size: 24,
             ),
           ),
-          if (label.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: FontUsageGuide.metadata.copyWith(
-                color: Colors.white,
-                fontSize: 10,
-              ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
             ),
-          ],
+          ),
         ],
       ),
     );
   }
-
-  Future<void> _showAddToPlaylistModal(Shorts short) async {
-    try {
-      // Get song data from short
-      final songRepository = SongRepository(GetIt.I<PocketBaseService>());
-      final song = await songRepository.getSongById(short.songId);
-      
-      if (song == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Song not found')),
-        );
-        return;
-      }
-
-      // Show playlist selection modal
-      await showPlaylistSelectionModal(
-        context,
-        song,
-        onPlaylistsChanged: () {
-          // Optionally refresh UI or show success message
-        },
-      );
-    } catch (e) {
-      debugPrint('Error showing add to playlist modal: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
-    }
-  }
-} 
+}

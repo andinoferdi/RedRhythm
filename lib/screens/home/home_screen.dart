@@ -181,7 +181,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   
   Future<void> _refreshData() async {
     // Manual refresh via pull-to-refresh using new providers
-    await Future.wait([
+    await Future.wait<void>([
       ref.read(playHistoryProvider.notifier).loadRecentlyPlayed(),
       ref.read(genreProvider.notifier).loadGenres(),
       ref.read(shortsProvider.notifier).refreshShorts(),
@@ -876,7 +876,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                       firstShort,
                       () {
                         // Navigate to shorts screen with specific genre
-                        context.router.push(const ShortsRoute());
+                        context.router.push(ShortsRoute());
                       },
                     ),
                   );
@@ -889,26 +889,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
     );
   }
   
-  /// Extract genre name from short data
+    /// Extract genre name from short data
   String _getGenreNameFromShort(dynamic short) {
     try {
-      // Try to get genre name from hashtags first
-      if (short.hashtags != null && short.hashtags.isNotEmpty) {
-        final hashtag = short.hashtags as String;
-        if (hashtag.startsWith('#')) {
-          return hashtag.substring(1).split(' ').first.toLowerCase();
-        }
-      }
+      // Debug: Print short data to understand structure
+      debugPrint('📹 Short data: ${short.toString()}');
       
-      // Fallback to default categories based on genre ID or other data
-      if (short.genresId != null) {
-        // You can map genre IDs to names here
-        // For now, return a generic name
-        return 'Music';
-      }
-      
-      return 'Shorts';
+      // If it's a Shorts object from our model
+      if (short.runtimeType.toString().contains('Shorts')) {
+         // Try to access genresId to get genre from genre provider
+         final genreId = short.genresId;
+         debugPrint('📹 Genre ID: $genreId');
+         
+         if (genreId != null && genreId.isNotEmpty) {
+           final genreState = ref.read(genreProvider);
+           debugPrint('📹 Available genres: ${genreState.genres.map((g) => '${g.id}: ${g.name}').toList()}');
+           
+            try {
+              final genre = genreState.genres.firstWhere((g) => g.id == genreId);
+              debugPrint('📹 Found genre: ${genre.name}');
+              return genre.name;
+            } catch (e) {
+              debugPrint('📹 Genre not found for ID: $genreId');
+              // Genre not found, return fallback
+              return 'Music';
+            }
+         }
+         
+         // Try to get genre name from hashtags as fallback (proper object access)
+         try {
+           if (short.hashtags != null && short.hashtags.isNotEmpty) {
+             final hashtag = short.hashtags;
+             if (hashtag.startsWith('#')) {
+               return hashtag.substring(1).split(' ').first;
+             }
+           }
+         } catch (e) {
+           debugPrint('📹 Error accessing hashtags: $e');
+         }
+         
+         // Try to get artist name as fallback
+         try {
+           if (short.artistName != null && short.artistName.isNotEmpty) {
+             return short.artistName;
+           }
+         } catch (e) {
+           debugPrint('📹 Error accessing artist name: $e');
+         }
+       }
+       
+       // Final fallback
+       return 'Music';
     } catch (e) {
+      debugPrint('❌ Error getting genre name: $e');
       return 'Shorts';
     }
   }

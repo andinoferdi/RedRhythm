@@ -1,72 +1,76 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Global video audio manager to prevent conflicts between music player and video shorts
-class VideoAudioManager extends StateNotifier<VideoAudioState> {
-  VideoAudioManager() : super(VideoAudioState.initial());
-
-  /// Call this when music starts playing
-  void musicStarted() {
-    if (state.isMusicPlaying != true) {
-      state = state.copyWith(isMusicPlaying: true);
-      debugPrint('🎵 Music started - videos should pause');
-    }
-  }
-
-  /// Call this when music stops
-  void musicStopped() {
-    if (state.isMusicPlaying != false) {
-      state = state.copyWith(isMusicPlaying: false);
-      debugPrint('🎵 Music stopped - videos can resume');
-    }
-  }
-
-  /// Call this when app goes to background
-  void appPaused() {
-    state = state.copyWith(isAppInBackground: true);
-    debugPrint('📱 App paused - videos should pause');
-  }
-
-  /// Call this when app comes to foreground
-  void appResumed() {
-    state = state.copyWith(isAppInBackground: false);
-    debugPrint('📱 App resumed - videos can resume if music not playing');
-  }
-
-  /// Check if videos should be paused
-  bool get shouldPauseVideos => state.isMusicPlaying || state.isAppInBackground;
-}
-
-/// State class for video audio management
-class VideoAudioState {
+/// State for coordinating video and audio playback
+class VideoAudioManagerState {
   final bool isMusicPlaying;
-  final bool isAppInBackground;
+  final bool shouldPauseVideos;
+  final bool isAppPaused;
 
-  const VideoAudioState({
-    required this.isMusicPlaying,
-    required this.isAppInBackground,
+  const VideoAudioManagerState({
+    this.isMusicPlaying = false,
+    this.shouldPauseVideos = false,
+    this.isAppPaused = false,
   });
 
-  factory VideoAudioState.initial() => const VideoAudioState(
-    isMusicPlaying: false,
-    isAppInBackground: false,
-  );
-
-  VideoAudioState copyWith({
+  VideoAudioManagerState copyWith({
     bool? isMusicPlaying,
-    bool? isAppInBackground,
+    bool? shouldPauseVideos,
+    bool? isAppPaused,
   }) {
-    return VideoAudioState(
+    return VideoAudioManagerState(
       isMusicPlaying: isMusicPlaying ?? this.isMusicPlaying,
-      isAppInBackground: isAppInBackground ?? this.isAppInBackground,
+      shouldPauseVideos: shouldPauseVideos ?? this.shouldPauseVideos,
+      isAppPaused: isAppPaused ?? this.isAppPaused,
+    );
+  }
+}
+
+/// Controller for managing video and audio coordination
+class VideoAudioManagerController extends StateNotifier<VideoAudioManagerState> {
+  VideoAudioManagerController() : super(const VideoAudioManagerState());
+
+  /// Called when music starts playing
+  void musicStarted() {
+    state = state.copyWith(
+      isMusicPlaying: true,
+      shouldPauseVideos: true,
     );
   }
 
-  /// Videos should be paused if music is playing OR app is in background
-  bool get shouldPauseVideos => isMusicPlaying || isAppInBackground;
+  /// Called when music stops
+  void musicStopped() {
+    state = state.copyWith(
+      isMusicPlaying: false,
+      shouldPauseVideos: false,
+    );
+  }
+
+  /// Called when app is paused (goes to background)
+  void appPaused() {
+    state = state.copyWith(
+      isAppPaused: true,
+      shouldPauseVideos: true,
+    );
+  }
+
+  /// Called when app resumes (comes to foreground)
+  void appResumed() {
+    state = state.copyWith(
+      isAppPaused: false,
+      shouldPauseVideos: state.isMusicPlaying, // Only pause if music is playing
+    );
+  }
+
+  /// Manually set video pause state
+  void setShouldPauseVideos(bool shouldPause) {
+    state = state.copyWith(shouldPauseVideos: shouldPause);
+  }
+
+  /// Check if videos should be paused (due to music or app state)
+  bool get shouldPauseVideos => state.shouldPauseVideos || state.isAppPaused;
 }
 
-/// Global provider for video audio management
-final videoAudioManagerProvider = StateNotifierProvider<VideoAudioManager, VideoAudioState>(
-  (ref) => VideoAudioManager(),
-); 
+/// Provider for video audio manager
+final videoAudioManagerProvider = StateNotifierProvider<VideoAudioManagerController, VideoAudioManagerState>((ref) {
+  return VideoAudioManagerController();
+});

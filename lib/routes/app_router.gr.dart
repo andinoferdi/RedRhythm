@@ -160,9 +160,15 @@ abstract class _$AppRouter extends RootStackRouter {
       );
     },
     ShortsRoute.name: (routeData) {
+      final args = routeData.argsAs<ShortsRouteArgs>(
+          orElse: () => const ShortsRouteArgs());
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: const ShortsScreen(),
+        child: ShortsScreen(
+          key: args.key,
+          initialGenreId: args.initialGenreId,
+          initialIndex: args.initialIndex,
+        ),
       );
     },
     SplashRoute.name: (routeData) {
@@ -609,16 +615,44 @@ class SearchRoute extends PageRouteInfo<void> {
 
 /// generated route for
 /// [ShortsScreen]
-class ShortsRoute extends PageRouteInfo<void> {
-  const ShortsRoute({List<PageRouteInfo>? children})
-      : super(
+class ShortsRoute extends PageRouteInfo<ShortsRouteArgs> {
+  ShortsRoute({
+    Key? key,
+    String? initialGenreId,
+    int? initialIndex,
+    List<PageRouteInfo>? children,
+  }) : super(
           ShortsRoute.name,
+          args: ShortsRouteArgs(
+            key: key,
+            initialGenreId: initialGenreId,
+            initialIndex: initialIndex,
+          ),
           initialChildren: children,
         );
 
   static const String name = 'ShortsRoute';
 
-  static const PageInfo<void> page = PageInfo<void>(name);
+  static const PageInfo<ShortsRouteArgs> page = PageInfo<ShortsRouteArgs>(name);
+}
+
+class ShortsRouteArgs {
+  const ShortsRouteArgs({
+    this.key,
+    this.initialGenreId,
+    this.initialIndex,
+  });
+
+  final Key? key;
+
+  final String? initialGenreId;
+
+  final int? initialIndex;
+
+  @override
+  String toString() {
+    return 'ShortsRouteArgs{key: $key, initialGenreId: $initialGenreId, initialIndex: $initialIndex}';
+  }
 }
 
 /// generated route for

@@ -12,7 +12,7 @@ class AppConfig {
   // Ganti IP address ini dengan IP laptop Anda di jaringan lokal
   // Jalankan script start_server.bat atau start_server.ps1 untuk melihat IP yang benar
   // Contoh: '192.168.1.100:8090', '192.168.43.1:8090', '10.0.0.5:8090'
-  static const String physicalDeviceUrl = 'http://192.168.1.8:8090';
+  static const String physicalDeviceUrl = 'http://192.168.1.13:8090';
   
   // PRODUCTION URL (jika ada server production)
   static const String productionUrl = 'https://your-production-server.com';

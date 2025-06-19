@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
-import 'package:audio_session/audio_session.dart';
-import '../utils/app_colors.dart';
+import 'dart:async';
 
+/// Advanced video thumbnail widget with seamless looping for shorts
+/// Implements best practices from TikTok/Instagram Reels/Spotify
 class VideoThumbnailWidget extends StatefulWidget {
   final String videoUrl;
   final double width;
@@ -11,380 +11,327 @@ class VideoThumbnailWidget extends StatefulWidget {
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
   final bool shouldPause;
-  final int previewDurationSeconds; // Customizable preview duration
+  final int previewDurationSeconds;
+  final bool autoPlay;
+  final bool enableLooping;
+  final bool showPlayIcon;
 
   const VideoThumbnailWidget({
     super.key,
     required this.videoUrl,
-    this.width = 160,
-    this.height = 240,
+    required this.width,
+    required this.height,
     this.borderRadius,
     this.onTap,
     this.shouldPause = false,
-    this.previewDurationSeconds = 7, // Default 7 seconds for Shorts
+    this.previewDurationSeconds = 7,
+    this.autoPlay = true,
+    this.enableLooping = true,
+    this.showPlayIcon = true,
   });
 
   @override
   State<VideoThumbnailWidget> createState() => _VideoThumbnailWidgetState();
 }
 
-class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
-  VideoPlayerController? _controller1;
-  VideoPlayerController? _controller2;
+class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget>
+    with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
-  bool _hasError = false;
-  AudioSession? _audioSession;
-  Duration? _previewEndPosition;
-  bool _isPlayingPreview = false;
+  bool _isPlaying = false;
   Timer? _loopTimer;
-  
-  // Dual player control
-  bool _useController1 = true; // Which controller is currently active
-  bool _isPreparingNext = false; // Prevent multiple preparations
+  Duration? _previewEndPosition;
+  bool _hasStartedPreview = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    _initializeVideo();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeController();
   }
 
   @override
   void dispose() {
-    _disposeControllers();
+    WidgetsBinding.instance.removeObserver(this);
+    _disposeController();
+    _loopTimer?.cancel();
     super.dispose();
-  }
-
-  void _disposeControllers() async {
-    try {
-      _isPlayingPreview = false;
-      _isPreparingNext = false;
-      _previewEndPosition = null;
-      
-      _loopTimer?.cancel();
-      _loopTimer = null;
-      
-      // Dispose both controllers
-      await _controller1?.pause();
-      await _controller1?.dispose();
-      _controller1 = null;
-      
-      await _controller2?.pause();
-      await _controller2?.dispose();
-      _controller2 = null;
-      
-      // Deactivate audio session
-      if (_audioSession != null) {
-        try {
-          await _audioSession!.setActive(false);
-        } catch (e) {
-          debugPrint('Error deactivating audio session: $e');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error disposing video controllers: $e');
-    }
-  }
-
-  void _initializeVideo() async {
-    if (widget.videoUrl.isEmpty) {
-      setState(() {
-        _hasError = true;
-      });
-      return;
-    }
-
-    try {
-      await _configureAudioSession();
-      
-      // Initialize BOTH controllers simultaneously
-      await _initializeDualControllers();
-      
-      if (mounted) {
-        _previewEndPosition = Duration(seconds: widget.previewDurationSeconds);
-        
-        setState(() {
-          _isInitialized = true;
-        });
-        
-        // Start with controller1
-        await _startSeamlessLoop();
-      }
-    } catch (error) {
-      debugPrint('Error initializing video thumbnail: $error');
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-        });
-      }
-    }
-  }
-
-  Future<void> _initializeDualControllers() async {
-    // Create two identical controllers
-    _controller1 = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl),
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: false,
-      ),
-    );
-    
-    _controller2 = VideoPlayerController.networkUrl(
-      Uri.parse(widget.videoUrl),
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: false,
-      ),
-    );
-
-    // Initialize both controllers in parallel
-    await Future.wait([
-      _controller1!.initialize(),
-      _controller2!.initialize(),
-    ]);
-    
-    // Configure both controllers
-    await Future.wait([
-      _controller1!.setVolume(0.0),
-      _controller2!.setVolume(0.0),
-      _controller1!.seekTo(Duration.zero),
-      _controller2!.seekTo(Duration.zero),
-    ]);
-    
-    // Disable native looping on both
-    _controller1!.setLooping(false);
-    _controller2!.setLooping(false);
-    
-    debugPrint('🎥 Dual controllers initialized successfully');
-  }
-
-  Future<void> _configureAudioSession() async {
-    try {
-      _audioSession = await AudioSession.instance;
-      
-      await _audioSession!.configure(AudioSessionConfiguration(
-        avAudioSessionCategory: AVAudioSessionCategory.ambient,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.mixWithOthers,
-        avAudioSessionMode: AVAudioSessionMode.defaultMode,
-        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
-        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
-        androidAudioAttributes: AndroidAudioAttributes(
-          contentType: AndroidAudioContentType.movie,
-          flags: AndroidAudioFlags.none,
-          usage: AndroidAudioUsage.media,
-        ),
-        androidAudioFocusGainType: AndroidAudioFocusGainType.gainTransientMayDuck,
-        androidWillPauseWhenDucked: false,
-      ));
-      
-      debugPrint('✅ Video audio session configured for mixing');
-    } catch (e) {
-      debugPrint('⚠️ Error configuring video audio session: $e');
-    }
-  }
-
-  Future<void> _startSeamlessLoop() async {
-    if (_controller1 == null || _controller2 == null || !mounted) return;
-    
-    _isPlayingPreview = true;
-    
-    // Start playing with controller1
-    await _controller1!.play();
-    debugPrint('🎥 Starting SEAMLESS dual-controller loop: ${_previewEndPosition!.inSeconds}s');
-    
-    // Start monitoring for seamless switching
-    _loopTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (!mounted || !_isPlayingPreview || _previewEndPosition == null) {
-        return;
-      }
-      
-      final activeController = _useController1 ? _controller1! : _controller2!;
-      final currentPosition = activeController.value.position;
-      
-      // When we're 200ms before the end, prepare the next controller
-      final timeUntilEnd = _previewEndPosition! - currentPosition;
-      if (timeUntilEnd <= const Duration(milliseconds: 200) && timeUntilEnd > Duration.zero && !_isPreparingNext) {
-        _prepareNextController();
-      }
-      
-      // When we reach the end, switch controllers instantly
-      if (currentPosition >= _previewEndPosition!) {
-        _switchControllers();
-      }
-    });
-  }
-
-  void _prepareNextController() async {
-    if (_isPreparingNext) return;
-    _isPreparingNext = true;
-    
-    try {
-      final nextController = _useController1 ? _controller2! : _controller1!;
-      
-      // Prepare the next controller to start from beginning
-      await nextController.seekTo(Duration.zero);
-      await nextController.setVolume(0.0);
-      
-      debugPrint('🎥 Next controller prepared and ready');
-    } catch (e) {
-      debugPrint('Error preparing next controller: $e');
-    }
-  }
-
-  void _switchControllers() async {
-    if (!mounted || !_isPlayingPreview) return;
-    
-    try {
-      final currentController = _useController1 ? _controller1! : _controller2!;
-      final nextController = _useController1 ? _controller2! : _controller1!;
-      
-      // INSTANT switch - no delay
-      await Future.wait([
-        currentController.pause(), // Stop current
-        nextController.play(),     // Start next
-      ]);
-      
-      // Switch the active controller flag
-      _useController1 = !_useController1;
-      _isPreparingNext = false;
-      
-      debugPrint('🎥 INSTANT controller switch: Controller${_useController1 ? "1" : "2"} now active');
-    } catch (e) {
-      debugPrint('Error switching controllers: $e');
-    }
   }
 
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    if (widget.videoUrl != oldWidget.videoUrl || 
-        widget.previewDurationSeconds != oldWidget.previewDurationSeconds) {
-      _disposeControllers();
-      _initializeVideo();
-    }
-    
-    if (widget.shouldPause != oldWidget.shouldPause) {
-      _handlePauseState();
-    }
-  }
-  
-  void _handlePauseState() async {
-    if (_controller1 == null || _controller2 == null) return;
-    
-    try {
+    // Handle shouldPause changes
+    if (oldWidget.shouldPause != widget.shouldPause) {
       if (widget.shouldPause) {
-        _isPlayingPreview = false;
-        _loopTimer?.cancel();
-        
-        // Pause both controllers
-        await Future.wait([
-          _controller1!.pause(),
-          _controller2!.pause(),
-        ]);
-        
-        debugPrint('🎥 Both controllers paused');
-      } else {
-        // Resume with fresh start
-        await Future.wait([
-          _controller1!.seekTo(Duration.zero),
-          _controller2!.seekTo(Duration.zero),
-          _controller1!.setVolume(0.0),
-          _controller2!.setVolume(0.0),
-        ]);
-        
-        _useController1 = true; // Reset to controller1
-        _isPreparingNext = false;
-        await _startSeamlessLoop();
-        
-        debugPrint('🎥 Controllers resumed with dual-loop');
+        _pauseVideo();
+      } else if (widget.autoPlay) {
+        _playVideo();
       }
-    } catch (e) {
-      debugPrint('Error handling pause state: $e');
+    }
+    
+    // Handle video URL changes
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _disposeController();
+      _initializeController();
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        decoration: BoxDecoration(
-          borderRadius: widget.borderRadius ?? BorderRadius.circular(10),
-          color: Colors.grey.shade900,
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _pauseVideo();
+        break;
+      case AppLifecycleState.resumed:
+        if (widget.autoPlay && !widget.shouldPause) {
+          _playVideo();
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  Future<void> _initializeController() async {
+    if (widget.videoUrl.isEmpty) return;
+
+    try {
+      _controller = VideoPlayerController.networkUrl(
+        Uri.parse(widget.videoUrl),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
         ),
-        clipBehavior: Clip.antiAlias,
+      );
+
+      await _controller!.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+
+        // Set up video properties
+        await _controller!.setVolume(0.0); // Muted by default for preview
+        await _controller!.setLooping(widget.enableLooping);
+
+        // Calculate preview duration
+        final videoDuration = _controller!.value.duration;
+        final previewDuration = Duration(seconds: widget.previewDurationSeconds);
+        _previewEndPosition = previewDuration > videoDuration ? videoDuration : previewDuration;
+
+        // Add listener for seamless looping
+        _controller!.addListener(_onVideoProgress);
+
+        // Auto-play if enabled
+        if (widget.autoPlay && !widget.shouldPause) {
+          _startPreview();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error initializing video controller: $e');
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+        });
+      }
+    }
+  }
+
+  void _disposeController() {
+    _controller?.removeListener(_onVideoProgress);
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+    _isPlaying = false;
+    _hasStartedPreview = false;
+  }
+
+  void _onVideoProgress() {
+    if (!mounted || _controller == null || !widget.enableLooping) return;
+
+    final position = _controller!.value.position;
+    final duration = _controller!.value.duration;
+
+    // Seamless looping logic - restart when reaching preview end or video end
+    if (_previewEndPosition != null && position >= _previewEndPosition!) {
+      _restartPreview();
+    } else if (position >= duration && duration > Duration.zero) {
+      _restartPreview();
+    }
+  }
+
+  Future<void> _startPreview() async {
+    if (_controller == null || !_isInitialized || _hasStartedPreview) return;
+
+    try {
+      await _controller!.seekTo(Duration.zero);
+      await _controller!.play();
+      
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+          _hasStartedPreview = true;
+        });
+      }
+      
+      debugPrint('🎥 Started seamless video preview: ${widget.previewDurationSeconds}s loop');
+    } catch (e) {
+      debugPrint('Error starting video preview: $e');
+    }
+  }
+
+  Future<void> _restartPreview() async {
+    if (_controller == null || !mounted) return;
+
+    try {
+      await _controller!.seekTo(Duration.zero);
+      if (_isPlaying && !widget.shouldPause) {
+        await _controller!.play();
+      }
+    } catch (e) {
+      debugPrint('Error restarting video preview: $e');
+    }
+  }
+
+  Future<void> _playVideo() async {
+    if (_controller == null || !_isInitialized || _isPlaying) return;
+
+    try {
+      await _controller!.play();
+      if (mounted) {
+        setState(() {
+          _isPlaying = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error playing video: $e');
+    }
+  }
+
+  Future<void> _pauseVideo() async {
+    if (_controller == null || !_isInitialized || !_isPlaying) return;
+
+    try {
+      await _controller!.pause();
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error pausing video: $e');
+    }
+  }
+
+  void _onTap() {
+    if (_controller != null && _isInitialized) {
+      if (_isPlaying) {
+        _pauseVideo();
+      } else {
+        _playVideo();
+      }
+    }
+    widget.onTap?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: widget.borderRadius,
+      ),
+      child: ClipRRect(
+        borderRadius: widget.borderRadius ?? BorderRadius.zero,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Dual video players - show active one
-            if (_isInitialized && _controller1 != null && _controller2 != null)
+            // Video player
+            if (_isInitialized && _controller != null)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _controller!.value.size.width,
+                  height: _controller!.value.size.height,
+                  child: VideoPlayer(_controller!),
+                ),
+              )
+            else
+              Container(
+                color: Colors.grey.shade900,
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2,
+                  ),
+                ),
+              ),
+
+            // Play/Pause overlay
+            if (widget.showPlayIcon)
               Positioned.fill(
-                child: AnimatedSwitcher(
-                  duration: Duration.zero, // Instant switch
-                  child: FittedBox(
-                    key: ValueKey(_useController1 ? 'controller1' : 'controller2'),
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: (_useController1 ? _controller1! : _controller2!).value.size.width,
-                      height: (_useController1 ? _controller1! : _controller2!).value.size.height,
-                      child: VideoPlayer(_useController1 ? _controller1! : _controller2!),
+                child: GestureDetector(
+                  onTap: _onTap,
+                  child: Container(
+                    color: Colors.transparent,
+                    child: AnimatedOpacity(
+                      opacity: !_isPlaying ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: widget.borderRadius,
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.play_circle_fill,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            
-            // Loading or error state
-            if (!_isInitialized || _hasError)
-              Container(
-                color: Colors.grey.shade900,
-                child: Center(
-                  child: _hasError
-                      ? Icon(
-                          Icons.video_library_outlined,
-                          color: Colors.grey.shade600,
-                          size: 32,
-                        )
-                      : const CircularProgressIndicator(
-                          color: AppColors.primary,
-                          strokeWidth: 2,
-                        ),
+
+            // Tap to play/pause (invisible overlay)
+            if (!widget.showPlayIcon)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _onTap,
+                  child: Container(color: Colors.transparent),
                 ),
               ),
-            
-            // Gradient overlay
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.transparent,
-                    Colors.black38,
-                  ],
-                  stops: [0.0, 0.7, 1.0],
-                ),
-              ),
-            ),
-            
-            // Play indicator
-            if (_isInitialized && !_hasError)
+
+            // Looping indicator (small dot)
+            if (widget.enableLooping && _isPlaying)
               Positioned(
-                bottom: 8,
+                top: 8,
                 right: 8,
                 child: Container(
                   padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.black54,
-                    shape: BoxShape.circle,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Icon(
-                    Icons.play_arrow,
+                    Icons.loop,
                     color: Colors.white,
-                    size: 16,
+                    size: 12,
                   ),
                 ),
               ),
@@ -393,4 +340,4 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       ),
     );
   }
-} 
+}
