@@ -2,6 +2,7 @@
 import 'package:auto_route/auto_route.dart';
 import '../../routes/app_router.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 
 @RoutePage()
 class OnboardingScreen extends StatelessWidget {
@@ -49,25 +50,20 @@ class OnboardingScreen extends StatelessWidget {
               children: [
                 RichText(
                   textAlign: TextAlign.center,
-                  text: const TextSpan(
-                    style: TextStyle(
-                      fontFamily: 'Gotham',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+                  text: TextSpan(
+                    style: FontUsageGuide.authWelcomeTitle,
                     children: [
-                      TextSpan(text: 'From the '),
+                      const TextSpan(text: 'From the '),
                       TextSpan(
                         text: 'latest',
-                        style: TextStyle(color: AppColors.primary, fontFamily: 'Gotham'),
+                        style: FontUsageGuide.authWelcomeTitle.copyWith(color: AppColors.primary),
                       ),
-                      TextSpan(text: ' to the\n'),
+                      const TextSpan(text: ' to the\n'),
                       TextSpan(
                         text: 'greatest',
-                        style: TextStyle(color: AppColors.primary, fontFamily: 'Gotham'),
+                        style: FontUsageGuide.authWelcomeTitle.copyWith(color: AppColors.primary),
                       ),
-                      TextSpan(text: ' hits, play your\nfavorite tracks on '),
+                      const TextSpan(text: ' hits, play your\nfavorite tracks on '),
                     ],
                   ),
                 ),
@@ -75,14 +71,9 @@ class OnboardingScreen extends StatelessWidget {
                   'assets/images/red_rhythm_text.png',
                   width: 180,
                 ),
-                const Text(
+                Text(
                   'now!',
-                  style: TextStyle(
-                    fontFamily: 'Gotham',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  style: FontUsageGuide.authWelcomeTitle,
                 ),
                 const SizedBox(height: 30),
                 SizedBox(
@@ -98,14 +89,9 @@ class OnboardingScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Get Started',
-                      style: TextStyle(
-                        fontFamily: 'Gotham',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                      style: FontUsageGuide.authButtonText,
                     ),
                   ),
                 ),

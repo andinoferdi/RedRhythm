@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../controllers/player_controller.dart';
 import '../../models/song.dart';
 import '../../utils/color_extractor.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../providers/dynamic_color_provider.dart';
 
 @RoutePage()
@@ -69,12 +70,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                 children: [
                                   Text(
                                     currentSong.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Gotham',
-                                    ),
+                                    style: FontUsageGuide.playerMainSongTitle,
                           textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -82,11 +78,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         const SizedBox(height: 2),
                                   Text(
                                     currentSong.artist,
-                                    style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 11,
-                                      fontFamily: 'Gotham',
-                                    ),
+                                    style: FontUsageGuide.playerMainArtistName,
                           textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -177,19 +169,11 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                       children: [
                         Text(
                           _formatDuration(playerState.currentPosition),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.playerDuration,
                         ),
                         Text(
                           _formatDuration(currentSong.duration),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 12,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.playerDuration,
                         ),
                       ],
                     ),
@@ -256,15 +240,15 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
             padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
                   trimmedLine,
-                  style: TextStyle(
-                color: isSpecialSection 
-                    ? Colors.white.withValues(alpha: 0.6)
-                    : Colors.white,
-                fontSize: isSpecialSection ? 13 : 18,
-                fontWeight: isSpecialSection ? FontWeight.w700 : FontWeight.w700,
-                height: 1.4,
-                fontFamily: 'Gotham',
-              ),
+                  style: isSpecialSection 
+                      ? FontUsageGuide.metadata.copyWith(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          height: 1.4,
+                        )
+                      : FontUsageGuide.playerMainSongTitle.copyWith(
+                          fontSize: 18,
+                          height: 1.4,
+                        ),
               textAlign: TextAlign.left,
             ),
           );
@@ -290,12 +274,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           
           Text(
             'No lyrics available',
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Gotham',
-              ),
+            style: FontUsageGuide.emptyStateTitle.copyWith(
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
               textAlign: TextAlign.center,
               ),
           ],

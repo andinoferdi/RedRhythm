@@ -6,6 +6,7 @@ import '../../models/song.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../services/pocketbase_service.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/font_usage_guide.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../providers/song_provider.dart';
 
@@ -132,10 +133,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
           SnackBar(
             content: Text(
               '${songIdsList.length} lagu berhasil ditambahkan',
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w700,
-              ),
+              style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
             ),
             backgroundColor: Colors.white,
           ),
@@ -169,11 +167,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
         backgroundColor: AppColors.background,
         title: Text(
           'Tambah Lagu ke ${widget.playlist.data['name']}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+          style: FontUsageGuide.appBarTitle,
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -185,11 +179,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
               onPressed: _isLoading ? null : _addSelectedSongs,
               child: Text(
                 'Tambah (${_selectedSongIds.length})',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: FontUsageGuide.authButtonText.copyWith(color: Colors.red),
               ),
             ),
         ],
@@ -202,10 +192,10 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: _filterSongs,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+              style: FontUsageGuide.authFieldInput,
               decoration: InputDecoration(
                 hintText: 'Cari lagu atau artis...',
-                hintStyle: TextStyle(color: Colors.grey[400], fontFamily: 'Gotham'),
+                hintStyle: FontUsageGuide.searchPlaceholder,
                 prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
                 filled: true,
                 fillColor: Colors.grey[800],
@@ -241,7 +231,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
           children: [
             Text(
               _errorMessage!,
-              style: const TextStyle(color: Colors.white, fontFamily: 'Gotham'),
+              style: FontUsageGuide.emptyStateMessage,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -270,7 +260,7 @@ class _AddSongsScreenState extends ConsumerState<AddSongsScreen> {
               _searchController.text.isEmpty 
                   ? 'Tidak ada lagu tersedia'
                   : 'Tidak ditemukan lagu yang cocok',
-              style: TextStyle(color: Colors.grey[400], fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Gotham',),
+              style: FontUsageGuide.emptyStateTitle.copyWith(color: Colors.grey[400]),
             ),
           ],
         ),

@@ -812,8 +812,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   blendMode: BlendMode.dstIn,
                   child: Text(
                     previewText,
-                    style: FontUsageGuide.modalBody.copyWith(
+                    style: FontUsageGuide.homeSectionHeader.copyWith(
                       color: Colors.white,
+                      fontSize: 18,
+                      height: 1.4,
                       shadows: [
                         const Shadow(
                           color: Colors.black26,
@@ -886,16 +888,15 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               color: AppColors.greyLight,
             ),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'No lyrics available for this song',
-                style: TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 14,
-                  fontFamily: 'Gotham',
+                          Expanded(
+                child: Text(
+                  'No lyrics available for this song',
+                  style: FontUsageGuide.emptyStateTitle.copyWith(
+                    color: AppColors.greyLight,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
 
@@ -1153,11 +1154,8 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 artist.bio.isNotEmpty
                     ? artist.bio
                     : 'No biography available for this artist.',
-                style: const TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 14,
+                style: FontUsageGuide.emptyStateMessage.copyWith(
                   height: 1.5,
-                  fontFamily: 'Gotham',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -1266,11 +1264,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                         const SizedBox(height: 4),
                         const Text(
                           'Artist information not available',
-                          style: TextStyle(
-                            color: AppColors.greyLight,
-                            fontSize: 14,
-                            fontFamily: 'Gotham',
-                          ),
+                          style: FontUsageGuide.emptyStateMessage,
                         ),
                       ],
                     ),
@@ -1297,13 +1291,10 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               const SizedBox(height: 12),
 
               // Fallback message
-              const Text(
+              Text(
                 'Artist information is not available in the database yet. Check back later for more details about this artist.',
-                style: TextStyle(
-                  color: AppColors.greyLight,
-                  fontSize: 14,
+                style: FontUsageGuide.emptyStateMessage.copyWith(
                   height: 1.5,
-                  fontFamily: 'Gotham',
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -1450,11 +1441,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             const SizedBox(height: 12),
             Text(
               'Tidak ada lagu lain dari',
-              style: const TextStyle(
-                color: AppColors.greyLight,
-                fontSize: 13,
-                fontFamily: 'Gotham',
-              ),
+              style: FontUsageGuide.emptyStateMessage,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),
@@ -1468,13 +1455,9 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Coba lagi nanti untuk lebih banyak lagu',
-              style: TextStyle(
-                color: AppColors.greyLight,
-                fontSize: 11,
-                fontFamily: 'Gotham',
-              ),
+              style: FontUsageGuide.metadata,
               textAlign: TextAlign.center,
             ),
           ],
@@ -1623,11 +1606,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
             // Duration
             Text(
               _formatDuration(song.duration),
-              style: const TextStyle(
-                color: AppColors.greyLight,
-                fontSize: 12,
-                fontFamily: 'Gotham',
-              ),
+              style: FontUsageGuide.metadata,
             ),
           ],
         ),
