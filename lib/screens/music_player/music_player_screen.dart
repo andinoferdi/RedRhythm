@@ -352,7 +352,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   80, // Space for fixed header
               left: 20.0,
               right: 20.0,
-              bottom: 20.0,
+              bottom: 40.0, // Increased bottom padding to prevent overflow
             ),
             child: Column(
               children: [
@@ -651,7 +651,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
 
                 // About Artist Section
                 _buildAboutArtistSection(currentSong),
@@ -751,7 +751,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                 ),
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
       ],
     );
   }
@@ -985,7 +985,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                   : _buildFallbackArtistContent(currentSong),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -1429,7 +1429,7 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                     ),
         ),
 
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
       ],
     );
   }
@@ -1497,50 +1497,52 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
 
   Widget _buildEmptyArtistSongs(String artistName) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.greyDark.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(50),
               ),
               child: Icon(
                 Icons.music_note_outlined,
-                size: 32,
+                size: 28,
                 color: AppColors.greyLight,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'Tidak ada lagu lain dari',
               style: const TextStyle(
                 color: AppColors.greyLight,
-                fontSize: 14,
+                fontSize: 13,
                 fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               artistName,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
                 fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
-              'Coba lagi nanti untuk melihat lebih banyak lagu',
+              'Coba lagi nanti untuk lebih banyak lagu',
               style: TextStyle(
                 color: AppColors.greyLight,
-                fontSize: 12,
+                fontSize: 11,
                 fontFamily: 'Gotham',
               ),
               textAlign: TextAlign.center,

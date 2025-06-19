@@ -964,7 +964,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
               // Note: Race condition fix is working correctly - song playing without playlist context is properly handled
               
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
                 child: Row(
                   children: [
                     // Song number with play indicator
@@ -986,7 +986,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                               textAlign: TextAlign.center,
                             ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
 
                     // Use SongItemWidget for consistency
                     Expanded(
@@ -995,7 +995,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
                         isCurrentSong: isCurrentSong && isPlayingFromThisPlaylist,
                         isPlaying: isPlaying,
                         onTap: () => _playSong(song),
-                        contentPadding: EdgeInsets.zero,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
                       ),
                     ),
                   ],
@@ -1015,7 +1015,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
         // Header with title and reload button
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1117,7 +1117,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
     final isAdding = _addingSongIds.contains(song.id);
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: Consumer(
         builder: (context, ref, child) {
           final playerState = ref.watch(playerControllerProvider);
@@ -1139,7 +1139,7 @@ class _PlaylistScreenState extends ConsumerState<PlaylistScreen> {
           return SongItemWidget(
             song: song,
             subtitle: song.artist.isNotEmpty ? song.artist : 'Unknown Artist',
-            contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(vertical: 8),
             isCurrentSong: isPlayingFromRecommended,
             isPlaying: isPlaying,
             trailing: Row(
