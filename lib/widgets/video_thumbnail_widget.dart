@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:audio_session/audio_session.dart';
@@ -10,6 +11,7 @@ class VideoThumbnailWidget extends StatefulWidget {
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
   final bool shouldPause;
+  final int previewDurationSeconds; // Customizable preview duration
 
   const VideoThumbnailWidget({
     super.key,
@@ -19,6 +21,7 @@ class VideoThumbnailWidget extends StatefulWidget {
     this.borderRadius,
     this.onTap,
     this.shouldPause = false,
+    this.previewDurationSeconds = 7, // Default 7 seconds for Shorts
   });
 
   @override
@@ -30,6 +33,9 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   bool _isInitialized = false;
   bool _hasError = false;
   AudioSession? _audioSession;
+  Duration? _previewEndPosition; // Track where preview should end
+  bool _isPlayingPreview = false; // Track if we're in preview mode
+  Timer? _loopTimer; // Timer for seamless looping
 
   @override
   void initState() {
@@ -45,6 +51,14 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   void _disposeController() async {
     try {
+      // Stop preview monitoring
+      _isPlayingPreview = false;
+      _previewEndPosition = null;
+      
+      // Cancel loop timer
+      _loopTimer?.cancel();
+      _loopTimer = null;
+      
       // Stop the video first
       await _controller?.pause();
       
@@ -89,19 +103,30 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       await _controller!.initialize();
       
       if (mounted) {
+        // Set preview end position (only load/play first X seconds)
+        final videoDuration = _controller!.value.duration;
+        final previewDuration = Duration(seconds: widget.previewDurationSeconds);
+        _previewEndPosition = videoDuration.compareTo(previewDuration) < 0 
+            ? videoDuration 
+            : previewDuration;
+        
         setState(() {
           _isInitialized = true;
         });
         
         // CRITICAL: Set volume to 0 BEFORE playing to prevent audio conflicts
         await _controller!.setVolume(0.0);
-        _controller!.setLooping(true);
+        _controller!.setLooping(false); // Don't loop the entire video
         
-        // Start playing silently
+        // Start playing silently from beginning
+        await _controller!.seekTo(Duration.zero);
         await _controller!.play();
         
-        // Start preview loop
-        _startPreviewLoop();
+        // Start monitoring video position for preview control
+        _startPositionMonitoring();
+        
+        // Start optimized preview loop
+        _startOptimizedPreviewLoop();
       }
     } catch (error) {
       debugPrint('Error initializing video thumbnail: $error');
@@ -140,32 +165,63 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     }
   }
 
-  void _startPreviewLoop() {
-    if (_controller == null || !mounted) return;
+  void _startPositionMonitoring() {
+    if (_controller == null || !mounted || _previewEndPosition == null) return;
     
-    // Create a 3-second preview loop
-    Future.doWhile(() async {
-      if (!mounted || _controller == null) return false;
-      
-      await Future.delayed(const Duration(seconds: 3));
-      
-      if (mounted && _controller != null && _controller!.value.isInitialized) {
-        // Ensure volume stays at 0 throughout playback
-        await _controller!.setVolume(0.0);
-        await _controller!.seekTo(Duration.zero);
-        await _controller!.play();
+    // Use precise timer for seamless looping without jeda
+    _loopTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (!mounted || _controller == null || _previewEndPosition == null || !_isPlayingPreview) {
+        timer.cancel();
+        return;
       }
       
-      return mounted && _controller != null;
+      final currentPosition = _controller!.value.position;
+      
+      // Check if we're approaching the end (with 100ms buffer for smooth transition)
+      final remainingTime = _previewEndPosition! - currentPosition;
+      
+      if (remainingTime <= const Duration(milliseconds: 150) && remainingTime >= Duration.zero) {
+        _seamlessRestart();
+      }
     });
+  }
+  
+  void _seamlessRestart() async {
+    if (_controller == null || !mounted || !_isPlayingPreview) return;
+    
+    try {
+      // Immediately seek to beginning without pausing for seamless loop
+      await _controller!.seekTo(Duration.zero);
+      
+      // Ensure volume stays at 0 and keep playing
+      await _controller!.setVolume(0.0);
+      
+      debugPrint('🎥 Seamless video loop: ${_previewEndPosition!.inSeconds}s');
+    } catch (e) {
+      debugPrint('Error in seamless restart: $e');
+    }
+  }
+
+  void _startOptimizedPreviewLoop() {
+    if (_controller == null || !mounted || _previewEndPosition == null) return;
+    
+    // Start the preview playback
+    _isPlayingPreview = true;
+    debugPrint('🎥 Starting optimized video preview: ${_previewEndPosition!.inSeconds}s duration');
+  }
+
+  void _startPreviewLoop() {
+    // Legacy method - kept for compatibility
+    _startOptimizedPreviewLoop();
   }
 
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Reinitialize if URL changes
-    if (widget.videoUrl != oldWidget.videoUrl) {
+    // Reinitialize if URL or duration changes
+    if (widget.videoUrl != oldWidget.videoUrl || 
+        widget.previewDurationSeconds != oldWidget.previewDurationSeconds) {
       _disposeController();
       _initializeVideo();
     }
@@ -182,13 +238,19 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     try {
       if (widget.shouldPause) {
         // Pause the video to avoid audio conflicts
+        _isPlayingPreview = false;
+        _loopTimer?.cancel();
         await _controller!.pause();
         debugPrint('🎥 Video paused to avoid audio conflict');
       } else {
-        // Resume the video with volume still at 0
+        // Resume the video with volume still at 0, start from beginning of preview
         await _controller!.setVolume(0.0);
+        await _controller!.seekTo(Duration.zero);
         await _controller!.play();
-        debugPrint('🎥 Video resumed silently');
+        _isPlayingPreview = true;
+        // Restart seamless loop monitoring
+        _startPositionMonitoring();
+        debugPrint('🎥 Video resumed silently with seamless loop');
       }
     } catch (e) {
       debugPrint('Error handling video pause state: $e');
