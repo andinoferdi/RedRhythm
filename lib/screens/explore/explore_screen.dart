@@ -90,7 +90,7 @@ class ExploreScreen extends ConsumerWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 25, // Match size with other screens
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                     maxLines: 1,
@@ -136,7 +136,8 @@ class ExploreScreen extends ConsumerWidget {
             style: TextStyle(
               color: AppColors.text,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
             ),
           ),
         ),
@@ -189,7 +190,8 @@ class ExploreScreen extends ConsumerWidget {
             style: TextStyle(
               color: AppColors.text,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Gotham',
             ),
           ),
         ),

@@ -363,6 +363,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     'Error: ${genreState.error}',
                     style: TextStyle(
                       color: Colors.red,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
@@ -379,6 +381,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     'No genres available',
                     style: TextStyle(
                       color: Colors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
@@ -470,6 +474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 title,
                 style: const TextStyle(
                   color: Colors.white,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   fontFamily: 'Gotham',
                 ),
@@ -601,6 +606,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                             style: TextStyle(
                               color: Colors.grey.shade400,
                               fontSize: 14,
+                              fontWeight: FontWeight.w700,
                               fontFamily: 'Gotham',
                             ),
                             maxLines: 1,
@@ -710,7 +716,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     style: TextStyle(
                       color: isDestructive ? Colors.red.shade400 : Colors.white,
                       fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
@@ -720,6 +726,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     style: TextStyle(
                       color: Colors.grey.shade400,
                       fontSize: 13,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
@@ -761,6 +768,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
             style: TextStyle(
               color: Colors.grey,
               fontSize: 14,
+              fontWeight: FontWeight.w700,
               fontFamily: 'Gotham',
             ),
           ),
@@ -772,7 +780,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 style: TextStyle(
                   color: Colors.grey.shade400,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   fontFamily: 'Gotham',
                 ),
               ),
@@ -804,7 +812,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 style: TextStyle(
                   color: Colors.red,
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   fontFamily: 'Gotham',
                 ),
               ),
@@ -924,6 +932,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     'Error: ${playHistoryState.error}',
                     style: const TextStyle(
                       color: Colors.red,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
@@ -940,6 +950,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                     'No recently played songs',
                     style: TextStyle(
                       color: Colors.grey,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Gotham',
                     ),
                   ),
