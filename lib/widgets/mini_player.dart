@@ -225,6 +225,20 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     }
   }
 
+  // Helper method to check if we're using default colors
+  bool _isUsingDefaultColors(DynamicColorState dynamicColorState, Song currentSong) {
+    // If currentSongId is null, we're definitely using default colors
+    if (dynamicColorState.currentSongId == null) return true;
+    
+    // If currentSongId doesn't match the current song, we need to extract colors
+    if (dynamicColorState.currentSongId != currentSong.id) return true;
+    
+    // If colors are null, we need to extract
+    if (dynamicColorState.colors == null) return true;
+    
+    return false;
+  }
+
   void _onSongChanged(Song? oldSong, Song? newSong) {
     if (oldSong?.id != newSong?.id) {
       // Reduced debug logging for better performance
@@ -256,9 +270,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
 
       // Auto-extract colors for new song from album art (not from playlist)
       if (next != null && previous?.id != next.id) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(dynamicColorProvider.notifier).extractColorsFromSong(next);
-        });
+        debugPrint('MiniPlayer: Song changed from ${previous?.title ?? 'null'} to ${next.title}');
+        // Remove the addPostFrameCallback delay for immediate color extraction
+        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(next);
       }
     });
 
@@ -269,6 +283,15 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
       _fadeController.reset();
       _currentProgress = 0.0;
       return const SizedBox.shrink();
+    }
+
+    // Check if we need to extract colors for the current song (for first time play)
+    if (currentSong != null && _isUsingDefaultColors(dynamicColorState, currentSong)) {
+      // Trigger immediate color extraction if not already done for this song
+      debugPrint('MiniPlayer: Triggering color extraction for ${currentSong.title} (currentSongId: ${dynamicColorState.currentSongId})');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(dynamicColorProvider.notifier).extractColorsFromSong(currentSong);
+      });
     }
 
     // Trigger fade in animation only when mini player first appears after app launch
