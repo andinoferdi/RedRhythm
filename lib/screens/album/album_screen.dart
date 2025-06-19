@@ -18,6 +18,7 @@ import '../../models/playlist.dart';
 import '../../repositories/song_playlist_repository.dart';
 import '../../widgets/playlist_selection_modal.dart';
 import '../../routes/app_router.dart';
+import '../../providers/album_select_provider.dart';
 
 @RoutePage()
 class AlbumScreen extends ConsumerStatefulWidget {
@@ -57,6 +58,10 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
   static DateTime? _cacheTimestamp;
   static const Duration _cacheValidDuration = Duration(seconds: 30);
 
+  // Album selection state
+  bool _isAlbumSelected = false;
+  bool _isLoadingAlbumSelection = false;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +73,10 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     // Reset shuffle mode when entering album screen (context change)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playerControllerProvider.notifier).resetShuffleOnContextChange();
+      // Initialize album select provider
+      ref.read(albumSelectProvider.notifier).loadSelectedAlbums();
+      // Check if current album is selected
+      _checkAlbumSelectionStatus();
     });
   }
 
@@ -128,13 +137,145 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
       }
     } catch (e) {
       // Silently fail - will use fallback icon
-      debugPrint('Failed to load artist image: $e');
     }
   }
 
   /// Get artist image URL
   String _getArtistImageUrl() {
     return _artistImageUrl ?? '';
+  }
+
+  /// Check if current album is selected in user's library
+  Future<void> _checkAlbumSelectionStatus() async {
+    if (_album == null || _album!.id.isEmpty) return;
+
+    setState(() {
+      _isLoadingAlbumSelection = true;
+    });
+
+    try {
+      final isSelected = ref.read(albumSelectProvider.notifier).isAlbumSelected(_album!.id);
+      
+      if (mounted) {
+        setState(() {
+          _isAlbumSelected = isSelected;
+          _isLoadingAlbumSelection = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAlbumSelected = false;
+          _isLoadingAlbumSelection = false;
+        });
+      }
+    }
+  }
+
+  /// Toggle album selection (add/remove from library)
+  Future<void> _toggleAlbumSelection() async {
+    if (_album == null || _album!.id.isEmpty) return;
+
+    setState(() {
+      _isLoadingAlbumSelection = true;
+    });
+
+    try {
+      bool success;
+      if (_isAlbumSelected) {
+        // Remove from library
+        success = await ref.read(albumSelectProvider.notifier).removeAlbumSelection(_album!.id);
+        if (success && mounted) {
+          setState(() {
+            _isAlbumSelected = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Album "${_album!.title}" dihapus dari library',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        // Add to library
+        success = await ref.read(albumSelectProvider.notifier).addAlbumSelection(_album!.id);
+        if (success && mounted) {
+          setState(() {
+            _isAlbumSelected = true;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.black),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Album "${_album!.title}" ditambahkan ke library',
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+
+      if (!success && mounted) {
+        final errorMessage = _isAlbumSelected 
+            ? 'Gagal menghapus album dari library' 
+            : 'Gagal menambahkan album ke library';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAlbumSelection = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadData() async {
@@ -181,7 +322,6 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
           }
         } catch (songsError) {
           // Don't fail the whole screen if songs can't be loaded
-          debugPrint('Warning: Could not load songs for album: $songsError');
           
           // Try fallback search by album name
           try {
@@ -189,7 +329,6 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
               songs = await _albumRepository.getSongsByAlbumName(album.title);
             }
           } catch (fallbackError) {
-            debugPrint('Warning: Fallback search also failed: $fallbackError');
             songs = [];
           }
         }
@@ -208,6 +347,9 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
         if (album.artistId.isNotEmpty) {
           _loadArtistImage(album.artistId);
         }
+
+        // Check album selection status after album is loaded
+        _checkAlbumSelectionStatus();
       } else {
         setState(() {
           _songs = [];
@@ -608,19 +750,31 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: Row(
         children: [
-          // Add to library button
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey[600]!, width: 1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.add, color: Colors.white),
-              iconSize: 20,
-            ),
-          ),
-
+          // Add to library button (no border)
+          _isLoadingAlbumSelection
+              ? SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                )
+              : IconButton(
+                  onPressed: _toggleAlbumSelection,
+                  icon: Icon(
+                    _isAlbumSelected ? Icons.check_circle : Icons.add_circle_outline,
+                    color: _isAlbumSelected ? Colors.red : Colors.white,
+                  ),
+                  iconSize: 28,
+                  tooltip: _isAlbumSelected ? 'Hapus dari library' : 'Tambah ke library',
+                ),
 
           const Spacer(),
 

@@ -19,6 +19,8 @@ import '../playlist/playlist_screen.dart';
 import '../../providers/artist_select_provider.dart';
 import '../../models/artist_select.dart';
 import '../../utils/image_helpers.dart';
+import '../../providers/album_select_provider.dart';
+import '../../models/album_select.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -37,6 +39,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(playlistProvider.notifier).loadPlaylists();
       ref.read(artistSelectProvider.notifier).loadSelectedArtists();
+      ref.read(albumSelectProvider.notifier).loadSelectedAlbums();
     });
   }
 
@@ -544,6 +547,79 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
+  Widget _buildAlbumItem(AlbumSelect albumSelect) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to album screen
+        context.router.push(AlbumRoute(
+          albumId: albumSelect.albumId,
+          albumTitle: albumSelect.albumTitle,
+        ));
+      },
+      onLongPress: () => _showAlbumOptionsBottomSheet(albumSelect),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        color: Colors.transparent,
+        child: Row(
+          children: [
+            // Album Cover Image
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[800],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: albumSelect.albumCoverImageUrl ?? '',
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    width: 64,
+                    height: 64,
+                    color: Colors.grey[800],
+                    child: const Icon(
+                      Icons.album,
+                      color: Colors.white54,
+                      size: 32,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    albumSelect.albumTitle ?? 'Unknown Album',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Album • ${albumSelect.albumArtistName ?? 'Unknown Artist'}',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildArtistPlaceholder(String artistName) {
     return Container(
       width: 64,
@@ -676,6 +752,109 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
+  void _showAlbumOptionsBottomSheet(AlbumSelect albumSelect) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.grey[800],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: ImageHelpers.buildSafeNetworkImage(
+                      imageUrl: albumSelect.albumCoverImageUrl ?? '',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      fallbackWidget: Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey[800],
+                        child: const Icon(
+                          Icons.album,
+                          color: Colors.white54,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        albumSelect.albumTitle ?? 'Unknown Album',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Album • ${albumSelect.albumArtistName ?? 'Unknown Artist'}',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildBottomSheetOption(
+              icon: Icons.remove_circle_outline,
+              title: 'Hapus dari library',
+              subtitle: 'Hapus album dari library',
+              onTap: () {
+                Navigator.pop(context);
+                _removeAlbumFromCollection(albumSelect);
+              },
+              isDestructive: true,
+            ),
+            const SizedBox(height: 8),
+            _buildBottomSheetOption(
+              icon: Icons.share_outlined,
+              title: 'Bagikan album',
+              subtitle: 'Bagikan ke teman-teman',
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Implement share functionality
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _removeArtistFromCollection(ArtistSelect artistSelect) async {
     try {
       final success = await ref.read(artistSelectProvider.notifier).removeArtistSelection(artistSelect.artistId);
@@ -688,7 +867,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 const Icon(Icons.check_circle, color: Colors.black),
                 const SizedBox(width: 8),
                 Expanded(
-                  child:                   Text(
+                  child: Text(
                     'Telah berhenti mengikuti "${artistSelect.artistName}"',
                     style: const TextStyle(
                       color: Colors.black,
@@ -718,16 +897,59 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
+  Future<void> _removeAlbumFromCollection(AlbumSelect albumSelect) async {
+    try {
+      final success = await ref.read(albumSelectProvider.notifier).removeAlbumSelection(albumSelect.albumId);
+      
+      if (mounted && success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.black),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Album "${albumSelect.albumTitle}" dihapus dari library',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.white,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menghapus album dari library: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildLibraryContent() {
     // Watch both playlist and artist providers
     final playlistState = ref.watch(autoRefreshPlaylistProvider);
     final selectedArtists = ref.watch(autoRefreshArtistSelectProvider);
+    final selectedAlbums = ref.watch(autoRefreshAlbumSelectProvider);
     
     final isLoadingPlaylists = playlistState.isLoading;
     final playlists = playlistState.playlists;
     final playlistError = playlistState.error;
     
-    // Combine playlists and artists into a single list for display
+    // Combine playlists, artists, and albums into a single list for display
     final allItems = <dynamic>[];
     
     if (!isLoadingPlaylists && playlistError == null) {
@@ -735,6 +957,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
     
     allItems.addAll(selectedArtists);
+    allItems.addAll(selectedAlbums);
     
     if (isLoadingPlaylists) {
       return const Center(
@@ -759,6 +982,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               onPressed: () {
                 ref.read(playlistProvider.notifier).refreshPlaylists();
                 ref.read(artistSelectProvider.notifier).refreshSelectedArtists();
+                ref.read(albumSelectProvider.notifier).refreshSelectedAlbums();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -791,7 +1015,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tambahkan playlist atau artis untuk\nmulai membangun koleksi musik kamu',
+                  'Tambahkan playlist, artis, atau album untuk\nmulai membangun koleksi musik kamu',
                   style: TextStyle(
                     color: Colors.grey[500],
                     fontSize: 14,
@@ -817,6 +1041,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         } else if (item is ArtistSelect) {
           // This is an artist
           return _buildArtistItem(item);
+        } else if (item is AlbumSelect) {
+          // This is an album
+          return _buildAlbumItem(item);
         }
         
         return const SizedBox.shrink();
@@ -829,6 +1056,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final playerState = ref.watch(playerControllerProvider);
     // Watch auto-refresh playlist provider for automatic updates
     ref.watch(autoRefreshPlaylistProvider);
+    // Watch auto-refresh artist select provider for automatic updates
+    ref.watch(autoRefreshArtistSelectProvider);
+    // Watch auto-refresh album select provider for automatic updates
+    ref.watch(autoRefreshAlbumSelectProvider);
     // Get the bottom padding to account for system navigation bars
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
