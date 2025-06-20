@@ -43,17 +43,3 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
-
-# PocketBase database files (too large for GitHub)
-Backend/pb_data/*.db
-Backend/pb_data/*.db-shm
-Backend/pb_data/*.db-wal
-Backend/pb_data/storage/
-
-# But allow Backend source files
-!Backend/README.md
-!Backend/.gitignore
-!Backend/pocketbase.exe
-!Backend/pb_migrations/
-!Backend/CHANGELOG.md
-!Backend/LICENSE.md
