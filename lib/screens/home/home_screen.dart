@@ -129,6 +129,65 @@ final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
   }
 });
 
+// Provider for popular songs (by playcount)
+final popularSongsProvider = FutureProvider<List<Song>>((ref) async {
+  try {
+    print('DEBUG: Starting popular songs provider...');
+    
+    // Initialize services
+    final pocketBaseService = PocketBaseService();
+    await pocketBaseService.initialize();
+    print('DEBUG: PocketBase initialized for popular songs');
+    
+    final songRepo = SongRepository(pocketBaseService);
+    
+    // Get all songs and sort by playcount
+    final songs = await songRepo.getAllSongs();
+    print('DEBUG: Got ${songs.length} songs for popularity ranking');
+    
+    if (songs.isNotEmpty) {
+      // Sort by playcount (descending) and take top 5
+      final sortedSongs = List<Song>.from(songs);
+      sortedSongs.sort((a, b) => b.playCount.compareTo(a.playCount));
+      return sortedSongs.take(5).toList();
+    }
+    
+    return [];
+  } catch (e) {
+    print('ERROR: Error loading popular songs: $e');
+    return [];
+  }
+});
+
+// Provider for recommended albums
+final recommendedAlbumsProvider = FutureProvider<List<Album>>((ref) async {
+  try {
+    print('DEBUG: Starting recommended albums provider...');
+    
+    // Initialize services
+    final pocketBaseService = PocketBaseService();
+    await pocketBaseService.initialize();
+    print('DEBUG: PocketBase initialized for recommended albums');
+    
+    final albumRepo = AlbumRepository(pocketBaseService);
+    
+    // Get all albums and shuffle them
+    final albums = await albumRepo.getAllAlbums();
+    print('DEBUG: Got ${albums.length} albums for recommendations');
+    
+    if (albums.isNotEmpty) {
+      final shuffledAlbums = List<Album>.from(albums)..shuffle();
+      // Take up to 6 albums for recommendations
+      return shuffledAlbums.take(6).toList();
+    }
+    
+    return [];
+  } catch (e) {
+    print('ERROR: Error loading recommended albums: $e');
+    return [];
+  }
+});
+
 // Provider for mixed random content (shuffled once per session)
 final mixedContentProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   try {
@@ -425,6 +484,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                         _buildYourTopMixes(context),
                         const SizedBox(height: 30),
                         _buildRecentListening(context),
+                        const SizedBox(height: 30),
+                        _buildRecommended(context),
+                        const SizedBox(height: 30),
+                        _buildPopularSongs(context),
                         // Add a bottom spacing to account for the navigation bar and mini player
                         SizedBox(height: 70 + bottomPadding + 64), // Added 64 for mini player
                       ],
@@ -1556,6 +1619,305 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecommended(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Recommended',
+            style: FontUsageGuide.homeSectionHeader,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Consumer(
+          builder: (context, ref, child) {
+            final recommendedAsync = ref.watch(recommendedAlbumsProvider);
+            
+            return recommendedAsync.when(
+              data: (albums) {
+                if (albums.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'No recommendations available',
+                        style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+                
+                return SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: albums.length,
+                    itemBuilder: (context, index) {
+                      final album = albums[index];
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          right: index < albums.length - 1 ? 16 : 0,
+                        ),
+                        child: _buildRecommendedAlbumCard(album),
+                      );
+                    },
+                  ),
+                );
+              },
+              loading: () => SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 6,
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        right: index < 5 ? 16 : 0,
+                      ),
+                      child: Container(
+                        width: 140,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              error: (error, stack) {
+                print('ERROR: Recommended albums error: $error');
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    child: Text(
+                      'Failed to load recommendations',
+                      style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedAlbumCard(Album album) {
+    return GestureDetector(
+      onTap: () {
+        // Navigate to album screen
+        context.router.push(AlbumRoute(
+          albumId: album.id,
+          albumTitle: album.title,
+        ));
+      },
+      child: SizedBox(
+        width: 140,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Album cover
+            Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF282828),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: ImageHelpers.buildSafeNetworkImage(
+                  imageUrl: album.coverImageUrl ?? '',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.cover,
+                  fallbackWidget: Container(
+                    color: const Color(0xFF282828),
+                    child: const Center(
+                      child: Icon(
+                        Icons.album,
+                        size: 60,
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Album title
+            Text(
+              album.title,
+              style: FontUsageGuide.authFieldLabel.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            // Artist name
+            Text(
+              album.artistName ?? 'Unknown Artist',
+              style: FontUsageGuide.authFieldLabel.copyWith(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+             ),
+     );
+   }
+
+  Widget _buildPopularSongs(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Text(
+            'Popular Songs',
+            style: FontUsageGuide.homeSectionHeader,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Consumer(
+          builder: (context, ref, child) {
+            final popularSongsAsync = ref.watch(popularSongsProvider);
+            
+            return popularSongsAsync.when(
+              data: (songs) {
+                if (songs.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20.0),
+                      child: Text(
+                        'No popular songs available',
+                        style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+                
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: songs.length,
+                  itemBuilder: (context, index) {
+                    final song = songs[index];
+                    
+                    return Consumer(
+                      builder: (context, ref, child) {
+                        final playerState = ref.watch(playerControllerProvider);
+                        final isCurrentSong = playerState.currentSong?.id == song.id;
+                        final isPlaying = isCurrentSong && playerState.isPlaying;
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              // Ranking number with play indicator
+                              SizedBox(
+                                width: 24,
+                                child: isPlaying
+                                    ? const Icon(
+                                        Icons.volume_up,
+                                        color: Colors.red,
+                                        size: 16,
+                                      )
+                                    : Text(
+                                        '${index + 1}',
+                                        style: FontUsageGuide.authButtonText.copyWith(
+                                          color: Colors.grey,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Use SongItemWidget for consistency
+                              Expanded(
+                                child: SongItemWidget(
+                                  song: song,
+                                  subtitle: '${song.formattedPlayCount} • ${song.artist}',
+                                  contentPadding: EdgeInsets.zero,
+                                  isCurrentSong: isCurrentSong,
+                                  isPlaying: isPlaying,
+                                  onTap: () {
+                                    // Play song without playlist context
+                                    ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+              loading: () => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: List.generate(5, (index) => 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 24),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              error: (error, stack) {
+                print('ERROR: Popular songs error: $error');
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
+                    child: Text(
+                      'Failed to load popular songs',
+                      style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
     );
   }
 }
