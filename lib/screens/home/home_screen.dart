@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pocketbase/pocketbase.dart';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 import 'package:auto_route/auto_route.dart';
@@ -12,12 +13,23 @@ import '../../utils/image_helpers.dart';
 import '../../providers/play_history_provider.dart';
 import '../../providers/genre_provider.dart';
 import '../../providers/shorts_provider.dart';
+import '../../providers/album_select_provider.dart';
+import '../../providers/artist_select_provider.dart';
+import '../../providers/favorite_provider.dart';
 import '../../widgets/user_avatar.dart';
 import '../../widgets/mini_player.dart';
 import '../../widgets/song_item_widget.dart';
 import '../../widgets/video_thumbnail_widget.dart';
 import '../../utils/font_usage_guide.dart';
 import '../../utils/video_audio_manager.dart';
+import '../../repositories/song_repository.dart';
+import '../../repositories/album_repository.dart';
+import '../../repositories/artist_repository.dart';
+import '../../services/pocketbase_service.dart';
+import '../../models/song.dart';
+import '../../models/album.dart';
+import '../../models/artist.dart';
+import 'dart:async';
 
 import '../../utils/app_colors.dart';
 import '../../utils/app_config.dart';
@@ -114,6 +126,118 @@ final recentlyPlayedProvider = FutureProvider<List<RecordModel>>((ref) async {
     return recentlyPlayed.items;
   } catch (e) {
     return [];
+  }
+});
+
+// Provider for mixed random content (shuffled once per session)
+final mixedContentProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  try {
+    print('DEBUG: Starting mixed content provider...');
+    final mixedContent = <Map<String, dynamic>>[];
+    
+    // Initialize services
+    final pocketBaseService = PocketBaseService();
+    await pocketBaseService.initialize();
+    print('DEBUG: PocketBase initialized');
+    
+    final songRepo = SongRepository(pocketBaseService);
+    final albumRepo = AlbumRepository(pocketBaseService);
+    final artistRepo = ArtistRepository(pocketBaseService);
+    
+    // Get data from various sources
+    print('DEBUG: Fetching data from repositories...');
+    final results = await Future.wait([
+      songRepo.getAllSongs(),
+      albumRepo.getAllAlbums(), 
+      artistRepo.getAllArtists(),
+    ]);
+    
+    final songs = results[0] as List<Song>;
+    final albums = results[1] as List<Album>;
+    final artists = results[2] as List<Artist>;
+    
+    print('DEBUG: Got ${songs.length} songs, ${albums.length} albums, ${artists.length} artists');
+    
+    // Add random songs (increased from 3 to 4)
+    if (songs.isNotEmpty) {
+      final shuffledSongs = List<Song>.from(songs)..shuffle();
+      final randomSongs = shuffledSongs.take(4);
+      for (final song in randomSongs) {
+        mixedContent.add({
+          'type': 'song',
+          'title': song.title,
+          'subtitle': song.artist,
+          'imageUrl': song.albumArtUrl,
+          'data': song,
+        });
+      }
+      print('DEBUG: Added ${randomSongs.length} songs to mixed content');
+    }
+    
+    // Add random albums (increased from 2 to 3)
+    if (albums.isNotEmpty) {
+      final shuffledAlbums = List<Album>.from(albums)..shuffle();
+      final randomAlbums = shuffledAlbums.take(3);
+      for (final album in randomAlbums) {
+        mixedContent.add({
+          'type': 'album',
+          'title': album.title,
+          'subtitle': album.artistName ?? 'Various Artists',
+          'imageUrl': album.coverImageUrl,
+          'data': album,
+        });
+      }
+      print('DEBUG: Added ${randomAlbums.length} albums to mixed content');
+    }
+    
+    // Add random artists (increased from 1 to 2)
+    if (artists.isNotEmpty) {
+      final shuffledArtists = List<Artist>.from(artists)..shuffle();
+      final randomArtists = shuffledArtists.take(2);
+      for (final artist in randomArtists) {
+        mixedContent.add({
+          'type': 'artist',
+          'title': artist.name,
+          'subtitle': 'Artist',
+          'imageUrl': artist.imageUrl,
+          'data': artist,
+        });
+      }
+      print('DEBUG: Added ${randomArtists.length} artists to mixed content');
+    }
+    
+    // Shuffle the mixed content once per session (until user logout/login)
+    mixedContent.shuffle();
+    
+    print('DEBUG: Mixed content final count: ${mixedContent.length}');
+    return mixedContent.take(8).toList();
+  } catch (e) {
+    print('ERROR: Error loading mixed content: $e');
+    print('ERROR: Stack trace: ${StackTrace.current}');
+    // Return some fallback content instead of empty list
+    return [
+      {
+        'type': 'song',
+        'title': 'My Music',
+        'subtitle': 'Discover new songs',
+        'imageUrl': '',
+        'data': null,
+      },
+      {
+        'type': 'album',
+        'title': 'Top Albums',
+        'subtitle': 'Popular albums',
+        'imageUrl': '',
+        'data': null,
+      },
+      {
+        'type': 'artist',
+        'title': 'Featured Artists',
+        'subtitle': 'Popular artists',
+        'imageUrl': '',
+        'data': null,
+      },
+    ];
   }
 });
 
@@ -395,61 +519,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
   }
 
   Widget _buildContinueListening(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Text(
-            'Continue Listening',
-            style: FontUsageGuide.homeSectionHeader,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Consumer(
-          builder: (context, ref, child) {
-            // Watch new genre provider
-            final genreState = ref.watch(genreProvider);
+    return Consumer(
+      builder: (context, ref, child) {
+        final mixedContentAsync = ref.watch(mixedContentProvider);
+        
+        return mixedContentAsync.when(
+          data: (mixedContent) {
+            print('DEBUG: Mixed content received: ${mixedContent.length} items');
             
-            // Show loading state
-            if (genreState.isLoading) {
-              return const Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
+            // Always show content, even if data is empty (8 items total)
+            final contentToShow = mixedContent.isEmpty ? [
+              {
+                'type': 'song',
+                'title': 'Discover Music',
+                'subtitle': 'Find new songs',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'album',
+                'title': 'Browse Albums',
+                'subtitle': 'Explore collections',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'artist',
+                'title': 'Find Artists',
+                'subtitle': 'Discover talent',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'song',
+                'title': 'Your Music',
+                'subtitle': 'Personal collection',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'album',
+                'title': 'Top Albums',
+                'subtitle': 'Popular releases',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'artist',
+                'title': 'Popular Artists',
+                'subtitle': 'Trending musicians',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'song',
+                'title': 'Search All',
+                'subtitle': 'Find anything',
+                'imageUrl': '',
+                'data': null,
+              },
+              {
+                'type': 'album',
+                'title': 'New Releases',
+                'subtitle': 'Latest albums',
+                'imageUrl': '',
+                'data': null,
+              },
+            ] : mixedContent;
             
-            // Show error state
-            if (genreState.error != null) {
-              return Center(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
-                  child: Text(
-                    'Error: ${genreState.error}',
-                    style: FontUsageGuide.authErrorText,
-                  ),
-                ),
-              );
-            }
-            
-            // Show empty state
-            if (genreState.genres.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20.0),
-                  child: Text(
-                    'No genres available',
-                    style: FontUsageGuide.authFieldLabel.copyWith(color: Colors.grey),
-                  ),
-                ),
-              );
-            }
-            
-            // Get the PocketBase URL for image URLs
-            
-            // Show genres grid
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: GridView.count(
@@ -459,42 +596,241 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                 mainAxisSpacing: 16,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                children: genreState.genres.take(6).map((genre) {
-                  // Map genre icon names to Material icons
-                  IconData icon = Icons.music_note;
-                  final genreName = genre.name.toLowerCase();
-                  
-                  if (genreName.contains('jazz')) {
-                    icon = Icons.coffee;
-                  } else if (genreName.contains('release')) {
-                    icon = Icons.new_releases;
-                  } else if (genreName.contains('anything')) {
-                    icon = Icons.all_inclusive;
-                  } else if (genreName.contains('anime')) {
-                    icon = Icons.music_note;
-                  } else if (genreName.contains('house')) {
-                    icon = Icons.house;
-                  } else if (genreName.contains('lo-fi')) {
-                    icon = Icons.headphones;
-                  }
-                  
-                  return _buildPlaylistCard(
-                    genre.name,
-                    icon,
-                    gradient: const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: AppColors.homeGradient,
-                    ),
-                    imageUrl: genre.iconUrl,
-                  );
+                children: contentToShow.map((item) {
+                  return _buildMixedContentCard(item);
                 }).toList(),
               ),
             );
           },
-        ),
-      ],
+          loading: () => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+            child: GridView.count(
+              crossAxisCount: 2,
+              childAspectRatio: 2.5,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: List.generate(8, (index) => Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[800],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )),
+            ),
+          ),
+          error: (error, stack) {
+            print('ERROR: Mixed content provider error: $error');
+            print('ERROR: Stack trace: $stack');
+            
+            // Show fallback content instead of hiding
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: GridView.count(
+                crossAxisCount: 2,
+                childAspectRatio: 2.5,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildMixedContentCard({
+                    'type': 'song',
+                    'title': 'My Music',
+                    'subtitle': 'Discover songs',
+                    'imageUrl': '',
+                    'data': null,
+                  }),
+                  _buildMixedContentCard({
+                    'type': 'album',
+                    'title': 'Albums',
+                    'subtitle': 'Browse collections',
+                    'imageUrl': '',
+                    'data': null,
+                  }),
+                  _buildMixedContentCard({
+                    'type': 'artist',
+                    'title': 'Artists',
+                    'subtitle': 'Find musicians',
+                    'imageUrl': '',
+                    'data': null,
+                  }),
+                  _buildMixedContentCard({
+                    'type': 'song',
+                    'title': 'Search',
+                    'subtitle': 'Find anything',
+                    'imageUrl': '',
+                    'data': null,
+                  }),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
+  }
+
+  // Build mixed content card with different types (song, album, artist)
+  Widget _buildMixedContentCard(Map<String, dynamic> item) {
+    final type = item['type'] as String;
+    final title = item['title'] as String;
+    final subtitle = item['subtitle'] as String;
+    final imageUrl = item['imageUrl'] as String?;
+    final data = item['data'];
+    
+    // Use simple dark background instead of colorful gradients
+    final darkBackground = [
+      const Color(0xFF1A1A1A), // Dark gray
+      const Color(0xFF0F0F0F), // Almost black
+    ];
+    
+    return GestureDetector(
+      onTap: () => _handleMixedContentTap(type, data),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: darkBackground,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              // Image or icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: (imageUrl != null && imageUrl.isNotEmpty)
+                      ? ImageHelpers.buildSafeNetworkImage(
+                          imageUrl: imageUrl,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          fallbackWidget: _getTypeIcon(type),
+                        )
+                      : _getTypeIcon(type),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: FontUsageGuide.authFieldLabel.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: FontUsageGuide.authFieldLabel.copyWith(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _getTypeIcon(String type) {
+    IconData icon;
+    switch (type) {
+      case 'song':
+        icon = Icons.music_note;
+        break;
+      case 'album':
+        icon = Icons.album;
+        break;
+      case 'artist':
+        icon = Icons.person;
+        break;
+      default:
+        icon = Icons.music_note;
+    }
+    
+    return Icon(
+      icon, 
+      color: Colors.white.withValues(alpha: 0.9),
+      size: 20,
+    );
+  }
+  
+  void _handleMixedContentTap(String type, dynamic data) {
+    // If data is null (fallback content), navigate to appropriate screens
+    if (data == null) {
+      switch (type) {
+        case 'song':
+          // Navigate to search screen
+          context.router.push(const SearchRoute());
+          break;
+        case 'album':
+          // Navigate to library screen
+          context.router.push(const LibraryRoute());
+          break;
+        case 'artist':
+          // Navigate to artist selection screen
+          context.router.push(const ArtistSelectionRoute());
+          break;
+      }
+      return;
+    }
+    
+    // Handle actual data
+    switch (type) {
+      case 'song':
+        // Play the song
+        final song = data as Song;
+        ref.read(playerControllerProvider.notifier).playSongWithoutPlaylist(song);
+        break;
+      case 'album':
+        // Navigate to album screen
+        final album = data as Album;
+        context.router.push(AlbumRoute(
+          albumId: album.id,
+          albumTitle: album.title,
+        ));
+        break;
+      case 'artist':
+        // Navigate to artist detail screen
+        final artist = data as Artist;
+        context.router.push(ArtistDetailRoute(
+          artistId: artist.id,
+          artistName: artist.name,
+        ));
+        break;
+    }
   }
 
   // Updating the _buildPlaylistCard method to accept an image URL
