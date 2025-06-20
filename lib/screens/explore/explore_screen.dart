@@ -529,7 +529,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   Widget _buildEnhancedGenreGrid() {
     final categories = [
       {
-        'title': 'My\nFavorites',
+        'title': 'Liked\nSongs',
         'color': const Color(0xFFE91E63), // Pink
         'icon': Icons.favorite,
         'isGradient': true,
@@ -543,28 +543,28 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         'action': () => context.router.push(ShortsRoute()),
       },
       {
-        'title': 'Recently\nPlayed',
+        'title': 'Recent\nPlays',
         'color': const Color(0xFF607D8B), // Blue grey
         'icon': Icons.history,
         'isGradient': false,
         'action': () => _showRecentlyPlayedModal(),
       },
       {
-        'title': 'Search\nMusic',
+        'title': 'Search',
         'color': const Color(0xFF4CAF50), // Green
         'icon': Icons.search,
         'isGradient': false,
         'action': () => context.router.push(const SearchRoute()),
       },
       {
-        'title': 'My\nLibrary',
+        'title': 'Library',
         'color': const Color(0xFFFF9800), // Orange
         'icon': Icons.library_music,
         'isGradient': true,
         'action': () => context.router.push(const LibraryRoute()),
       },
       {
-        'title': 'Artist\nSelection',
+        'title': 'Artists',
         'color': const Color(0xFF00BCD4), // Cyan
         'icon': Icons.person,
         'isGradient': false,
@@ -576,7 +576,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     final authState = ref.watch(authControllerProvider);
     if (authState.isAuthenticated && authState.user != null) {
       categories.add({
-        'title': 'Admin\nTools',
+        'title': 'Admin',
         'color': const Color(0xFF795548), // Brown
         'icon': Icons.admin_panel_settings,
         'isGradient': true,
