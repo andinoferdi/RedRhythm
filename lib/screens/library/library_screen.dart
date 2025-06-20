@@ -22,6 +22,8 @@ import '../../models/artist_select.dart';
 import '../../utils/image_helpers.dart';
 import '../../providers/album_select_provider.dart';
 import '../../models/album_select.dart';
+import '../../providers/favorite_provider.dart';
+import '../favorites/favorites_screen.dart';
 
 @RoutePage()
 class LibraryScreen extends ConsumerStatefulWidget {
@@ -41,6 +43,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       ref.read(playlistProvider.notifier).loadPlaylists();
       ref.read(artistSelectProvider.notifier).loadSelectedArtists();
       ref.read(albumSelectProvider.notifier).loadSelectedAlbums();
+      ref.read(favoriteProvider.notifier).loadFavorites();
     });
   }
 
@@ -389,6 +392,72 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         );
       }
     }
+  }
+
+  Widget _buildFavoritesItem() {
+    final favoriteState = ref.watch(favoriteProvider);
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          AppRouter.createConsistentRoute(
+            const FavoritesScreen(),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        color: Colors.transparent,
+        child: Row(
+          children: [
+            // Favorites icon (red heart)
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.red.shade300,
+                    Colors.red.shade600,
+                    Colors.red.shade800,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.favorite,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Lagu yang Disukai',
+                    style: FontUsageGuide.listSongTitle,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${favoriteState.favoriteSongs.length} lagu',
+                    style: FontUsageGuide.metadata,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildPlaylistItem(RecordModel playlist) {
@@ -858,6 +927,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final playlistState = ref.watch(autoRefreshPlaylistProvider);
     final selectedArtists = ref.watch(autoRefreshArtistSelectProvider);
     final selectedAlbums = ref.watch(autoRefreshAlbumSelectProvider);
+    final favoriteState = ref.watch(autoRefreshFavoriteProvider);
     
     final isLoadingPlaylists = playlistState.isLoading;
     final playlists = playlistState.playlists;
@@ -865,6 +935,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     
     // Combine playlists, artists, and albums into a single list for display
     final allItems = <dynamic>[];
+    
+    // Add favorites as first item if there are favorite songs
+    if (favoriteState.favoriteSongs.isNotEmpty) {
+      allItems.add('favorites'); // Special identifier for favorites
+    }
     
     if (!isLoadingPlaylists && playlistError == null) {
       allItems.addAll(playlists);
@@ -897,6 +972,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 ref.read(playlistProvider.notifier).refreshPlaylists();
                 ref.read(artistSelectProvider.notifier).refreshSelectedArtists();
                 ref.read(albumSelectProvider.notifier).refreshSelectedAlbums();
+                ref.read(favoriteProvider.notifier).refreshFavorites();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -946,7 +1022,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       itemBuilder: (context, index) {
         final item = allItems[index];
         
-        if (item is RecordModel) {
+        if (item is String && item == 'favorites') {
+          // This is favorites
+          return _buildFavoritesItem();
+        } else if (item is RecordModel) {
           // This is a playlist
           return _buildPlaylistItem(item);
         } else if (item is ArtistSelect) {

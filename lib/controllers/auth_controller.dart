@@ -10,6 +10,7 @@ import '../utils/search_history_utils.dart';
 import '../providers/user_provider.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/play_history_provider.dart';
+import '../providers/favorite_provider.dart';
 import 'player_controller.dart';
 
 final authControllerProvider = StateNotifierProvider<AuthController, AuthState>(
@@ -166,6 +167,12 @@ class AuthController extends StateNotifier<AuthState> {
         _ref.read(userProvider.notifier).clearUserCache();
         _ref.read(playlistProvider.notifier).clearPlaylists();
         _ref.read(playHistoryProvider.notifier).clearRecentlyPlayed();
+        // Clear favorites
+        try {
+          _ref.read(favoriteProvider.notifier).clearFavorites();
+        } catch (e) {
+          debugPrint('Error clearing favorites: $e');
+        }
       } catch (e) {
         debugPrint('Error clearing provider cache: $e');
       }

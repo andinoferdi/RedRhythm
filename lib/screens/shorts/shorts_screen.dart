@@ -64,7 +64,7 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.initialGenreId != null && widget.initialGenreId!.isNotEmpty) {
         // Load shorts for specific genre and reset index
-        debugPrint('🎬 Loading shorts for genre: ${widget.initialGenreId}');
+    
         ref.read(shortsProvider.notifier).loadShortsByGenre(widget.initialGenreId!).then((_) {
           // After loading, ensure we're at the first video of filtered list
           if (mounted) {
@@ -251,9 +251,7 @@ class _ShortsScreenState extends ConsumerState<ShortsScreen>
                   final isActive = index == _currentIndex;
                   
                   // Debug logging to track which short is being used
-                  debugPrint('🎬 PageView[${index}]: ${short.id} - ${short.songTitle} by ${short.artistName}');
-                  debugPrint('🎬 Video URL: ${short.videoUrl}');
-                  debugPrint('🎬 Is Active: $isActive');
+
                   
                   return ShortsVideoPlayer(
                     key: ValueKey('shorts_${short.id}'), // Force rebuild on data change
@@ -386,10 +384,7 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
   void initState() {
     super.initState();
     
-    // Debug logging to track which short is being initialized
-    debugPrint('🎥 ShortsVideoPlayer init: ${widget.short.id}');
-    debugPrint('🎥 Short data: ${widget.short.songTitle} by ${widget.short.artistName}');
-    debugPrint('🎥 Video URL: ${widget.short.videoUrl}');
+
     
     _initializeVideo();
     _loadSongAndArtistData();
@@ -397,7 +392,7 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
 
   @override
   void dispose() {
-    debugPrint('🎥 ShortsVideoPlayer dispose: ${widget.short.id}');
+
     _controller?.dispose();
     super.dispose();
   }
@@ -447,28 +442,22 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
 
   Future<void> _loadSongAndArtistData() async {
     try {
-      debugPrint('🎵 Loading data for short: ${widget.short.id}');
-      debugPrint('🎵 Short songId: ${widget.short.songId}');
-      debugPrint('🎵 Short artistId: ${widget.short.artistId}');
-      debugPrint('🎵 Short songTitle: ${widget.short.songTitle}');
-      debugPrint('🎵 Short artistName: ${widget.short.artistName}');
-      
       // Load song data
       if (widget.short.songId.isNotEmpty) {
         final song = await widget.songRepository.getSongById(widget.short.songId);
         if (mounted) {
-          debugPrint('🎵 Loaded song: ${song?.title} by ${song?.artist}');
-          
           // Validate that loaded song matches the short
           if (song != null && song.title == widget.short.songTitle) {
-            debugPrint('✅ Song data matches short data');
             setState(() => _song = song);
           } else {
-            debugPrint('❌ Song data mismatch! Expected: ${widget.short.songTitle}, Got: ${song?.title}');
-            debugPrint('🔄 Using fallback data from short object');
             // Don't set _song, let UI use fallback data from widget.short
             setState(() => _song = null);
           }
+        }
+      } else {
+        // No song ID available, set to null immediately
+        if (mounted) {
+          setState(() => _song = null);
         }
       }
 
@@ -476,18 +465,18 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
       if (widget.short.artistId.isNotEmpty) {
         final artist = await widget.artistRepository.getArtistById(widget.short.artistId);
         if (mounted) {
-          debugPrint('🎵 Loaded artist: ${artist?.name}');
-          
           // Validate that loaded artist matches the short
           if (artist != null && artist.name == widget.short.artistName) {
-            debugPrint('✅ Artist data matches short data');
             setState(() => _artist = artist);
           } else {
-            debugPrint('❌ Artist data mismatch! Expected: ${widget.short.artistName}, Got: ${artist?.name}');
-            debugPrint('🔄 Using fallback data from short object');
             // Don't set _artist, let UI use fallback data from widget.short
             setState(() => _artist = null);
           }
+        }
+      } else {
+        // No artist ID available, set to null immediately
+        if (mounted) {
+          setState(() => _artist = null);
         }
       }
 
@@ -496,12 +485,19 @@ class _ShortsVideoPlayerState extends ConsumerState<ShortsVideoPlayer> {
         await _checkIfSongInPlaylist();
       }
       
+      // Set loading to false after all data loading is complete
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+      
     } catch (e) {
-      debugPrint('❌ Error loading song/artist data: $e');
       if (mounted) {
         setState(() {
           _song = null;
           _artist = null;
+          _isLoadingData = false; // Also set to false on error
         });
       }
     }

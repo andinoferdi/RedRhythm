@@ -42,10 +42,10 @@ void main() async {
       
       // Configure session to handle interruptions gracefully
       session.interruptionEventStream.listen((event) {
-        debugPrint('🎵 Audio interruption: ${event.type}');
+
         if (event.type == AudioInterruptionType.duck) {
           // Continue playing at reduced volume during duck
-          debugPrint('🎵 Audio ducked - continuing playback');
+          
         }
       });
       
@@ -53,7 +53,7 @@ void main() async {
         debugPrint('⚠️ Audio becoming noisy - pausing playback');
         // Handle when headphones are unplugged, etc.
       });
-      debugPrint('✅ Audio session configured successfully');
+
     } catch (e) {
       debugPrint('⚠️ Error configuring audio session: $e');
     }

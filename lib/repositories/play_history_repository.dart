@@ -60,11 +60,11 @@ class PlayHistoryRepository {
                 }
               }
             } catch (e) {
-              // Silently handle song fetch error
+              // Even if we can't get song details, we can still create a basic history record
             }
           }
           
-          // Create PlayHistory object
+          // Create PlayHistory object (even with partial data)
           final history = PlayHistory.fromRecord(
             record,
             songRecord: songRecord,
@@ -92,7 +92,7 @@ class PlayHistoryRepository {
     int? durationSeconds,
   }) async {
     try {
-      debugPrint('🔄 Repository: Adding play history for $songId ($durationSeconds seconds)');
+
       
       // First, delete any existing history for this song to avoid duplicates
       final existingHistory = await pb.collection('recent_plays').getList(
@@ -101,15 +101,13 @@ class PlayHistoryRepository {
         filter: 'user_id = "$userId" && song_id = "$songId"',
       );
       
-      debugPrint('🔍 Found ${existingHistory.items.length} existing records for song $songId');
+      
       
       // Delete all existing records for this song
       for (final record in existingHistory.items) {
         try {
           await pb.collection('recent_plays').delete(record.id);
-          debugPrint('🗑️ Deleted existing record: ${record.id}');
         } catch (e) {
-          debugPrint('⚠️ Failed to delete record ${record.id}: $e');
           // Continue if delete fails
         }
       }
@@ -122,9 +120,9 @@ class PlayHistoryRepository {
         'played_at': DateTime.now().toIso8601String(),
       });
       
-      debugPrint('✅ Repository: Created new play history record: ${newRecord.id}');
+      
     } catch (e) {
-      debugPrint('❌ Repository error: $e');
+      
       rethrow;
     }
   }

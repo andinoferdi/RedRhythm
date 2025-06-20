@@ -28,7 +28,7 @@ class ShortsController extends StateNotifier<ShortsState> {
         currentGenreFilter: null, // Clear genre filter for general load
       );
     } catch (e) {
-      debugPrint('❌ ShortsController error: $e');
+
       
       // For now, we'll create an empty state to prevent the home screen from failing
       // TODO: Fix the repository parsing issue
@@ -57,7 +57,7 @@ class ShortsController extends StateNotifier<ShortsState> {
         currentGenreFilter: genreId,
       );
     } catch (e) {
-      debugPrint('❌ ShortsController loadShortsByGenre error: $e');
+
       
       state = state.copyWith(
         shorts: [], // Empty list instead of failing
@@ -108,7 +108,7 @@ class ShortsController extends StateNotifier<ShortsState> {
         hasReachedMax: newShorts.length < 20,
       );
     } catch (e) {
-      debugPrint('❌ Load more shorts error: $e');
+
       state = state.copyWith(
         isLoadingMore: false,
         error: null, // Don't show error for pagination
@@ -221,7 +221,7 @@ class ShortsController extends StateNotifier<ShortsState> {
 
   /// Clear current genre filter and reload all shorts
   Future<void> clearFilter() async {
-    debugPrint('🔄 Clearing genre filter');
+
     state = state.copyWith(currentGenreFilter: null);
     await loadShorts(page: 1, limit: 20); // Reload all shorts
   }

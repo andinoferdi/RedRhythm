@@ -477,17 +477,13 @@ class ColorExtractor {
       final colors = await extractColorsFromUrl(imageUrl);
       
       if (verbose) {
-        debugPrint('✅ Extracted colors:');
-        debugPrint('   Primary: ${colors.primary.toString()}');
-        debugPrint('   Secondary: ${colors.secondary.toString()}');
-        debugPrint('   Background: ${colors.backgroundStart.toString()} → ${colors.backgroundEnd.toString()}');
-        debugPrint('   Accent: ${colors.accent.toString()}');
+        
       }
       
       return colors;
     } catch (e) {
       if (verbose) {
-        debugPrint('❌ Color extraction failed: $e');
+
       }
       return getDefaultColors();
     }

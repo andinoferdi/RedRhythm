@@ -510,8 +510,8 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
     final playerState = ref.read(playerControllerProvider);
     final albumContextId = _album!.artistId.isNotEmpty ? _album!.artistId : 'album_${_album!.id}';
     
-    // Only allow shuffle toggle if playing from this album or no context
-    if (playerState.currentArtistId == null || playerState.currentArtistId == albumContextId) {
+    // Only allow shuffle toggle if no music is playing OR playing from this album context
+    if (!playerState.isPlaying || playerState.currentArtistId == albumContextId) {
       ref.read(playerControllerProvider.notifier).toggleShuffle();
       
       // If currently playing from this album, update the queue accordingly
@@ -779,14 +779,34 @@ class _AlbumScreenState extends ConsumerState<AlbumScreen> {
           Consumer(
             builder: (context, ref, child) {
               final playerState = ref.watch(playerControllerProvider);
+              final albumContextId = _album!.artistId.isNotEmpty ? _album!.artistId : 'album_${_album!.id}';
               
               return IconButton(
-                onPressed: _toggleShuffle,
+                onPressed: () {
+                  final playerState = ref.read(playerControllerProvider);
+                  // Only enable if no music is playing OR playing from this album
+                  if (!playerState.isPlaying || playerState.currentArtistId == albumContextId) {
+                    _toggleShuffle();
+                  }
+                },
                 icon: Icon(
                   Icons.shuffle, 
-                  color: playerState.shuffleMode ? Colors.red : Colors.white,
+                  color: () {
+                    // Check if shuffle is allowed
+                    final canShuffle = !playerState.isPlaying || playerState.currentArtistId == albumContextId;
+                    if (!canShuffle) return Colors.grey[600]; // Disabled color
+                    return playerState.shuffleMode ? Colors.red : Colors.white;
+                  }(),
                 ),
                 iconSize: 24,
+                style: IconButton.styleFrom(
+                  backgroundColor: () {
+                    final canShuffle = !playerState.isPlaying || playerState.currentArtistId == albumContextId;
+                    if (!canShuffle) return Colors.grey[900]; // Disabled background
+                    return playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800];
+                  }(),
+                  padding: const EdgeInsets.all(12),
+                ),
               );
             },
           ),

@@ -14,6 +14,7 @@ import '../../utils/color_extractor.dart';
 import '../../providers/dynamic_color_provider.dart';
 import '../../routes/app_router.dart';
 import '../../providers/artist_select_provider.dart';
+import '../../providers/favorite_provider.dart';
 import '../../utils/font_usage_guide.dart';
 import '../../utils/responsive_helper.dart';
 
@@ -641,20 +642,59 @@ class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen>
                             );
                           },
                         ),
-                        IconButton(
-                          icon: Icon(
-                            playerState.repeatMode == RepeatMode.off
-                                ? Icons.repeat
-                                : playerState.repeatMode == RepeatMode.one
-                                    ? Icons.repeat_one
-                                    : Icons.repeat,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          onPressed: () {
-                            ref
-                                .read(playerControllerProvider.notifier)
-                                .toggleRepeatMode();
+                        Consumer(
+                          builder: (context, ref, child) {
+                            final favoriteState = ref.watch(favoriteProvider);
+                            final isFavorite = favoriteState.favoriteSongs.any(
+                              (song) => song.id == currentSong.id,
+                            );
+
+                            return IconButton(
+                              icon: Icon(
+                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: isFavorite ? Colors.red : Colors.white,
+                                size: 24,
+                              ),
+                              onPressed: () async {
+                                if (isFavorite) {
+                                  final success = await ref
+                                      .read(favoriteProvider.notifier)
+                                      .removeFromFavorites(currentSong.id);
+                                  
+                                  if (mounted && success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Dihapus dari favorit',
+                                          style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
+                                        ),
+                                        backgroundColor: Colors.white,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                    );
+                                  }
+                                } else {
+                                  final success = await ref
+                                      .read(favoriteProvider.notifier)
+                                      .addToFavorites(currentSong.id);
+                                  
+                                  if (mounted && success) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Ditambahkan ke favorit',
+                                          style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
+                                        ),
+                                        backgroundColor: Colors.white,
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                            );
                           },
                         ),
                       ],

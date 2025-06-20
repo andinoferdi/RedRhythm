@@ -329,8 +329,8 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
   void _toggleShuffle() {
     final playerState = ref.read(playerControllerProvider);
     
-    // Only allow shuffle toggle if playing from this artist or no artist context
-    if (playerState.currentArtistId == null || playerState.currentArtistId == _artist?.id) {
+    // Only allow shuffle toggle if no music is playing OR playing from this artist context
+    if (!playerState.isPlaying || playerState.currentArtistId == _artist?.id) {
       ref.read(playerControllerProvider.notifier).toggleShuffle();
       
       // If currently playing from this artist, update the queue accordingly
@@ -606,13 +606,28 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
               final playerState = ref.watch(playerControllerProvider);
               
               return IconButton(
-                onPressed: _toggleShuffle,
+                onPressed: () {
+                  final playerState = ref.read(playerControllerProvider);
+                  // Only enable if no music is playing OR playing from this artist
+                  if (!playerState.isPlaying || playerState.currentArtistId == _artist?.id) {
+                    _toggleShuffle();
+                  }
+                },
                 icon: Icon(
                   Icons.shuffle, 
-                  color: playerState.shuffleMode ? Colors.red : Colors.white,
+                  color: () {
+                    // Check if shuffle is allowed
+                    final canShuffle = !playerState.isPlaying || playerState.currentArtistId == _artist?.id;
+                    if (!canShuffle) return Colors.grey[600]; // Disabled color
+                    return playerState.shuffleMode ? Colors.red : Colors.white;
+                  }(),
                 ),
                 style: IconButton.styleFrom(
-                  backgroundColor: playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800],
+                  backgroundColor: () {
+                    final canShuffle = !playerState.isPlaying || playerState.currentArtistId == _artist?.id;
+                    if (!canShuffle) return Colors.grey[900]; // Disabled background
+                    return playerState.shuffleMode ? Colors.red.withValues(alpha: 0.2) : Colors.grey[800];
+                  }(),
                   padding: const EdgeInsets.all(12),
                 ),
               );

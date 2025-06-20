@@ -39,10 +39,16 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Reduce verbose system logs in debug builds
+            buildConfigField("boolean", "ENABLE_VERBOSE_LOGGING", "false")
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            // Disable all verbose logging in release
+            buildConfigField("boolean", "ENABLE_VERBOSE_LOGGING", "false")
         }
     }
 }

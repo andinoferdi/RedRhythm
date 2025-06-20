@@ -48,7 +48,7 @@ class AudioDurationService {
         await durationPlayer.dispose();
       }
     } catch (e) {
-      debugPrint('❌ Error getting audio duration: $e');
+
       return null;
     }
   }
@@ -62,7 +62,7 @@ class AudioDurationService {
       
       return true;
     } catch (e) {
-      debugPrint('❌ Error updating song duration in database: $e');
+
       return false;
     }
   }
@@ -98,14 +98,14 @@ class AudioDurationService {
       // Get audio URL
       final audioUrl = _getSongAudioUrl(song);
       if (audioUrl == null) {
-        debugPrint('❌ No audio URL available for song: ${song.title}');
+  
         return false;
       }
 
       // Get actual duration from MP3 file
       final duration = await getAudioFileDuration(audioUrl);
       if (duration == null) {
-        debugPrint('❌ Could not detect duration for song: ${song.title}');
+
         return false;
       }
 
@@ -114,7 +114,7 @@ class AudioDurationService {
       
       return success;
     } catch (e) {
-      debugPrint('❌ Error updating song duration: $e');
+
       return false;
     }
   }
@@ -157,12 +157,11 @@ class AudioDurationService {
       }
 
       debugPrint('📈 Duration update completed:');
-      debugPrint('✅ Success: $successCount songs');
-      debugPrint('❌ Failed: $failCount songs');
+
       debugPrint('📊 Total processed: ${songsToUpdate.length} songs');
       
     } catch (e) {
-      debugPrint('❌ Error in bulk song duration update: $e');
+
     }
   }
 

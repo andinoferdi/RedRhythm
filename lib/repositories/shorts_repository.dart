@@ -19,7 +19,7 @@ class ShortsRepository {
     String? searchQuery,
   }) async {
     try {
-      debugPrint('🔍 Fetching shorts from collection: shorts');
+  
       
       String filter = '';
       
@@ -28,8 +28,7 @@ class ShortsRepository {
         filter = 'title ~ "$searchQuery" || hashtags ~ "$searchQuery"';
       }
 
-      debugPrint('🔍 Query filter: $filter');
-      debugPrint('🔍 PocketBase URL: ${_pb.baseUrl}');
+      
 
       final resultList = await _pb.collection('shorts').getList(
         page: page,
@@ -39,38 +38,35 @@ class ShortsRepository {
         expand: 'artist_id,song_id,genres_id',
       );
 
-      debugPrint('✅ Found ${resultList.items.length} shorts in database');
+      
       
       final shorts = resultList.items.map((record) {
-        debugPrint('📹 Processing record: ${record.id}');
-        debugPrint('📹 Record data: ${record.data}');
-        debugPrint('📹 Record expand: ${record.expand}');
+        
         return _recordToShorts(record);
       }).toList();
 
-      debugPrint('✅ Converted ${shorts.length} shorts to models');
+      
       
       // Apply genre filter in memory if specified
       if (genreFilter != null && genreFilter.isNotEmpty) {
-        debugPrint('🔍 Applying genre filter in memory: $genreFilter');
+        
         final filteredShorts = shorts.where((short) {
           // Filter by genre_id (from song) or artist_id
           final matchesGenre = short.genresId == genreFilter;
           final matchesArtist = short.artistId == genreFilter;
           
-          debugPrint('📹 Short ${short.id}: genresId=${short.genresId}, artistId=${short.artistId}, filter=$genreFilter');
-          debugPrint('📹 Matches genre: $matchesGenre, Matches artist: $matchesArtist');
+          
           
           return matchesGenre || matchesArtist;
         }).toList();
         
-        debugPrint('✅ Filtered to ${filteredShorts.length} shorts');
+        
         return filteredShorts;
       }
       
       return shorts;
     } catch (e) {
-      debugPrint('❌ Error fetching shorts: $e');
+      
       rethrow;
     }
   }
@@ -208,7 +204,7 @@ class ShortsRepository {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error parsing expand data: $e');
+
       // Continue with null values
     }
 
@@ -218,18 +214,16 @@ class ShortsRepository {
         ? '${_pb.baseUrl}/api/files/${record.collectionId}/${record.id}/$videoFileName'
         : '';
 
-    debugPrint('📹 Video filename: $videoFileName');
-    debugPrint('📹 Generated video URL: $videoUrl');
+
 
     // Get genre ID - prioritize direct field, then from song
     String genreId = data['genres_id'] as String? ?? '';
     if (genreId.isEmpty && genreIdFromSong != null && genreIdFromSong.isNotEmpty) {
       genreId = genreIdFromSong;
-      debugPrint('📹 Using genre_id from song: $genreId');
+
     }
 
-    debugPrint('📹 Short data: Shorts(id: ${record.id}, genresId: $genreId, videoUrl: $videoUrl, artistId: ${data['artist_id']}, songId: ${data['song_id']}, title: ${data['title']}, hashtags: ${data['hashtags']}, artistName: ${artistName ?? 'Unknown Artist'}, songTitle: ${songTitle ?? 'Unknown Song'}, thumbnailUrl: ${data['thumbnail_url']}, views: ${data['views'] ?? 0}, likes: ${data['likes'] ?? 0}, createdAt: ${record.created}, updatedAt: ${record.updated})');
-    debugPrint('📹 Final Genre ID: $genreId');
+
 
     return Shorts(
       id: record.id,

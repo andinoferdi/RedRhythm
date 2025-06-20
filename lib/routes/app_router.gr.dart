@@ -85,10 +85,28 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const ExploreScreen(),
       );
     },
+    FavoritesRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const FavoritesScreen(),
+      );
+    },
     ForgotPasswordRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: const ForgotPasswordScreen(),
+      );
+    },
+    GenreRoute.name: (routeData) {
+      final args = routeData.argsAs<GenreRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: GenreScreen(
+          genreId: args.genreId,
+          genreName: args.genreName,
+          sourceTabIndex: args.sourceTabIndex,
+          key: args.key,
+        ),
       );
     },
     HomeRoute.name: (routeData) {
@@ -398,6 +416,20 @@ class ExploreRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [FavoritesScreen]
+class FavoritesRoute extends PageRouteInfo<void> {
+  const FavoritesRoute({List<PageRouteInfo>? children})
+      : super(
+          FavoritesRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'FavoritesRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
 /// [ForgotPasswordScreen]
 class ForgotPasswordRoute extends PageRouteInfo<void> {
   const ForgotPasswordRoute({List<PageRouteInfo>? children})
@@ -409,6 +441,53 @@ class ForgotPasswordRoute extends PageRouteInfo<void> {
   static const String name = 'ForgotPasswordRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [GenreScreen]
+class GenreRoute extends PageRouteInfo<GenreRouteArgs> {
+  GenreRoute({
+    required String genreId,
+    String? genreName,
+    int? sourceTabIndex,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+          GenreRoute.name,
+          args: GenreRouteArgs(
+            genreId: genreId,
+            genreName: genreName,
+            sourceTabIndex: sourceTabIndex,
+            key: key,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'GenreRoute';
+
+  static const PageInfo<GenreRouteArgs> page = PageInfo<GenreRouteArgs>(name);
+}
+
+class GenreRouteArgs {
+  const GenreRouteArgs({
+    required this.genreId,
+    this.genreName,
+    this.sourceTabIndex,
+    this.key,
+  });
+
+  final String genreId;
+
+  final String? genreName;
+
+  final int? sourceTabIndex;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'GenreRouteArgs{genreId: $genreId, genreName: $genreName, sourceTabIndex: $sourceTabIndex, key: $key}';
+  }
 }
 
 /// generated route for

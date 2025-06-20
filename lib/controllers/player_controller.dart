@@ -207,7 +207,7 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
       
       // Activate the session
       await _audioSession!.setActive(true);
-      debugPrint('🎵 Music audio focus ensured with system volume control');
+
     } catch (e) {
       debugPrint('⚠️ Error ensuring music audio focus: $e');
     }
@@ -1044,7 +1044,7 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
               songId,
               durationSeconds: playDurationSeconds,
             );
-        debugPrint('✅ Play history saved: $songId (${playDurationSeconds}s)');
+
       }
     } catch (e) {
       debugPrint('Error adding to play history: $e');
@@ -1099,7 +1099,7 @@ class PlayerController extends StateNotifier<app_state.PlayerState> {
 
     // Prevent race conditions - only one save operation at a time
     if (_isSavingPlayHistory) {
-      debugPrint('❌ Skipping play history save: already in progress');
+      
       return;
     }
 

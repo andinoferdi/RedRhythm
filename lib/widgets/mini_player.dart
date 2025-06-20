@@ -9,6 +9,7 @@ import '../utils/image_helpers.dart';
 import '../utils/color_extractor.dart';
 import '../utils/font_usage_guide.dart';
 import '../providers/dynamic_color_provider.dart';
+import '../providers/favorite_provider.dart';
 // Used for Song type in playerState.currentSong and MusicPlayerRoute
 import '../models/song.dart';
 import '../models/playlist.dart';
@@ -41,6 +42,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     with TickerProviderStateMixin {
   bool _isLoadingPlaylists = false;
   bool _isInPlaylist = false;
+  bool _isInFavorites = false;
   String? _lastCheckedSongId; // Cache to avoid unnecessary checks
 
   // Add cache for playlist data to reduce database calls
@@ -119,8 +121,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
     }
 
     try {
-      // Reduced debug logging for better performance
-
       // Set loading state immediately for better UX
       if (mounted) {
         setState(() {
@@ -128,7 +128,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         });
       }
 
+      // Check both playlists and favorites
       List<Playlist> allPlaylists;
+      bool isInFavorites = false;
 
       // Use cache if available and valid
       final now = DateTime.now();
@@ -147,6 +149,10 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         _cacheTimestamp = now;
       }
 
+      // Check favorites
+      final favoriteRepository = ref.read(favoriteRepositoryProvider);
+      isInFavorites = await favoriteRepository.isFavorite(currentSong.id);
+
       bool foundInAnyPlaylist = false;
 
       for (final playlist in allPlaylists) {
@@ -160,6 +166,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
       if (mounted) {
         setState(() {
           _isInPlaylist = foundInAnyPlaylist;
+          _isInFavorites = isInFavorites;
           _lastCheckedSongId = currentSong.id;
           _isLoadingPlaylists = false;
         });
@@ -168,11 +175,11 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         _clearOptimisticState();
       }
     } catch (e) {
-      // Reduced debug logging for better performance
       // Don't show error to user for this background check
       if (mounted) {
         setState(() {
           _isInPlaylist = false; // Default to false on error
+          _isInFavorites = false;
           _lastCheckedSongId = currentSong.id;
           _isLoadingPlaylists = false;
         });
@@ -274,6 +281,14 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
         debugPrint('MiniPlayer: Song changed from ${previous?.title ?? 'null'} to ${next.title}');
         // Remove the addPostFrameCallback delay for immediate color extraction
         ref.read(dynamicColorProvider.notifier).extractColorsFromSong(next);
+      }
+    });
+
+    // Watch for favorites changes to refresh button state
+    ref.listen(favoriteProvider, (previous, next) {
+      // Refresh the status when favorites change
+      if (mounted) {
+        _checkIfSongInPlaylist();
       }
     });
 
@@ -447,13 +462,36 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                     // Control Buttons
                     Row(
                       children: [
-                        // Add to Playlist Button
+                        // Add to Playlist/Favorites Button
                         Consumer(
                           builder: (context, ref, child) {
-                            // Use optimistic state if available, otherwise use real state
+                            // Determine display state - prioritize favorites over playlists
                             final displayState = _hasOptimisticState
                                 ? _optimisticState
-                                : _isInPlaylist;
+                                : (_isInFavorites || _isInPlaylist);
+
+                            // Determine icon and color based on status
+                            IconData iconData;
+                            Color iconColor;
+                            String tooltipText;
+
+                            if (_isLoadingPlaylists) {
+                              iconData = Icons.add_circle_outline;
+                              iconColor = Colors.white;
+                              tooltipText = 'Checking...';
+                            } else if (_isInFavorites) {
+                              iconData = Icons.favorite;
+                              iconColor = Colors.red;
+                              tooltipText = 'In favorites';
+                            } else if (_isInPlaylist) {
+                              iconData = Icons.check_circle;
+                              iconColor = Colors.red;
+                              tooltipText = 'In playlist';
+                            } else {
+                              iconData = Icons.add_circle_outline;
+                              iconColor = Colors.white;
+                              tooltipText = 'Add to playlist/favorites';
+                            }
 
                             return IconButton(
                               onPressed: _isLoadingPlaylists
@@ -464,8 +502,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                                           .currentSong;
                                       if (currentSong != null) {
                                         // Set optimistic state based on current state
-                                        // If currently in playlist, optimistically show it will be removed
-                                        // If not in playlist, optimistically show it will be added
                                         final hasPlaylists =
                                             _cachedPlaylists?.isNotEmpty ??
                                                 true;
@@ -495,18 +531,10 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer>
                                       ),
                                     )
                                   : Icon(
-                                      displayState
-                                          ? Icons.check_circle
-                                          : Icons.add_circle_outline,
-                                      color: displayState
-                                          ? Colors.red
-                                          : Colors.white,
+                                      iconData,
+                                      color: iconColor,
                                     ),
-                              tooltip: _isLoadingPlaylists
-                                  ? 'Checking playlists...'
-                                  : (displayState
-                                      ? 'In playlist'
-                                      : 'Add to playlist'),
+                              tooltip: tooltipText,
                             );
                           },
                         ),

@@ -7,6 +7,7 @@ import '../repositories/song_playlist_repository.dart';
 import '../utils/app_colors.dart';
 import '../utils/font_usage_guide.dart';
 import 'playlist_image_widget.dart';
+import '../providers/favorite_provider.dart';
 
 // Import the provider from mini_player
 import 'mini_player.dart' show playlistUpdateNotifierProvider;
@@ -30,6 +31,7 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
   Map<String, bool> _playlistStates = {};
   bool _isLoading = true;
   bool _isApplyingChanges = false;
+  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -51,10 +53,15 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
       
       final playlists = await repository.getAllPlaylists();
       
+      // Check if song is in favorites - use async method
+      final favoriteRepository = ref.read(favoriteRepositoryProvider);
+      final isFavorite = await favoriteRepository.isFavorite(widget.song.id);
+      
       if (mounted) {
         setState(() {
           _playlists = playlists;
           _playlistStates = {};
+          _isFavorite = isFavorite;
           
           // Initialize playlist states
           for (final playlist in playlists) {
@@ -120,6 +127,25 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
       int addedCount = 0;
       int removedCount = 0;
 
+      // Handle favorites change
+      final favoriteRepository = ref.read(favoriteRepositoryProvider);
+      final originalFavoriteState = await favoriteRepository.isFavorite(widget.song.id);
+      if (_isFavorite != originalFavoriteState) {
+        hasChanges = true;
+        if (_isFavorite) {
+          // Add to favorites
+          await favoriteRepository.addToFavorites(widget.song.id);
+          addedCount++;
+        } else {
+          // Remove from favorites
+          await favoriteRepository.removeFromFavorites(widget.song.id);
+          removedCount++;
+        }
+        
+        // Refresh favorites provider after change
+        ref.read(favoriteProvider.notifier).loadFavorites();
+      }
+
       for (final playlist in _playlists) {
         final currentState = _playlistStates[playlist.id] ?? false;
         final originalState = playlist.songs.contains(widget.song.id);
@@ -143,21 +169,48 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
         ref.read(playlistUpdateNotifierProvider.notifier).notifyPlaylistUpdated();
         widget.onPlaylistsChanged?.call();
         
-        // Show success message
-        String message = '';
-        if (addedCount > 0 && removedCount > 0) {
-          message = 'Added to $addedCount, removed from $removedCount playlists';
-        } else if (addedCount > 0) {
-          message = 'Added to $addedCount playlist${addedCount > 1 ? 's' : ''}';
-        } else if (removedCount > 0) {
-          message = 'Removed from $removedCount playlist${removedCount > 1 ? 's' : ''}';
+        // Show success message with proper distinction
+        List<String> messages = [];
+        
+        // Handle favorites message separately
+        if (_isFavorite != originalFavoriteState) {
+          if (_isFavorite) {
+            messages.add('Ditambahkan ke favorit');
+          } else {
+            messages.add('Dihapus dari favorit');
+          }
         }
-
-        if (mounted && message.isNotEmpty) {
+        
+        // Handle playlist changes
+        int playlistAdded = 0;
+        int playlistRemoved = 0;
+        
+        for (final playlist in _playlists) {
+          final currentState = _playlistStates[playlist.id] ?? false;
+          final originalState = playlist.songs.contains(widget.song.id);
+          
+          if (currentState != originalState) {
+            if (currentState) {
+              playlistAdded++;
+            } else {
+              playlistRemoved++;
+            }
+          }
+        }
+        
+        if (playlistAdded > 0 && playlistRemoved > 0) {
+          messages.add('Ditambahkan ke $playlistAdded, dihapus dari $playlistRemoved playlist');
+        } else if (playlistAdded > 0) {
+          messages.add('Ditambahkan ke $playlistAdded playlist${playlistAdded > 1 ? 's' : ''}');
+        } else if (playlistRemoved > 0) {
+          messages.add('Dihapus dari $playlistRemoved playlist${playlistRemoved > 1 ? 's' : ''}');
+        }
+        
+        if (mounted && messages.isNotEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                message,
+                messages.join(' • '),
                 style: FontUsageGuide.authButtonText.copyWith(color: Colors.black),
               ),
               backgroundColor: Colors.white,
@@ -277,13 +330,113 @@ class _PlaylistSelectionModalState extends ConsumerState<PlaylistSelectionModal>
             ),
           ),
           
+          // Favorites section
+          Container(
+            margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isFavorite = !_isFavorite;
+                  });
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  child: Row(
+                    children: [
+                      // Favorites icon
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.red.shade300,
+                              Colors.red.shade600,
+                              Colors.red.shade800,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.favorite,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      
+                      // Favorites info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Lagu yang Disukai',
+                              style: FontUsageGuide.listSongTitle.copyWith(
+                                color: AppColors.text,
+                                fontSize: 16,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Favorit',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Checkbox
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _isFavorite 
+                              ? AppColors.primary 
+                              : AppColors.textSecondary.withValues(alpha: 0.5),
+                            width: 2,
+                          ),
+                          color: _isFavorite ? AppColors.primary : Colors.transparent,
+                        ),
+                        child: _isFavorite
+                          ? Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            )
+                          : null,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Divider
+          Container(
+            margin: EdgeInsets.symmetric(horizontal: 16),
+            height: 1,
+            color: AppColors.textSecondary.withValues(alpha: 0.2),
+          ),
+          
           // Recently played section (if playlists exist)
           if (_playlists.isNotEmpty) ...[
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              height: 1,
-              color: AppColors.textSecondary.withValues(alpha: 0.2),
-            ),
+            SizedBox(height: 16),
             
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
